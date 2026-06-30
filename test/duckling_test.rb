@@ -63,7 +63,10 @@ class DucklingIntervalTest < Minitest::Test
     assert_equal :interval, entity[:value][:type]
     assert entity[:value].key?(:from), "interval value should have :from"
     assert entity[:value].key?(:to),   "interval value should have :to"
-    assert_equal :hour, entity[:value][:from][:grain]
+    assert_equal :value, entity[:value][:from][:type]
+    assert_equal :hour,  entity[:value][:from][:grain]
+    assert_equal :value, entity[:value][:to][:type]
+    assert_equal :hour,  entity[:value][:to][:grain]
   end
 end
 
