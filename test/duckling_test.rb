@@ -15,14 +15,14 @@ class DucklingEntityShapeTest < Minitest::Test
     results = Duckling.parse("at 3pm", locale: "en")
     assert results.size > 0, "Expected at least one result from Duckling.parse"
     first = results.first
-    assert first.key?(:body),  "Expected result to have :body key"
+    assert first.key?(:body), "Expected result to have :body key"
     assert first.key?(:start), "Expected result to have :start key"
-    assert first.key?(:end),   "Expected result to have :end key"
-    assert first.key?(:dim),   "Expected result to have :dim key"
+    assert first.key?(:end), "Expected result to have :end key"
+    assert first.key?(:dim), "Expected result to have :dim key"
     assert first.key?(:value), "Expected result to have :value key"
     value = first[:value]
     assert_kind_of Hash, value, "Expected :value to be a Hash"
-    assert value.key?(:type),  "Expected :value to have :type key"
+    assert value.key?(:type), "Expected :value to have :type key"
     assert value.key?(:value), "Expected :value to have :value key"
     assert value.key?(:grain), "Expected :value to have :grain key"
   end
@@ -44,9 +44,9 @@ class DucklingParityTest < Minitest::Test
     assert_operator results.size, :>=, 1, "expected at least one entity for 'Call me tomorrow'"
     entity = results.find { |r| r[:body] == "tomorrow" }
     refute_nil entity, "expected an entity with body: 'tomorrow'"
-    assert_equal :time,  entity[:dim]
+    assert_equal :time, entity[:dim]
     assert_equal :value, entity[:value][:type]
-    assert_equal :day,   entity[:value][:grain]
+    assert_equal :day, entity[:value][:grain]
     assert_match(/\A\d{4}-\d{2}-\d{2}/, entity[:value][:value],
       "expected :value to be an ISO8601 date string starting with YYYY-MM-DD")
     assert_kind_of Array, entity[:value][:values]
@@ -59,14 +59,14 @@ class DucklingIntervalTest < Minitest::Test
     results = Duckling.parse("from 3pm to 5pm", locale: "en")
     assert results.size > 0
     entity = results.first
-    assert_equal :time,     entity[:dim]
+    assert_equal :time, entity[:dim]
     assert_equal :interval, entity[:value][:type]
     assert entity[:value].key?(:from), "interval value should have :from"
-    assert entity[:value].key?(:to),   "interval value should have :to"
+    assert entity[:value].key?(:to), "interval value should have :to"
     assert_equal :value, entity[:value][:from][:type]
-    assert_equal :hour,  entity[:value][:from][:grain]
+    assert_equal :hour, entity[:value][:from][:grain]
     assert_equal :value, entity[:value][:to][:type]
-    assert_equal :hour,  entity[:value][:to][:grain]
+    assert_equal :hour, entity[:value][:to][:grain]
   end
 end
 
