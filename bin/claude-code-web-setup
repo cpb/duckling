@@ -1,0 +1,15 @@
+#!/bin/sh
+# Web session setup hook skeleton — cpb plugin default (no-op).
+#
+# Called before Edit/Write tool calls in remote Claude Code sessions
+# (when CLAUDE_CODE_REMOTE=true). Copy this to ./bin/claude-code-web-setup
+# in your project (via /cpb:init) and implement project-specific setup.
+#
+# Common patterns:
+#   - Install dependencies:   bundle install  /  npm install
+#   - Install formatters:     hk install
+#   - Run migrations:         bin/rails db:prepare
+#
+# Use tmp/claude-web-receipts/ for receipt-file caching to avoid re-running
+# on every tool call — see fizzbuzz_app's bin/claude-code-web-setup for an example.
+exit 0
