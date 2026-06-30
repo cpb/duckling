@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "yaml"
 
-class TestHillCiLayer < Minitest::Test
+class ExtconfTest < Minitest::Test
   def test_native_extension_infrastructure
-    ext_dir = File.join(__dir__, "../ext/duckling")
+    ext_dir = File.expand_path("../../../ext/duckling", __dir__)
 
     assert File.exist?(File.join(ext_dir, "Cargo.toml")),
       "ext/duckling/Cargo.toml must exist — Rust crate not yet set up"
