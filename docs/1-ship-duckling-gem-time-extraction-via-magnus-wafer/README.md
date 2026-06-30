@@ -36,6 +36,7 @@ Start here, then follow the path for your role:
     - [corpus-cases.md](./research/test-coverage/corpus-cases.md) — wafer-inc-duckling time corpus; 10 categories; Rust test helper patterns.
     - [ruby-test-design.md](./research/test-coverage/ruby-test-design.md) — REFERENCE_TIME, assertion helpers, 8 test classes.
     - [pyduckling-reference.md](./research/test-coverage/pyduckling-reference.md) — pyduckling test inventory; port vs. skip decisions.
+  - [research/ffi-risks.md](./research/ffi-risks.md) — Tested evaluation of FFI binding risks (GVL blocking, panic safety, GC pressure, date rot, day-of-week validation gap).
 
 ### Plans
 
