@@ -40,10 +40,14 @@ edition = "2021"
 There is no `[lib]` section, so the crate-type defaults to `rlib`. It is
 suitable as a dependency of the extension crate.
 
-The crate is NOT published to crates.io. Its Cargo.toml references
-`repository = "https://github.com/wafer-inc/duckling"` and
-`documentation = "https://docs.rs/duckling"`, but no version of this
-wafer-inc fork appears on crates.io under that name.
+The crate **is published to crates.io as `duckling`** — the package name
+matches the crate name. Current crates.io version: **0.4.0** (published
+2026-04-16). The local checkout at `/Users/cpb/projects/duks/wafer-inc-duckling`
+is also at 0.4.0, matching the published release.
+
+crates.io: https://crates.io/crates/duckling  
+Repo: https://github.com/wafer-inc/duckling  
+Owner: Andre Popovitch (anchpop)
 
 ## Verified Cargo.toml from rust_blank
 
@@ -84,7 +88,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 magnus = { version = "0.9", features = ["rb-sys"] }
-duckling = { path = "../../path/to/wafer-inc-duckling" }  # see Open Questions
+duckling = "0.4"   # published on crates.io as "duckling" by wafer-inc/anchpop
 rb-sys = { version = "*", default-features = false, features = ["stable-api-compiled-fallback"] }
 ```
 
@@ -118,18 +122,14 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
 
 ## Open Questions
 
-1. **Path vs. git dependency for wafer-inc-duckling**: wafer-inc-duckling is not
-   on crates.io. The local path is
-   `/Users/cpb/projects/duks/wafer-inc-duckling`. For the gem to be installable
-   by others, either: (a) wafer-inc-duckling must be published to crates.io, or
-   (b) referenced as a git dependency (e.g.
-   `{ git = "https://github.com/wafer-inc/duckling" }`), or (c) vendored into
-   the gem repo. A local path dep works for development only.
+1. ~~**Path vs. git dependency**: wafer-inc-duckling is not on crates.io.~~
+   **Resolved**: The crate is published on crates.io as `duckling = "0.4"`.
+   Use the crates.io dep — no path or git dependency needed. The local checkout
+   at `/Users/cpb/projects/duks/wafer-inc-duckling` is the development source
+   for the same 0.4.0 release.
 
-2. **Does wafer-inc-duckling need to be published to crates.io before the gem
-   can be published?** Yes, if using a path dependency. A git dependency
-   sidesteps this for source gems, but `cargo package` may reject git
-   dependencies with `--locked` unless the git rev is pinned.
+2. ~~**Does wafer-inc-duckling need to be published to crates.io?**~~
+   **Resolved**: Already published. No crates.io blocker for gem publication.
 
 3. **Is a build.rs needed in ext/duckling/?** The rust_blank example has NO
    `build.rs`. Magnus's own `build.rs` calls `rb_sys_env::activate()`, and

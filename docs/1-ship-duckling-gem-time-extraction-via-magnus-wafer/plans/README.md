@@ -27,4 +27,4 @@ is complete.
 | NaiveDateTime → bare ISO8601 (no offset) | 02 | Semantically honest; avoids threading Context into serialization |
 | `reference_time:` as Unix i64 | 02 | Enables deterministic test assertions |
 | No `build.rs` in extension crate | 01 | Magnus propagates rb_sys link metadata transitively |
-| wafer-inc-duckling via local path dep | 01 | Not on crates.io — must resolve before RubyGems publication |
+| `duckling = "0.4"` crates.io dep | 01 | Published as `duckling` on crates.io — no path dep needed |

@@ -52,13 +52,13 @@ crate-type = ["cdylib"]
 
 [dependencies]
 magnus = { version = "0.9" }
-duckling = { path = "../../duks/wafer-inc-duckling" }
+duckling = "0.4"   # crates.io: https://crates.io/crates/duckling
 rb-sys = { version = "*", default-features = false, features = ["stable-api-compiled-fallback"] }
 ```
 
 Notes:
 - `edition = "2024"` requires rustc 1.85+; Magnus 0.9 already requires 1.85.
-- Path dep works for local development only — see Open Questions.
+- `duckling = "0.4"` is the crates.io dep — no path dependency needed.
 - No `[build-dependencies]` or `build.rs`; Magnus handles rb_sys link metadata.
 
 ### 2. Create `ext/duckling/src/lib.rs`
@@ -137,16 +137,11 @@ requirements.
 
 ## Open Questions
 
-1. **wafer-inc-duckling not on crates.io.** The Cargo path dependency
-   (`path = "../../duks/wafer-inc-duckling"`) works for local development but
-   will not survive `gem install` from RubyGems. wafer-inc-duckling has no
-   crates.io release. Options before RubyGems publication:
-   (a) publish wafer-inc-duckling to crates.io,
-   (b) switch to `{ git = "https://github.com/wafer-inc/duckling" }`,
-   (c) vendor the Rust source into the gem repo.
-   For 0.2.0 local development the path dep is acceptable.
-   ([extension-crate.md](../research/build-wiring/extension-crate.md) — Open
-   Questions 1 and 2)
+1. ~~**wafer-inc-duckling not on crates.io.**~~ **Resolved**: The crate is
+   published on crates.io as `duckling = "0.4"` (https://crates.io/crates/duckling).
+   Use `duckling = "0.4"` in Cargo.toml — no path or git dependency needed.
+   No crates.io blocker for RubyGems publication.
+   ([extension-crate.md](../research/build-wiring/extension-crate.md))
 
 2. **`edition = "2024"` and stable Rust.** Edition 2024 was stabilized in
    Rust 1.85. Magnus 0.9 declares `rust-version = "1.85"`. The

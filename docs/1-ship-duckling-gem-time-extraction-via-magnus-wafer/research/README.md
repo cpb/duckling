@@ -16,6 +16,6 @@ prescriptive recommendations — those live in [`../plans/`](../plans/README.md)
 | Topic | Critical finding |
 |-------|-----------------|
 | wafer-inc-duckling-api | `Options::with_latent` defaults to `false` — latent entities excluded by default. `Grain::as_str()` returns `"no_grain"` (not `"nosec"`). |
-| build-wiring | No `build.rs` needed in the extension crate; Magnus propagates rb_sys link metadata transitively. wafer-inc-duckling is **not on crates.io** — publish blocker for RubyGems. |
+| build-wiring | No `build.rs` needed in the extension crate; Magnus propagates rb_sys link metadata transitively. `duckling` crate IS on crates.io as `duckling 0.4.0` — use `duckling = "0.4"` in Cargo.toml. |
 | type-mapping-strategy | `serde_magnus` produces the wrong shape (externally-tagged enums, PascalCase grains). Manual Magnus mapping (Option B) is required for 0.2.0. |
 | test-coverage | Fixed reference time 2013-02-12 04:30:00 UTC-2 matches wafer-inc-duckling corpus; test inputs and expected values can be read directly from the Rust corpus file. |

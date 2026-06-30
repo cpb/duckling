@@ -46,13 +46,7 @@ Start here, then follow the path for your role:
 
 ## Critical Open Questions (requiring human decision)
 
-1. **wafer-inc-duckling not on crates.io.** The Cargo path dependency works for local
-   development but will not work when the gem is installed from RubyGems. Must choose:
-   (a) publish wafer-inc-duckling to crates.io, (b) use a git dependency, or (c) vendor
-   the Rust source. Blocks RubyGems publication of 0.2.0.
-   → See [extension-crate.md](./research/build-wiring/extension-crate.md)
-
-2. **NaiveDateTime timezone in Ruby output.** Wall-clock expressions like "tomorrow"
+1. **NaiveDateTime timezone in Ruby output.** Wall-clock expressions like "tomorrow"
    produce `TimePoint::Naive` with no timezone. Option N1 (bare ISO8601) differs from
    pyduckling's timezone-aware output. This affects test parity assertions.
    → See [ruby-hash-schema.md](./research/type-mapping-strategy/ruby-hash-schema.md)
