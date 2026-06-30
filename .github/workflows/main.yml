@@ -28,5 +28,7 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
       - name: Run the default task
         run: bundle exec rake
