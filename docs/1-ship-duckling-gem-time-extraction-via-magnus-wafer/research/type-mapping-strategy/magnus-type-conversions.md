@@ -66,6 +66,46 @@ This produces a Ruby `Time` object, not an ISO8601 string. For the hash-based ou
 format in 0.2.0, the value field should be a String, so use `dt.to_rfc3339()` even for
 `Instant` time points.
 
+## Ruby Symbol Keys and Values
+
+All entity hash keys must be Ruby Symbols (`:body`, `:dim`, `:grain`, etc.) and many
+values must also be Symbols (`:time`, `:value`, `:interval`, `:day`, etc.). The hill
+tests in PR #2 assert this directly.
+
+**Creating symbols in Magnus:**
+
+```rust
+// From the Ruby handle — most reliable, interned symbols
+let sym = ruby.sym("body");      // → :body
+h.aset(ruby.sym("body"), val)?;  // key is :body
+
+// For grain/type/dim values that are also symbols:
+h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;      // :grain => :day
+h.aset(ruby.sym("type"), ruby.sym("value"))?;              // :type => :value
+let dim_str = entity.value.dim_kind().to_string();
+h.aset(ruby.sym("dim"), ruby.sym(&dim_str))?;              // :dim => :time
+```
+
+`ruby.sym(s: &str)` returns a `Symbol` which implements `IntoValue`, so it works anywhere
+a value is accepted. `Symbol` keys are compared by identity (interned), making symbol-keyed
+hashes more efficient to look up in Ruby.
+
+**`DimensionKind::Display` for the `:dim` value:**
+
+`DimensionKind` implements `Display`. The string it produces is what `DimensionKind::Time.to_string()` returns:
+
+```
+DimensionKind::Time         → "time"         → :time
+DimensionKind::Numeral      → "number"        → :number
+DimensionKind::AmountOfMoney → "amount-of-money" → :"amount-of-money"
+```
+
+For 0.2.0 (Time only), this always produces `"time"` → `:time`. For future dimensions, the
+hyphenated names produce symbols like `:"amount-of-money"` which are valid Ruby Symbols but
+require quotes when written as literals.
+
+---
+
 ## NaiveDateTime: No Automatic Conversion
 
 `chrono::NaiveDateTime` does **not** get an `IntoValue` implementation from the `chrono`
@@ -85,7 +125,8 @@ Two practical approaches for `TimePoint::Naive`:
 
 ## Manual Hash Construction with Magnus
 
-When not using serde_magnus, Ruby hashes are built with `magnus::RHash`:
+When not using serde_magnus, Ruby hashes are built with `magnus::RHash`. All keys and
+grain/type/dim values must be Ruby Symbols (see Symbol section above).
 
 ```rust
 use magnus::{Ruby, RHash, RArray, Error, Value};
@@ -93,15 +134,15 @@ use duckling::{Entity, DimensionValue, TimeValue, TimePoint};
 
 fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint) -> Result<Value, Error> {
     let h = ruby.hash_new();
-    h.aset("type", "value")?;
+    h.aset(ruby.sym("type"), ruby.sym("value"))?;  // :type => :value
     match tp {
         TimePoint::Naive { value, grain } => {
-            h.aset("value", value.format("%Y-%m-%dT%H:%M:%S").to_string())?;
-            h.aset("grain", grain.as_str())?;
+            h.aset(ruby.sym("value"), value.format("%Y-%m-%dT%H:%M:%S").to_string())?;
+            h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;  // :grain => :day etc.
         }
         TimePoint::Instant { value, grain } => {
-            h.aset("value", value.to_rfc3339())?;
-            h.aset("grain", grain.as_str())?;
+            h.aset(ruby.sym("value"), value.to_rfc3339())?;
+            h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;
         }
     }
     Ok(h.as_value())
@@ -111,31 +152,31 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue) -> Result<Value, Error> {
     let h = ruby.hash_new();
     match tv {
         TimeValue::Single { value, values, .. } => {
-            h.aset("type", "value")?;
-            // Flatten primary time point fields into the value hash (pyduckling style):
+            h.aset(ruby.sym("type"), ruby.sym("value"))?;  // :type => :value
+            // Flatten primary time point fields into the value hash:
             match value {
                 TimePoint::Naive { value: dt, grain } => {
-                    h.aset("value", dt.format("%Y-%m-%dT%H:%M:%S").to_string())?;
-                    h.aset("grain", grain.as_str())?;
+                    h.aset(ruby.sym("value"), dt.format("%Y-%m-%dT%H:%M:%S").to_string())?;
+                    h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;
                 }
                 TimePoint::Instant { value: dt, grain } => {
-                    h.aset("value", dt.to_rfc3339())?;
-                    h.aset("grain", grain.as_str())?;
+                    h.aset(ruby.sym("value"), dt.to_rfc3339())?;
+                    h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;
                 }
             }
             let vals = ruby.ary_new();
             for tp in values {
                 vals.push(time_point_to_ruby(ruby, tp)?)?;
             }
-            h.aset("values", vals)?;
+            h.aset(ruby.sym("values"), vals)?;
         }
         TimeValue::Interval { from, to, .. } => {
-            h.aset("type", "interval")?;
+            h.aset(ruby.sym("type"), ruby.sym("interval"))?;  // :type => :interval
             if let Some(tp) = from {
-                h.aset("from", time_point_to_ruby(ruby, tp)?)?;
+                h.aset(ruby.sym("from"), time_point_to_ruby(ruby, tp)?)?;
             }
             if let Some(tp) = to {
-                h.aset("to", time_point_to_ruby(ruby, tp)?)?;
+                h.aset(ruby.sym("to"), time_point_to_ruby(ruby, tp)?)?;
             }
         }
     }
@@ -144,14 +185,17 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue) -> Result<Value, Error> {
 
 fn entity_to_ruby(ruby: &Ruby, entity: &Entity) -> Result<Value, Error> {
     let h = ruby.hash_new();
-    h.aset("body", entity.body.clone())?;
-    h.aset("start", entity.start)?;
-    h.aset("end", entity.end)?;
+    h.aset(ruby.sym("body"), entity.body.clone())?;
+    h.aset(ruby.sym("start"), entity.start)?;
+    h.aset(ruby.sym("end"), entity.end)?;
+    // :dim derived from DimensionKind::Display — "time" → :time
+    let dim_str = entity.value.dim_kind().to_string();
+    h.aset(ruby.sym("dim"), ruby.sym(&dim_str))?;
     if let Some(latent) = entity.latent {
-        h.aset("latent", latent)?;
+        h.aset(ruby.sym("latent"), latent)?;
     }
     if let DimensionValue::Time(ref tv) = entity.value {
-        h.aset("value", time_value_to_ruby(ruby, tv)?)?;
+        h.aset(ruby.sym("value"), time_value_to_ruby(ruby, tv)?)?;
     }
     Ok(h.as_value())
 }

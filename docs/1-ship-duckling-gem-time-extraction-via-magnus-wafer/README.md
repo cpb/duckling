@@ -40,17 +40,34 @@ Start here, then follow the path for your role:
 ### Plans
 
 - [plans/README.md](./plans/README.md) — Breadth-first summary; dependency order; key decisions table.
+  - [plans/00-pr2-roadmap.md](./plans/00-pr2-roadmap.md) — **Start here for implementation**: step-by-step path from research → PR #2 green; dependency graph; pre-implementation checklist.
   - [plans/01-native-extension-setup.md](./plans/01-native-extension-setup.md) — Wire ext/duckling cdylib crate, extconf.rb, Rakefile, CI.
-  - [plans/02-ruby-api-design.md](./plans/02-ruby-api-design.md) — `Duckling.parse` API, manual Magnus mapping, NaiveDateTime handling.
-  - [plans/03-test-suite-and-ci.md](./plans/03-test-suite-and-ci.md) — Failing tests first; six test classes; RubyGems 0.2.0 checklist.
+  - [plans/02-ruby-api-design.md](./plans/02-ruby-api-design.md) — `Duckling.parse` API, manual Magnus mapping, symbol keys, NaiveDateTime handling.
+  - [plans/03-test-suite-and-ci.md](./plans/03-test-suite-and-ci.md) — Hill tests already written in PR #2; extended corpus test design.
 
-## Critical Open Questions (requiring human decision)
+## Settled Decisions (were open; now closed)
 
-1. **NaiveDateTime timezone in Ruby output.** Wall-clock expressions like "tomorrow"
-   produce `TimePoint::Naive` with no timezone. Option N1 (bare ISO8601) differs from
-   pyduckling's timezone-aware output. This affects test parity assertions.
-   → See [ruby-hash-schema.md](./research/type-mapping-strategy/ruby-hash-schema.md)
+- **wafer-inc-duckling on crates.io** — Published as `duckling = "0.4"`. Use crates.io
+  dep in Cargo.toml. No publish blocker. (Resolved in commit b17070e.)
+- **Symbol vs. String keys** — All entity hash keys and dim/type/grain values are Ruby
+  Symbols (`:body`, `:dim`, `:value`, `:type`, `:grain`, `:day`, etc.). Settled by the
+  hill tests in PR #2. All plan examples have been updated to reflect this.
+  → See [ruby-hash-schema.md](./research/type-mapping-strategy/ruby-hash-schema.md)
+- **NaiveDateTime format** — Option N1 (bare ISO8601, no offset). The hill test asserts
+  a date prefix only, so this is acceptable for 0.2.0.
+  → See [ruby-hash-schema.md](./research/type-mapping-strategy/ruby-hash-schema.md)
 
-3. **`reference_time:` type in Ruby API.** Plan 02 proposes `i64` Unix timestamp.
-   A Ruby `Time` object would be more ergonomic but requires more Magnus plumbing.
+## Open Questions (still requiring decision or confirmation)
+
+1. **`reference_time:` timezone loss.** Passing `reference_time` as a Unix `i64` loses
+   the UTC offset. `DateTime::from_timestamp(secs, 0).fixed_offset()` reconstructs at
+   UTC+0. The hill tests don't expose this (none test Instant values with exact ISO8601),
+   but extended corpus tests (`"now"`) will fail unless the offset is preserved.
+   Options: (a) accept i64 and document the UTC-0 reconstruction for 0.2.0; (b) accept a
+   Ruby `Time` and extract both `.to_i` and `.utc_offset` via Magnus.
    → See [02-ruby-api-design.md](./plans/02-ruby-api-design.md) Open Questions
+
+2. **`NoGrain` → `"nosec"` vs. `"no_grain"`.** `Grain::as_str()` returns `"no_grain"`;
+   original Haskell/pyduckling uses `"nosec"`. Use `"no_grain"` for 0.2.0 and document.
+   Verify whether any real Time entity in the corpus actually carries `NoGrain`.
+   → See [ruby-hash-schema.md](./research/type-mapping-strategy/ruby-hash-schema.md)

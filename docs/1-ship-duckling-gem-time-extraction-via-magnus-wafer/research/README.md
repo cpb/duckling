@@ -15,7 +15,7 @@ prescriptive recommendations — those live in [`../plans/`](../plans/README.md)
 
 | Topic | Critical finding |
 |-------|-----------------|
-| wafer-inc-duckling-api | `Options::with_latent` defaults to `false` — latent entities excluded by default. `Grain::as_str()` returns `"no_grain"` (not `"nosec"`). |
-| build-wiring | No `build.rs` needed in the extension crate; Magnus propagates rb_sys link metadata transitively. `duckling` crate IS on crates.io as `duckling 0.4.0` — use `duckling = "0.4"` in Cargo.toml. |
-| type-mapping-strategy | `serde_magnus` produces the wrong shape (externally-tagged enums, PascalCase grains). Manual Magnus mapping (Option B) is required for 0.2.0. |
-| test-coverage | Fixed reference time 2013-02-12 04:30:00 UTC-2 matches wafer-inc-duckling corpus; test inputs and expected values can be read directly from the Rust corpus file. |
+| wafer-inc-duckling-api | `Options::with_latent` defaults to `false` — latent entities excluded by default. `Grain::as_str()` returns `"no_grain"` (not `"nosec"`). `Entity` has no `dim` field — derive `:dim` from `entity.value.dim_kind().to_string()`. |
+| build-wiring | No `build.rs` needed in the extension crate; Magnus propagates rb_sys link metadata transitively. `duckling` IS on crates.io as `duckling 0.4.0` — use `duckling = "0.4"`. |
+| type-mapping-strategy | `serde_magnus` produces the wrong shape (externally-tagged enums, PascalCase grains). Manual Magnus mapping (Option B) is required. **All hash keys and grain/type/dim values must be Ruby Symbols** — use `ruby.sym("key")` in Rust. |
+| test-coverage | Hill tests already written in PR #2 (`test/duckling_test.rb`); they assert symbol keys. Fixed reference time 2013-02-12 04:30:00 UTC-2 matches wafer-inc-duckling corpus. |

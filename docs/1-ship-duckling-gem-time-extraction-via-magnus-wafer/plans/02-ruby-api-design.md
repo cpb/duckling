@@ -5,14 +5,15 @@
 ### 1. API Signature
 
 ```ruby
-Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil)
+Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)
 ```
 
 - `text` — positional String, required.
 - `locale:` — BCP-47 tag string; default `"en"`. Split on `-` to produce `Lang` + optional `Region`. Validated at call time; unknown codes raise `ArgumentError`.
 - `dims:` — Array of dimension name strings; default `["time"]`. Unknown strings raise `ArgumentError` in 0.2.0 (fail loud rather than silently skip).
 - `reference_time:` — Ruby `Integer` (Unix seconds). When `nil`, falls back to `Context::default()` (`Utc::now()` + EN-US locale). **Include in 0.2.0** for testability (see Open Questions).
-- Returns `Array<Hash>` — one hash per entity. See [ruby-hash-schema.md](../research/type-mapping-strategy/ruby-hash-schema.md).
+- `with_latent:` — Boolean; default `false`. Mirrors `Options { with_latent }` in wafer-inc-duckling. When `false`, latent/ambiguous entities are excluded (matches `Options::default()`).
+- Returns `Array<Hash>` — one hash per entity, with **Symbol keys and Symbol values** for dim/type/grain. See [ruby-hash-schema.md](../research/type-mapping-strategy/ruby-hash-schema.md).
 
 ### 2. Type Conversion — Manual Magnus Mapping (Option B)
 
@@ -62,19 +63,24 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
 ```rust
 fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let args = scan_args::scan_args::<(String,), (), (), (), _, ()>(args)?;
-    let kw = scan_args::get_kwargs::<_, (), (Option<String>, Option<Vec<String>>, Option<i64>), ()>(
-        args.keywords, &[], &["locale", "dims", "reference_time"]
-    )?;
+    let kw = scan_args::get_kwargs::<
+        _, (),
+        (Option<String>, Option<Vec<String>>, Option<i64>, Option<bool>),
+        ()
+    >(args.keywords, &[], &["locale", "dims", "reference_time", "with_latent"])?;
+
     let text        = args.required.0;
     let locale_str  = kw.optional.0.unwrap_or_else(|| "en".to_string());
     let dims_strs   = kw.optional.1.unwrap_or_else(|| vec!["time".to_string()]);
     let ref_time_i  = kw.optional.2; // Option<i64> Unix seconds
+    let with_latent = kw.optional.3.unwrap_or(false);
 
     let locale  = parse_locale_str(&locale_str)?;      // -> duckling::Locale
     let dims    = parse_dims(&dims_strs)?;              // -> Vec<DimensionKind>
-    let context = build_context(ref_time_i, &locale)?; // -> duckling::Context
+    let context = build_context(ref_time_i)?;           // -> duckling::Context
+    let options = Options { with_latent };
 
-    let entities = duckling::parse(&text, &locale, &dims, &context, &Options::default());
+    let entities = duckling::parse(&text, &locale, &dims, &context, &options);
 
     let out = ruby.ary_new();
     for e in &entities {
@@ -88,9 +94,31 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
 
 **Dim parsing** — match strings to `DimensionKind` variants using their `Display` strings from [types.md](../research/wafer-inc-duckling-api/types.md) (`"time"` → `Time`, `"number"` → `Numeral`, `"amount-of-money"` → `AmountOfMoney`, etc.). Raise `ArgumentError` for unrecognised strings.
 
-**Context construction** — when `reference_time` is `Some(unix_secs)`, construct `DateTime<FixedOffset>` as `DateTime::from_timestamp(unix_secs, 0).fixed_offset()`, then `Context::new(dt, locale)`. When `None`, use `Context::default()`.
+**Context construction** — when `reference_time` is `Some(unix_secs)`, construct
+`DateTime<FixedOffset>` as:
+```rust
+fn build_context(ref_time_i: Option<i64>) -> Result<Context, Error> {
+    match ref_time_i {
+        Some(secs) => {
+            let utc = DateTime::from_timestamp(secs, 0)
+                .ok_or_else(|| Error::new(magnus::exception::arg_error(), "invalid reference_time"))?;
+            Ok(Context::new(utc.fixed_offset(), Locale::default()))
+        }
+        None => Ok(Context::default()),
+    }
+}
+```
+Note: `DateTime::from_timestamp(secs, 0)` produces a UTC `DateTime`, then `.fixed_offset()`
+converts it to `FixedOffset` with offset +00:00. This loses the caller's original timezone
+offset — a known limitation for 0.2.0. For the hill tests, this does not matter (the test
+inputs don't span a date boundary under UTC vs. UTC-2). Revisit in 0.3.0 by accepting a
+Ruby `Time` object and extracting `.utc_offset` via Magnus.
 
-**Helper functions** — copy `entity_to_ruby`, `time_value_to_ruby`, `time_point_to_ruby` from [magnus-type-conversions.md](../research/type-mapping-strategy/magnus-type-conversions.md) verbatim. Use `grain.as_str()` for grain strings (produces lowercase, matches target schema).
+**Helper functions** — copy `entity_to_ruby`, `time_value_to_ruby`, `time_point_to_ruby` from [magnus-type-conversions.md](../research/type-mapping-strategy/magnus-type-conversions.md) verbatim. Use `ruby.sym(grain.as_str())` for grain values (Symbol, not String). Use `ruby.sym("body")` etc. for all hash keys. The `:dim` key must be added explicitly:
+```rust
+let dim_str = entity.value.dim_kind().to_string();
+h.aset(ruby.sym("dim"), ruby.sym(&dim_str))?;
+```
 
 ### 2. `lib/duckling.rb` — No Ruby-level changes needed
 
@@ -129,12 +157,17 @@ require "duckling"
 
 ref = Time.new(2013, 2, 12, 4, 30, 0, "-02:00").to_i
 results = Duckling.parse("tomorrow", locale: "en", reference_time: ref)
-results.first["body"]            # => "tomorrow"
-results.first["value"]["type"]   # => "value"
-results.first["value"]["grain"]  # => "day"
-results.first["value"]["value"]  # => "2013-02-13T00:00:00"  (no offset — Naive)
+results.first[:body]            # => "tomorrow"
+results.first[:dim]             # => :time
+results.first[:value][:type]    # => :value
+results.first[:value][:grain]   # => :day
+results.first[:value][:value]   # => "2013-02-13T00:00:00"  (no offset — Naive)
 
 results2 = Duckling.parse("in one hour", locale: "en", reference_time: ref)
-results2.first["value"]["value"] # => "2013-02-12T06:30:00+00:00"  (Instant, has offset)
-results2.first["value"]["grain"] # => "minute"
+results2.first[:value][:value]  # => "2013-02-12T06:30:00+00:00"  (Instant, has offset)
+results2.first[:value][:grain]  # => :minute
+
+# Note: reference_time is reconstructed at UTC+0 (see Context construction above).
+# The Instant value above uses +00:00 because the reference was passed as a bare i64.
+# The hill tests do not check the offset on Instant values, so this passes.
 ```
