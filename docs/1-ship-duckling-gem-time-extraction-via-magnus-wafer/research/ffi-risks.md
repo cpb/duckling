@@ -10,6 +10,20 @@ on this machine using Criterion. All code observations were from
 [wafer-inc/duckling@c96b068](https://github.com/wafer-inc/duckling/tree/c96b0681ab9a097712b20fe838786a2c65efc537)
 and [matsadler/magnus@4e46772](https://github.com/matsadler/magnus/tree/4e46772050e47cd6cd988fa935263cc5c583e388).
 
+## Table of Contents
+
+- [Summary Table](#summary-table)
+- [Risk 1: Incomplete Port and Maintenance](#risk-1-incomplete-port-and-maintenance)
+- [Risk 2: GVL Thread Blocking](#risk-2-gvl-thread-blocking)
+  - [Falcon (Fiber-based, not thread-based)](#falcon-fiber-based-not-thread-based)
+  - [Sidekiq (background job threads)](#sidekiq-background-job-threads)
+- [Risk 3: Panic Boundary Catastrophe](#risk-3-panic-boundary-catastrophe)
+- [Risk 4: GC Pressure from Ruby Object Allocation](#risk-4-gc-pressure-from-ruby-object-allocation)
+- [Risk 5: Date Rot (Hardcoded 2020–2025 Ranges)](#risk-5-date-rot-hardcoded-20202025-ranges)
+- [Risk 6: Meta Abandonment (Haskell Duckling Frozen Since 2021)](#risk-6-meta-abandonment-haskell-duckling-frozen-since-2021)
+- [Version Roadmap for Risk Mitigation](#version-roadmap-for-risk-mitigation)
+- [Appendix: The Gemini Code Sample Analysis](#appendix-the-gemini-code-sample-analysis)
+
 ---
 
 ## Summary Table
