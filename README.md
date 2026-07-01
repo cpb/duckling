@@ -78,7 +78,8 @@ Each entity in the returned array is a `Hash` with:
 
   **Gotcha:** an interval's `:to` is the *exclusive* boundary, not the
   literal named time — `"from 3pm to 5pm"` resolves `:to` to `18:00`, not
-  `17:00`. This matches upstream `wafer-inc-duckling` behavior.
+  `17:00`. This matches upstream [duckling](https://github.com/wafer-inc/duckling)
+  behavior.
 
 ### Supported dimensions
 
@@ -105,7 +106,8 @@ Duckling.parse("birthdays are march 3, march 9, april 12 and may 5", locale: "en
 ```
 
 This is an upstream grammar/ranking behavior in the wrapped
-`wafer-inc-duckling` engine, not something this gem can work around. Joining
+[duckling](https://github.com/wafer-inc/duckling) engine, not something this
+gem can work around. Joining
 dates with "and", periods, or a name/label immediately before each date
 avoids the collapse:
 
@@ -125,7 +127,7 @@ date in the collapsed run.
 After checking out the repo, run `bin/setup` to install dependencies. Building
 the native Rust extension requires a Rust toolchain; run `rake compile` to
 build it before running `rake test`, or just run `rake` (or
-`bundle exec rake`) with no arguments to compile, test, and lint in order. You
+`bundle exec rake`) with no arguments to lint, compile, and test in order. You
 can also run `bin/console` for an interactive prompt that will allow you to
 experiment.
 
