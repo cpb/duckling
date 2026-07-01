@@ -60,7 +60,7 @@ Register `Duckling.parse` in the `#[magnus::init]` function. The parse function 
 2. Call `duckling::parse(...)` with the resolved locale, dims, context, and options.
 3. Return an `RArray` of entity hashes with **symbol keys**:
    - `:body` (String), `:start` (Integer), `:end` (Integer)
-   - `:dim` (Symbol) — from `entity.value.dim_kind().to_string()` → `ruby.sym(&dim_str)`
+   - `:dim` (Symbol) — from `entity.value.dim_kind().to_string()` → `ruby.to_symbol(&dim_str)`
    - `:latent` (bool) — only when `entity.latent` is `Some`
    - `:value` (Hash) — see entity shape below
 
@@ -75,9 +75,9 @@ Entity `:value` hash for `TimeValue::Interval`:
                    to:   { type: :value, grain: :hour, value: "..." } }
 ```
 
-Key implementation note: all `h.aset(...)` calls use `ruby.sym("key")` as the key
+Key implementation note: all `h.aset(...)` calls use `ruby.to_symbol("key")` as the key
 argument, not plain string literals. Grain and type values are also symbols:
-`ruby.sym(grain.as_str())`, `ruby.sym("value")`, `ruby.sym("interval")`.
+`ruby.to_symbol(grain.as_str())`, `ruby.to_symbol("value")`, `ruby.to_symbol("interval")`.
 
 After this step:
 - `DucklingEntityShapeTest#test_parse_result_shape` → **passes**
@@ -95,7 +95,7 @@ because of a missing method. Ensure:
 For **parity** ("Call me tomorrow" → body `"tomorrow"`):
 - The `entity.body` field is extracted correctly (it is `"tomorrow"` because duckling
   isolates the matched span, not the full input).
-- `value[:grain]` is `:day` (Naive, `Grain::Day` → `as_str() == "day"` → `ruby.sym("day")`).
+- `value[:grain]` is `:day` (Naive, `Grain::Day` → `as_str() == "day"` → `ruby.to_symbol("day")`).
 - `value[:value]` starts with `"2013-02-13"` — verify the reference_time context produces
   the right date. With the corpus reference time (Unix seconds of 2013-02-12T06:30:00Z),
   "tomorrow" resolves to 2013-02-13.
@@ -151,8 +151,8 @@ Before writing any Rust code, confirm:
 - [ ] `duckling = "0.4"` resolves from crates.io (run `cargo search duckling` or check
       https://crates.io/crates/duckling)
 - [ ] Magnus 0.9 is available (`cargo search magnus`)
-- [ ] `ruby.sym("body")` is the correct Magnus API for creating interned Ruby Symbols
-      (verified in `/Users/cpb/projects/duks/magnus/src/ruby.rs` — method is `Ruby::sym`)
+- [ ] `ruby.to_symbol("body")` is the correct Magnus API for creating interned Ruby Symbols
+      (verified in [`src/symbol.rs`](https://github.com/matsadler/magnus/blob/4e46772050e47cd6cd988fa935263cc5c583e388/src/symbol.rs) — method is `Ruby::to_symbol`; there is no `Ruby::sym` and no `src/ruby.rs` in magnus)
 - [ ] `DimensionKind::Time.to_string()` returns `"time"` (verified from types.md Display table)
 - [ ] `Grain::Day.as_str()` returns `"day"` (verified from types.md Grain table)
 

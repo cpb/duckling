@@ -1,6 +1,6 @@
 # pyduckling Reference Tests
 
-Source examined: `/Users/cpb/projects/duks/pyduckling/duckling/tests/test_duckling.py` (171 lines)
+Source examined: [`duckling/tests/test_duckling.py`](https://github.com/cpb/pyduckling/blob/bbe06d2deb75d556cf324fe5e4edc04962e7192f/duckling/tests/test_duckling.py) (171 lines)
 
 pyduckling is a Python FFI wrapper around the **Haskell** duckling binary (`hs_init` / GHC runtime). It is NOT the same codebase as wafer-inc-duckling (which is a Rust port). Both aim to be compatible with the Haskell original, but they are independent implementations.
 

@@ -1,9 +1,9 @@
 # Corpus Cases: wafer-inc-duckling English Time Corpus
 
 Source files examined:
-- `/Users/cpb/projects/duks/wafer-inc-duckling/src/corpus/time_en.rs` (92 KB, 1300+ lines)
-- `/Users/cpb/projects/duks/wafer-inc-duckling/tests/time_corpus.rs` (5198 lines, 100+ `#[test]` functions)
-- `/Users/cpb/projects/duks/wafer-inc-duckling/src/corpus/mod.rs` (corpus helper implementations)
+- [`src/corpus/time_en.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/corpus/time_en.rs) (92 KB, 1300+ lines)
+- [`tests/time_corpus.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/tests/time_corpus.rs) (5198 lines, 100+ `#[test]` functions)
+- [`src/corpus/mod.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/corpus/mod.rs) (corpus helper implementations)
 
 ---
 

@@ -7,7 +7,8 @@ risk is real, and which milestone (if any) should address it.
 
 All benchmarks were run against the compiled release binary of wafer-inc-duckling 0.4.0
 on this machine using Criterion. All code observations were from
-`/Users/cpb/projects/duks/wafer-inc-duckling` and `/Users/cpb/projects/duks/magnus`.
+[wafer-inc/duckling@c96b068](https://github.com/wafer-inc/duckling/tree/c96b0681ab9a097712b20fe838786a2c65efc537)
+and [matsadler/magnus@4e46772](https://github.com/matsadler/magnus/tree/4e46772050e47cd6cd988fa935263cc5c583e388).
 
 ---
 
@@ -97,8 +98,9 @@ concurrent Ruby threads — Puma workers, Sidekiq jobs — are meaningfully dela
 
 ### What was measured
 
-Criterion benchmarks from `benches/parse.rs` in wafer-inc-duckling (release build,
-`/Users/cpb/projects/duks/wafer-inc-duckling`):
+Criterion benchmarks from
+[`benches/parse.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/benches/parse.rs)
+in wafer-inc-duckling (release build):
 
 | Input | Median time |
 |-------|-------------|

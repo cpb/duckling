@@ -5,7 +5,7 @@ Research terrain map for the `duckling` Rust crate (v0.4.0) from
 documents the complete public API as it exists in source, cross-verified
 against the actual Rust files.
 
-Source root: `/Users/cpb/projects/duks/wafer-inc-duckling/`
+Source root: [wafer-inc/duckling@c96b068](https://github.com/wafer-inc/duckling/tree/c96b0681ab9a097712b20fe838786a2c65efc537)
 
 ---
 

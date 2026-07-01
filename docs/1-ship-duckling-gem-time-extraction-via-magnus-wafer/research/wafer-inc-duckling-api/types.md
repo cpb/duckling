@@ -1,8 +1,8 @@
 # Public Types
 
 Source files:
-- `/Users/cpb/projects/duks/wafer-inc-duckling/src/types.rs`
-- `/Users/cpb/projects/duks/wafer-inc-duckling/src/dimensions/time_grain/mod.rs`
+- [`src/types.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/types.rs)
+- [`src/dimensions/time_grain/mod.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/dimensions/time_grain/mod.rs)
 
 All types listed here are re-exported from `src/lib.rs` and are part of the
 public API surface.
@@ -201,6 +201,43 @@ primary value is the first); for `Interval` it contains up to 3
 `IntervalEndpoints` — matching Haskell's `TimeValue (SimpleValue v)
 [v1, v2, v3] holiday` idiom.
 
+### What populates `values` (occurrences)
+
+No corpus example currently asserts on `values` — the corpus check helpers
+(e.g. `datetime()` in
+[`src/corpus/mod.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/corpus/mod.rs))
+match against `value` only and ignore `values`/`holiday` with `..`. The
+behavior below is derived directly from
+[`generate_extra_values`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/dimensions/time/mod.rs#L286)
+and
+[`series::generate_series`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/dimensions/time/series.rs#L724),
+not from a written example.
+
+`values` is populated by the **series generator**, which produces up to 3
+future occurrences (falling back to past occurrences if none are in the
+future) for **recurring/unanchored** time forms — expressions that don't pin
+down a single instant. Confirmed recurring forms (`series::generate_series`
+match arms): `DayOfWeek`, `Month`, `Hour`/`HourMinute`, `DayOfMonth`, `Year`,
+`PartOfDay`, `Weekend`, `Season`, `Holiday` (only when no explicit year is
+given), `DateMDY` (month/day without year), and `Composed` combinations of
+these.
+
+Concretely: **"christmas"** resolves as `Holiday("Christmas", year_opt: None)`.
+[`series_holiday`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/dimensions/time/series.rs#L478)
+shows the fixed-year case (`year_opt: Some(_)`) short-circuits to a single
+value with `(vec![], vec![obj])` — so **"christmas 2026"** would NOT get
+extra occurrences. Only the unpinned "christmas" walks forward year by year,
+giving `values: [<this year's Dec 25>, <next year>, <year after>]`.
+
+Conversely, a fully anchored date like "July 1st 2026" (`DateMDY` with
+`year: Some(2026)`) goes through the `Some(y)` branch of
+[`series_date_mdy`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/dimensions/time/series.rs#L575),
+which returns a single-element series rather than an empty one — so `values`
+still ends up with exactly 1 element, just via the "series produced one
+result" path rather than the "series was empty, fall back to primary" path
+in `generate_extra_values`. Either way: a year-pinned date never yields 3
+occurrences, only an unpinned/recurring form does.
+
 ---
 
 ## `TimePoint` — single time moment
@@ -268,7 +305,7 @@ the interval. Both endpoints may be `None` for open-ended intervals.
 
 ## `Grain` — time precision
 
-Source: `/Users/cpb/projects/duks/wafer-inc-duckling/src/dimensions/time_grain/mod.rs`
+Source: [`src/dimensions/time_grain/mod.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/dimensions/time_grain/mod.rs)
 
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize)]

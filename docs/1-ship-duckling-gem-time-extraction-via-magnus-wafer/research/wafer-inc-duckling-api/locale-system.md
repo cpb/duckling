@@ -1,7 +1,7 @@
 # Locale System
 
-Source: `/Users/cpb/projects/duks/wafer-inc-duckling/src/locale.rs`
-Context/Options: `/Users/cpb/projects/duks/wafer-inc-duckling/src/resolve.rs`
+Source: [`src/locale.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/locale.rs)
+Context/Options: [`src/resolve.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/resolve.rs)
 
 ---
 
@@ -198,8 +198,8 @@ carries `entity.latent = Some(true)`).
 ## Ranking classifier coverage
 
 The ranking classifiers live in
-`/Users/cpb/projects/duks/wafer-inc-duckling/src/ranking_classifiers/` and
-are bundled JSON files loaded at compile time. Only these six languages have
+[`src/ranking_classifiers/`](https://github.com/wafer-inc/duckling/tree/c96b0681ab9a097712b20fe838786a2c65efc537/src/ranking_classifiers)
+and are bundled JSON files loaded at compile time. Only these six languages have
 classifiers:
 
 | File | Language | Size on disk |

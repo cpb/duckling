@@ -2,7 +2,7 @@
 
 ## Current Rakefile
 
-Source: `/Users/cpb/projects/duks/duckling/.claude/worktrees/agent-ac11e2ae2ad24ff55/Rakefile`
+Source: [`Rakefile`](https://github.com/cpb/duckling/blob/ec00708fc85e28ea510c3be4ce8df131497facb0/Rakefile)
 
 ```ruby
 # frozen_string_literal: true
@@ -23,7 +23,7 @@ lib files) and StandardRB lint only.
 
 ## Verified reference: rust_blank Rakefile
 
-Source: `/Users/cpb/projects/duks/magnus/examples/rust_blank/Rakefile`
+Source: [`examples/rust_blank/Rakefile`](https://github.com/matsadler/magnus/blob/4e46772050e47cd6cd988fa935263cc5c583e388/examples/rust_blank/Rakefile)
 
 ```ruby
 # frozen_string_literal: true

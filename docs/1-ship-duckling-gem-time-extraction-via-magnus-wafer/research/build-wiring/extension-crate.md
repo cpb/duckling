@@ -8,7 +8,7 @@ from the wafer-inc-duckling library crate, which stays as an rlib dependency.
 
 ## Verified reference: rust_blank example
 
-Source: `/Users/cpb/projects/duks/magnus/examples/rust_blank/ext/rust_blank/`
+Source: [`examples/rust_blank/ext/rust_blank/`](https://github.com/matsadler/magnus/tree/4e46772050e47cd6cd988fa935263cc5c583e388/examples/rust_blank/ext/rust_blank)
 
 The canonical Magnus example for a gem extension crate. Verified file list:
 
@@ -23,12 +23,12 @@ ext/rust_blank/
 
 Note: no `build.rs` exists in this example crate. Magnus itself carries the
 `build.rs` that calls `rb_sys_env::activate()` (at
-`/Users/cpb/projects/duks/magnus/build.rs`), and that runs when the extension
-depends on magnus as a crate.
+[`build.rs`](https://github.com/matsadler/magnus/blob/4e46772050e47cd6cd988fa935263cc5c583e388/build.rs)),
+and that runs when the extension depends on magnus as a crate.
 
 ## wafer-inc-duckling crate type
 
-Source: `/Users/cpb/projects/duks/wafer-inc-duckling/Cargo.toml`
+Source: [`Cargo.toml`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/Cargo.toml)
 
 ```toml
 [package]
@@ -42,7 +42,7 @@ suitable as a dependency of the extension crate.
 
 The crate **is published to crates.io as `duckling`** — the package name
 matches the crate name. Current crates.io version: **0.4.0** (published
-2026-04-16). The local checkout at `/Users/cpb/projects/duks/wafer-inc-duckling`
+2026-04-16). [wafer-inc/duckling@c96b068](https://github.com/wafer-inc/duckling/tree/c96b0681ab9a097712b20fe838786a2c65efc537)
 is also at 0.4.0, matching the published release.
 
 crates.io: https://crates.io/crates/duckling  
@@ -124,9 +124,9 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
 
 1. ~~**Path vs. git dependency**: wafer-inc-duckling is not on crates.io.~~
    **Resolved**: The crate is published on crates.io as `duckling = "0.4"`.
-   Use the crates.io dep — no path or git dependency needed. The local checkout
-   at `/Users/cpb/projects/duks/wafer-inc-duckling` is the development source
-   for the same 0.4.0 release.
+   Use the crates.io dep — no path or git dependency needed.
+   [wafer-inc/duckling@c96b068](https://github.com/wafer-inc/duckling/tree/c96b0681ab9a097712b20fe838786a2c65efc537)
+   is the development source for the same 0.4.0 release.
 
 2. ~~**Does wafer-inc-duckling need to be published to crates.io?**~~
    **Resolved**: Already published. No crates.io blocker for gem publication.

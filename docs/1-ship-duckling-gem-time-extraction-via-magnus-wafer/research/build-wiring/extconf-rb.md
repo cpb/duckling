@@ -8,7 +8,7 @@ RubyGems and rake-compiler know to invoke it.
 
 ## Verified reference: rust_blank example
 
-Source: `/Users/cpb/projects/duks/magnus/examples/rust_blank/ext/rust_blank/extconf.rb`
+Source: [`examples/rust_blank/ext/rust_blank/extconf.rb`](https://github.com/matsadler/magnus/blob/4e46772050e47cd6cd988fa935263cc5c583e388/examples/rust_blank/ext/rust_blank/extconf.rb)
 
 Exact content:
 

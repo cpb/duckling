@@ -104,7 +104,11 @@ and have no known system library requirements.
 
 ### Magnus workspace rust-toolchain.toml
 
-Source: `/Users/cpb/projects/duks/magnus/rust-toolchain.toml`
+Correction: the local magnus checkout used during this research had an
+untracked `rust-toolchain.toml` (confirmed via `git status` — not present in
+[matsadler/magnus](https://github.com/matsadler/magnus) upstream). Magnus
+itself does **not** pin a toolchain version; the file below was a local
+artifact, not sourced from the project:
 
 ```toml
 [toolchain]
@@ -116,8 +120,8 @@ components = [
 ]
 ```
 
-Magnus pins to a specific stable version. The extension crate could adopt the
-same approach.
+The extension crate could still adopt a pinned-toolchain approach
+independently — see the recommendation below.
 
 ### Recommended approach for duckling gem
 

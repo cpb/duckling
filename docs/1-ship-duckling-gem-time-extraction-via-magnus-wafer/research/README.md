@@ -18,6 +18,6 @@ prescriptive recommendations — those live in [`../plans/`](../plans/README.md)
 |-------|-----------------|
 | wafer-inc-duckling-api | `Options::with_latent` defaults to `false` — latent entities excluded by default. `Grain::as_str()` returns `"no_grain"` (not `"nosec"`). `Entity` has no `dim` field — derive `:dim` from `entity.value.dim_kind().to_string()`. |
 | build-wiring | No `build.rs` needed in the extension crate; Magnus propagates rb_sys link metadata transitively. `duckling` IS on crates.io as `duckling 0.4.0` — use `duckling = "0.4"`. |
-| type-mapping-strategy | `serde_magnus` produces the wrong shape (externally-tagged enums, PascalCase grains). Manual Magnus mapping (Option B) is required. **All hash keys and grain/type/dim values must be Ruby Symbols** — use `ruby.sym("key")` in Rust. |
+| type-mapping-strategy | `serde_magnus` produces the wrong shape (externally-tagged enums, PascalCase grains). Manual Magnus mapping (Option B) is required. **All hash keys and grain/type/dim values must be Ruby Symbols** — use `ruby.to_symbol("key")` in Rust. |
 | test-coverage | Hill tests already written in PR #2 (`test/duckling_test.rb`); they assert symbol keys. Fixed reference time 2013-02-12 04:30:00 UTC-2 matches wafer-inc-duckling corpus. |
 | ffi-risks | GVL hold measured at ~505µs for short inputs, ~3ms for long prose. Magnus 0.9 has no high-level GVL release API. Panic risk mitigated by duckling's own `catch_unwind`. Date rot hypothesis falsified (2030+ works). duckling does NOT validate day-of-week labels. |

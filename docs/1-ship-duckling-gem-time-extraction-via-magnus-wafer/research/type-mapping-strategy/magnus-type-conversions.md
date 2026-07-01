@@ -1,7 +1,7 @@
 # Magnus Type Conversions
 
 Magnus 0.9.0 built-in `IntoValue` implementations and manual hash/array construction
-APIs, sourced from the local Magnus checkout at `/Users/cpb/projects/duks/magnus/`.
+APIs, sourced from [matsadler/magnus@4e46772](https://github.com/matsadler/magnus/tree/4e46772050e47cd6cd988fa935263cc5c583e388).
 
 ## Built-in IntoValue Implementations
 
@@ -76,17 +76,17 @@ tests in PR #2 assert this directly.
 
 ```rust
 // From the Ruby handle — most reliable, interned symbols
-let sym = ruby.sym("body");      // → :body
-h.aset(ruby.sym("body"), val)?;  // key is :body
+let sym = ruby.to_symbol("body");      // → :body
+h.aset(ruby.to_symbol("body"), val)?;  // key is :body
 
 // For grain/type/dim values that are also symbols:
-h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;      // :grain => :day
-h.aset(ruby.sym("type"), ruby.sym("value"))?;              // :type => :value
+h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;      // :grain => :day
+h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;              // :type => :value
 let dim_str = entity.value.dim_kind().to_string();
-h.aset(ruby.sym("dim"), ruby.sym(&dim_str))?;              // :dim => :time
+h.aset(ruby.to_symbol("dim"), ruby.to_symbol(&dim_str))?;              // :dim => :time
 ```
 
-`ruby.sym(s: &str)` returns a `Symbol` which implements `IntoValue`, so it works anywhere
+`ruby.to_symbol(s: &str)` returns a `Symbol` which implements `IntoValue`, so it works anywhere
 a value is accepted. `Symbol` keys are compared by identity (interned), making symbol-keyed
 hashes more efficient to look up in Ruby.
 
@@ -134,15 +134,15 @@ use duckling::{Entity, DimensionValue, TimeValue, TimePoint};
 
 fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint) -> Result<Value, Error> {
     let h = ruby.hash_new();
-    h.aset(ruby.sym("type"), ruby.sym("value"))?;  // :type => :value
+    h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;  // :type => :value
     match tp {
         TimePoint::Naive { value, grain } => {
-            h.aset(ruby.sym("value"), value.format("%Y-%m-%dT%H:%M:%S").to_string())?;
-            h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;  // :grain => :day etc.
+            h.aset(ruby.to_symbol("value"), value.format("%Y-%m-%dT%H:%M:%S").to_string())?;
+            h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;  // :grain => :day etc.
         }
         TimePoint::Instant { value, grain } => {
-            h.aset(ruby.sym("value"), value.to_rfc3339())?;
-            h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;
+            h.aset(ruby.to_symbol("value"), value.to_rfc3339())?;
+            h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
         }
     }
     Ok(h.as_value())
@@ -152,31 +152,31 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue) -> Result<Value, Error> {
     let h = ruby.hash_new();
     match tv {
         TimeValue::Single { value, values, .. } => {
-            h.aset(ruby.sym("type"), ruby.sym("value"))?;  // :type => :value
+            h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;  // :type => :value
             // Flatten primary time point fields into the value hash:
             match value {
                 TimePoint::Naive { value: dt, grain } => {
-                    h.aset(ruby.sym("value"), dt.format("%Y-%m-%dT%H:%M:%S").to_string())?;
-                    h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;
+                    h.aset(ruby.to_symbol("value"), dt.format("%Y-%m-%dT%H:%M:%S").to_string())?;
+                    h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
                 }
                 TimePoint::Instant { value: dt, grain } => {
-                    h.aset(ruby.sym("value"), dt.to_rfc3339())?;
-                    h.aset(ruby.sym("grain"), ruby.sym(grain.as_str()))?;
+                    h.aset(ruby.to_symbol("value"), dt.to_rfc3339())?;
+                    h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
                 }
             }
             let vals = ruby.ary_new();
             for tp in values {
                 vals.push(time_point_to_ruby(ruby, tp)?)?;
             }
-            h.aset(ruby.sym("values"), vals)?;
+            h.aset(ruby.to_symbol("values"), vals)?;
         }
         TimeValue::Interval { from, to, .. } => {
-            h.aset(ruby.sym("type"), ruby.sym("interval"))?;  // :type => :interval
+            h.aset(ruby.to_symbol("type"), ruby.to_symbol("interval"))?;  // :type => :interval
             if let Some(tp) = from {
-                h.aset(ruby.sym("from"), time_point_to_ruby(ruby, tp)?)?;
+                h.aset(ruby.to_symbol("from"), time_point_to_ruby(ruby, tp)?)?;
             }
             if let Some(tp) = to {
-                h.aset(ruby.sym("to"), time_point_to_ruby(ruby, tp)?)?;
+                h.aset(ruby.to_symbol("to"), time_point_to_ruby(ruby, tp)?)?;
             }
         }
     }
@@ -185,17 +185,17 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue) -> Result<Value, Error> {
 
 fn entity_to_ruby(ruby: &Ruby, entity: &Entity) -> Result<Value, Error> {
     let h = ruby.hash_new();
-    h.aset(ruby.sym("body"), entity.body.clone())?;
-    h.aset(ruby.sym("start"), entity.start)?;
-    h.aset(ruby.sym("end"), entity.end)?;
+    h.aset(ruby.to_symbol("body"), entity.body.clone())?;
+    h.aset(ruby.to_symbol("start"), entity.start)?;
+    h.aset(ruby.to_symbol("end"), entity.end)?;
     // :dim derived from DimensionKind::Display — "time" → :time
     let dim_str = entity.value.dim_kind().to_string();
-    h.aset(ruby.sym("dim"), ruby.sym(&dim_str))?;
+    h.aset(ruby.to_symbol("dim"), ruby.to_symbol(&dim_str))?;
     if let Some(latent) = entity.latent {
-        h.aset(ruby.sym("latent"), latent)?;
+        h.aset(ruby.to_symbol("latent"), latent)?;
     }
     if let DimensionValue::Time(ref tv) = entity.value {
-        h.aset(ruby.sym("value"), time_value_to_ruby(ruby, tv)?)?;
+        h.aset(ruby.to_symbol("value"), time_value_to_ruby(ruby, tv)?)?;
     }
     Ok(h.as_value())
 }
@@ -214,5 +214,5 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity) -> Result<Value, Error> {
 
 ## Magnus Version
 
-This analysis is based on Magnus 0.9.0, the version in `/Users/cpb/projects/duks/magnus/Cargo.toml`.
+This analysis is based on Magnus 0.9.0, the version in [`Cargo.toml`](https://github.com/matsadler/magnus/blob/4e46772050e47cd6cd988fa935263cc5c583e388/Cargo.toml).
 The `chrono` feature uses chrono 0.4.38 (`chrono = { version = "0.4.38", optional = true }`).

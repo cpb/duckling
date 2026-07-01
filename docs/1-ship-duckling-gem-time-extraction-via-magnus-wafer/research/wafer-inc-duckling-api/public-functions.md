@@ -1,6 +1,6 @@
 # Public Parse Functions
 
-Source: `/Users/cpb/projects/duks/wafer-inc-duckling/src/lib.rs`
+Source: [`src/lib.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/lib.rs)
 
 ---
 
@@ -10,7 +10,7 @@ Source: `/Users/cpb/projects/duks/wafer-inc-duckling/src/lib.rs`
 |-------|-------|
 | Crate name | `duckling` |
 | Version | `0.4.0` |
-| Cargo.toml | `/Users/cpb/projects/duks/wafer-inc-duckling/Cargo.toml` |
+| Cargo.toml | [`Cargo.toml`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/Cargo.toml) |
 | Crate type | `rlib` (library, **not** `cdylib`) |
 | License | BSD-3-Clause |
 | Repository | https://github.com/wafer-inc/duckling |

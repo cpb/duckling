@@ -114,10 +114,10 @@ offset — a known limitation for 0.2.0. For the hill tests, this does not matte
 inputs don't span a date boundary under UTC vs. UTC-2). Revisit in 0.3.0 by accepting a
 Ruby `Time` object and extracting `.utc_offset` via Magnus.
 
-**Helper functions** — copy `entity_to_ruby`, `time_value_to_ruby`, `time_point_to_ruby` from [magnus-type-conversions.md](../research/type-mapping-strategy/magnus-type-conversions.md) verbatim. Use `ruby.sym(grain.as_str())` for grain values (Symbol, not String). Use `ruby.sym("body")` etc. for all hash keys. The `:dim` key must be added explicitly:
+**Helper functions** — copy `entity_to_ruby`, `time_value_to_ruby`, `time_point_to_ruby` from [magnus-type-conversions.md](../research/type-mapping-strategy/magnus-type-conversions.md) verbatim. Use `ruby.to_symbol(grain.as_str())` for grain values (Symbol, not String). Use `ruby.to_symbol("body")` etc. for all hash keys. The `:dim` key must be added explicitly:
 ```rust
 let dim_str = entity.value.dim_kind().to_string();
-h.aset(ruby.sym("dim"), ruby.sym(&dim_str))?;
+h.aset(ruby.to_symbol("dim"), ruby.to_symbol(&dim_str))?;
 ```
 
 ### 2. `lib/duckling.rb` — No Ruby-level changes needed

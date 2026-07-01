@@ -17,8 +17,8 @@ assert_equal :interval, entity[:value][:type]
 assert_equal :hour,     entity[:value][:from][:grain]
 ```
 
-The implication for the Rust bridge: all `h.aset(key, ...)` calls must use `ruby.sym("key")`
-rather than `"key"` as the key; dim/type/grain values must also use `ruby.sym(...)`.
+The implication for the Rust bridge: all `h.aset(key, ...)` calls must use `ruby.to_symbol("key")`
+rather than `"key"` as the key; dim/type/grain values must also use `ruby.to_symbol(...)`.
 See [magnus-type-conversions.md](./magnus-type-conversions.md) for the updated Rust code.
 
 ## Design Constraint: pyduckling Compatibility
@@ -165,7 +165,7 @@ present for "from 3pm to 5pm", and that each has `:type: :value` and `:grain: :h
 ## Grain Symbol Mapping
 
 `Grain::as_str()` returns lowercase strings that must be converted to Ruby Symbols in the
-output. The manual mapping calls `grain.as_str()` and wraps the result in `ruby.sym(...)`.
+output. The manual mapping calls `grain.as_str()` and wraps the result in `ruby.to_symbol(...)`.
 
 | Variant | `as_str()` | Ruby symbol | pyduckling |
 |---------|-----------|-------------|------------|
