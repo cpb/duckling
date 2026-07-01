@@ -69,13 +69,14 @@ real implementation lands (see "Keeping this file current").
 ## Gem release conventions
 
 - **Versioning**: SemVer (`MAJOR.MINOR.PATCH`), single source of truth is `Duckling::VERSION` in `lib/duckling/version.rb`, consumed by `duckling.gemspec`.
-- **Current state**: no `CHANGELOG.md` and no automated release workflow exist yet on `main`. The README's "release a new version" section still describes the stock `bundle exec rake release` flow (manual, via `bundler/gem_tasks`) — treat that as stale once the tag-triggered pipeline below lands.
-- **(planned) Tag-triggered pipeline** (tracked in issue #4): pushing a `vX.Y.Z` tag triggers `.github/workflows/release.yml`, which:
+- **Current state**: `CHANGELOG.md` (Keep a Changelog format) and the tag-triggered release pipeline (issue #4) are both live on `main`. The README's "release a new version" section still describes the stock `bundle exec rake release` flow (manual, via `bundler/gem_tasks`) — that's stale; don't run `rake release` manually.
+- **Tag-triggered pipeline**: pushing a `vX.Y.Z` tag triggers `.github/workflows/release.yml`, which:
   1. Re-runs the main CI workflow (`main.yml`) as a gate — release only proceeds if it's green.
   2. Verifies the pushed tag matches `Duckling::VERSION` exactly; fails the build on mismatch.
   3. `gem build` + `gem push` (via `RUBYGEMS_API_KEY` secret) and creates a GitHub release with `gh release create ... --generate-notes`.
-  4. Appends a dated entry to `CHANGELOG.md` (Keep a Changelog format) on `main`, committed by `github-actions[bot]`.
-  - **Release trigger going forward**: bump `Duckling::VERSION`, merge to `main`, then push a matching `vX.Y.Z` tag — don't run `rake release` manually once this lands.
+  4. Appends a dated entry to `CHANGELOG.md` by committing to a `changelog/vX.Y.Z` branch, opening a PR (`gh pr create`), and auto-merging it (`gh pr merge --auto --squash`) — it does **not** push to `main` directly, since `main` requires PRs (see below).
+  - **Release trigger going forward**: bump `Duckling::VERSION`, merge to `main`, then push a matching `vX.Y.Z` tag.
+- **Branch protection on `main`** (issue #11): direct pushes are blocked — all changes, including the release pipeline's CHANGELOG commit, land via PR. Merging requires the `Ruby 3.3.6` status check to pass; branch deletion and force-pushes are disabled. No required review count (single-maintainer repo), so PRs merge as soon as CI is green.
 
 ## `bin/` scripts (dev-workflow tooling, not part of the gem)
 
