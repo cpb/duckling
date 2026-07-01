@@ -84,7 +84,7 @@ These come from the cpb Claude Code plugin's harness (commit `d69ba38`) and mana
 
 - `bin/worktree` — large CLI (`add`, `cd`, `harness`, `cleanup`, `heal-poll`, etc.) for creating per-issue git worktrees and driving Claude/Gemini sessions in tmux.
 - `bin/check-worktree` — PreToolUse hook that blocks `Edit`/`Write` when on the `main` branch, steering you toward `bin/worktree add <branch>` instead.
-- `bin/claude-code-web-setup` — no-op skeleton hook for remote/web Claude Code sessions.
+- `bin/claude-code-web-setup` — PreToolUse hook for remote/web Claude Code sessions. Before each `Edit`/`Write`, just-in-time installs gems (`bundle install`), compiles the native extension (`bundle exec rake compile`), and provisions `hk` (installing the binary and running `hk install` if missing) — each step cached via receipt files in `tmp/claude-web-receipts/` so it's a no-op after the first call per session.
 
 ## Keeping this file current
 
