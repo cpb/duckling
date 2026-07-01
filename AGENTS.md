@@ -68,7 +68,7 @@ real implementation lands (see "Keeping this file current").
 ## Gem release conventions
 
 - **Versioning**: SemVer (`MAJOR.MINOR.PATCH`), single source of truth is `Duckling::VERSION` in `lib/duckling/version.rb`, consumed by `duckling.gemspec`.
-- **Current state**: `CHANGELOG.md` (Keep a Changelog format) and the tag-triggered release pipeline (issue #4) are both live on `main`. The README's "release a new version" section still describes the stock `bundle exec rake release` flow (manual, via `bundler/gem_tasks`) — that's stale; don't run `rake release` manually.
+- **Current state**: `CHANGELOG.md` (Keep a Changelog format) and the tag-triggered release pipeline (issue #4) are both live on `main`. `rake release` no longer runs the stock `bundler/gem_tasks` flow — the `Rakefile` narrows it to just creating and pushing the `vX.Y.Z` git tag (see `release:guard_clean`/`release:source_control_push`), since building and pushing the `.gem` is now CI's job (issue #24). The README's "release a new version" section documents this flow.
 - **Tag-triggered pipeline**: pushing a `vX.Y.Z` tag triggers `.github/workflows/release.yml`, which:
   1. Re-runs the main CI workflow (`main.yml`) as a gate — release only proceeds if it's green.
   2. Verifies the pushed tag matches `Duckling::VERSION` exactly; fails the build on mismatch.
@@ -95,7 +95,7 @@ part of that PR** (don't leave it for someone else):
 - Directory layout (new top-level dirs, moved files)
 - Build/test commands (`bin/test`, `bin/lint`, `Rakefile` tasks)
 - The Rust/Magnus wiring (`Cargo.toml`, `extconf.rb`, CI Rust toolchain setup) — in particular, once issue #1's native extension lands, replace the **(planned)** Rust sections above with the actual, verified file contents
-- The release process — once issue #4's tag-triggered pipeline lands, replace the **(planned)** release section above with the actual, verified workflow behavior
+- The release process (`Rakefile` `release` task, `.github/workflows/release.yml`) — keep "Gem release conventions" above in sync with the actual, verified workflow behavior
 - Version numbers for tools/crates/gems — these belong in their own config files (`duckling.gemspec`, `ext/duckling/Cargo.toml`/`Cargo.lock`, `.standard.yml`, `hk.pkl`, CI workflow matrices), not here. If you need to reference a version, point to the file/field that holds it rather than copying the number, so this doc can't go stale when Dependabot or a manual bump changes it.
 
 If you're an agent and notice this file is out of date with what you just

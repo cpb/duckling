@@ -13,3 +13,10 @@ Minitest::TestTask.create
 require "standard/rake"
 
 task default: %i[standard compile test]
+
+# bundler/gem_tasks's default `release` task builds and pushes the .gem
+# itself, which would race the tag-triggered CI pipeline in
+# .github/workflows/release.yml that already does the actual build and
+# publish once a vX.Y.Z tag lands. Narrow `release` to just tagging.
+Rake::Task["release"].clear
+task release: ["release:guard_clean", "release:source_control_push"]
