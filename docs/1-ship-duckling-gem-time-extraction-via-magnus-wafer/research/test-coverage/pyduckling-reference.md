@@ -98,7 +98,7 @@ The Ruby gem will construct reference time differently — either as a Ruby `Tim
 
 ### Haskell GHC runtime initialization
 
-pyduckling's C extension calls `hs_init()` at load time. The Ruby gem uses a Rust native extension via Magnus — no Haskell runtime, no `hs_init`. This is a primary motivation for the project (see `pr_context.md`).
+pyduckling's C extension calls `hs_init()` at load time. The Ruby gem uses a Rust native extension via Magnus — no Haskell runtime, no `hs_init`. This is a primary motivation for the project (see [issue #1](https://github.com/cpb/duckling/issues/1)).
 
 ### `pendulum` library
 
@@ -228,7 +228,7 @@ The comment at line 1 of `time_en.rs`:
 ### Practical implications for Ruby tests
 
 - For simple cases (today, tomorrow, at 3pm, in 2 hours), [duckling](https://github.com/wafer-inc/duckling) and pyduckling should return identical results.
-- The Ruby acceptance criteria (`pr_context.md`) explicitly says: "matching what [duckling](https://github.com/wafer-inc/duckling) produces" — so Ruby tests compare against the Rust output, not the Haskell/pyduckling output.
+- The Ruby acceptance criteria ([issue #1](https://github.com/cpb/duckling/issues/1)) explicitly says: "matching what [duckling](https://github.com/wafer-inc/duckling) produces" — so Ruby tests compare against the Rust output, not the Haskell/pyduckling output.
 - For edge cases (unusual timezone handling, very far-future dates, BC years), divergence is possible. The Ruby test suite should not include edge cases unless the exact expected value has been verified against the [duckling](https://github.com/wafer-inc/duckling) Rust binary.
 
 ### Specific known scope difference

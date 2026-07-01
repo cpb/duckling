@@ -26,7 +26,7 @@ The reference time is a fixed constant — it does not change between test runs.
 
 ## 2. How `Duckling.parse` Will Be Called
 
-The public API for the gem is not yet implemented, but the acceptance criteria in `pr_context.md` states:
+The public API for the gem is not yet implemented, but the acceptance criteria in [issue #1](https://github.com/cpb/duckling/issues/1) states:
 
 ```
 Duckling.parse(text, locale: "en") extracts time/date entities from English text
