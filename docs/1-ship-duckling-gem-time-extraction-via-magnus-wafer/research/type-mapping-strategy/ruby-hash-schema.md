@@ -131,7 +131,10 @@ uses `assert_match(/\A\d{4}-\d{2}-\d{2}/, entity[:value][:value])` — prefix-on
 missing offset.
 Cons: breaks direct equality with pyduckling test cases which always include an offset.
 
-**Option N2: apply reference timezone at serialization time** (deferred to 0.3.0)
+**Option N2: apply reference timezone at serialization time** (deferred to 0.3.0,
+tracked as [issue #33](https://github.com/cpb/duckling/issues/33) — framed there as
+"handle Naive time values the way Rails ActiveSupport does": resolve against the
+reference zone rather than surfacing a zoneless value)
 
 Pros: matches pyduckling format exactly.
 Cons: requires threading the reference `Context` timezone through to serialization;

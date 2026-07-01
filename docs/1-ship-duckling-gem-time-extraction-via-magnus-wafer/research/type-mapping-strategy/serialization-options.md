@@ -165,6 +165,49 @@ serde_json = "1"  # already a transitive dep of wafer-inc-duckling
 
 ---
 
+## Option D: serde_magnus (symbol-keyed) + Ruby pattern-matching `Data` factories
+
+**Reviewer suggestion (PR #3), not yet evaluated — added here to preserve the idea, not
+to declare it decided.**
+
+Options A and C above both treat serde_magnus's externally-tagged shape
+(`{"Time" => tv}`, `{"Single" => {...}}`, PascalCase `Grain` variants) as a defect to be
+fixed with serde container attributes or worked around with manual mapping. This option
+reframes it: **keep** the externally-tagged shape — don't fight serde's default enum
+representation — and instead:
+
+1. Make the *only* serde-side change be symbolizing keys (not renaming or re-tagging),
+   so the output is `{Time: {Single: {value: {...}, values: [...]}}}` with Symbol keys
+   throughout rather than String keys. Ruby's `case/in` pattern matching (and the
+   `deconstruct_keys` protocol generally) is built around Symbol-keyed Hash patterns, so
+   this is the one serde tweak that actually matters for ergonomics — not the full
+   `rename_all`/`tag = "type"` treatment Option A considered.
+2. In Ruby, write factory methods that `case/in` pattern-match on that symbol-keyed,
+   externally-tagged shape and construct `Data`-based value objects (`Data.define(...)`)
+   for `Entity`, `TimeValue::Single`, `TimeValue::Interval`, `TimePoint::Naive`,
+   `TimePoint::Instant`, etc., rather than returning raw nested Hashes to callers.
+
+Rationale (reviewer's framing): **hashes are not the preferred end-user API.** A
+`Data`-based API gives callers proper immutable value objects with named accessors and
+`===`/pattern-matching support of their own, instead of a Hash whose shape callers have
+to memorize and re-parse. The externally-tagged wrapper keys (`"Time"`, `"Single"`,
+`"Naive"`) that Options A/C treat as noise to strip out are, from this angle, exactly the
+discriminant that Ruby pattern matching wants to switch on — so there's no need to change
+serde's enum representation at all, only its key type.
+
+This does not resolve the `NaiveDateTime` timezone question (still Option N1 vs. N2 in
+[ruby-hash-schema.md](./ruby-hash-schema.md)) — it's a proposal about the *shape of the
+returned object* (Hash vs. `Data`) and *how the extension gets there* (manual mapping vs.
+symbol-keyed serde_magnus + Ruby-side pattern matching), orthogonal to that question. See
+[issue #33](https://github.com/cpb/duckling/issues/33) for the naive-time-handling ticket.
+
+**Status:** Exploratory. **Option B (Manual Magnus Mapping) remains the shipped 0.2.0
+implementation** — this option is a proposed direction for a future release, tracked as
+[issue #32](https://github.com/cpb/duckling/issues/32) rather than folded into the
+current recommendation below.
+
+---
+
 ## Recommendation
 
 **Use Option B (Manual Magnus Mapping) for 0.2.0.**

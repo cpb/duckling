@@ -116,16 +116,41 @@ runtime). During development the dev profile is preferred.
 `spec.add_development_dependency "rake-compiler", "~> 1.2.0"` and Gemfile.lock
 pins it to `1.2.9`. `Rake::ExtensionTask` is provided by this gem.
 
-## Open Questions
+## Resolved (were open questions)
 
-1. **Does Minitest::TestTask.create support deps?** The current Rakefile uses
-   `Minitest::TestTask.create` (minitest 6.0.6). The rust_blank example uses
-   `Rake::TestTask` with `t.deps << :compile`. These are different classes.
-   Check whether `Minitest::TestTask.create` accepts a block with deps, or
-   whether the compile task needs to be listed explicitly in the default task
-   ordering.
+1. **Does Minitest::TestTask.create support deps?** No need — the shipped
+   Rakefile ([`main@03a69e1`](https://github.com/cpb/duckling/blob/03a69e157a1543862c734ca8ac278a84600af315/Rakefile))
+   doesn't attempt to wire `Minitest::TestTask.create` with explicit deps at
+   all. It relies purely on the `default` task's array ordering
+   (`task default: %i[standard compile test]`), confirmed empirically below.
+   Filed [issue #30](https://github.com/cpb/duckling/issues/30) to explore
+   making `test` explicitly depend on `:compile` (`task test: :compile` or
+   similar) so `bundle exec rake test` alone — not just the default task —
+   also compiles first.
 
 2. **Does `task default: %i[compile test standard]` guarantee compile runs
-   before test?** Rake executes prerequisite tasks in left-to-right order when
-   they are listed in the array, so `compile` running before `test` should hold.
-   Verify against actual Rake behavior with the installed rake version (13.4.2).
+   before test?** Confirmed empirically with the installed Rake 13.4.2:
+
+   ```ruby
+   task :c do puts "RAN: c" end
+   task :a do puts "RAN: a" end
+   task :b do puts "RAN: b" end
+   task default: %i[c a b]
+   Rake::Task[:default].invoke
+   # => RAN: c
+   #    RAN: a
+   #    RAN: b
+   ```
+
+   Rake invokes prerequisites in the array's listed order. `task default:
+   %i[standard compile test]` (the shipped ordering) runs `standard` (lint),
+   then `compile`, then `test`, in that order, every time.
+
+## Follow-up: the `:dev` task was never added
+
+The shipped Rakefile has no `:dev` task — `bundle exec rake compile` always
+builds in the release Cargo profile (slower compile, faster runtime), even
+during local development. Filed
+[issue #31](https://github.com/cpb/duckling/issues/31) to add the
+`RB_SYS_CARGO_PROFILE=dev` task described above for a faster edit-compile-test
+loop.

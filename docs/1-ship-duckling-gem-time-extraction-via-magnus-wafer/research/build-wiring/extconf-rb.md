@@ -66,12 +66,15 @@ spec.add_dependency "rb_sys", "~> 0.9.39"
 The `rb_sys` runtime dependency is what provides `rb_sys/mkmf` to end-users
 who install the gem from source. Gemfile.lock pins `rb_sys` to `0.9.128`.
 
-## Open Questions
+## Resolved (were open questions; the gem has since shipped as v0.2.0)
 
 1. **Does `create_rust_makefile` need Cargo in PATH at gem install time?**
    Yes — the Makefile it generates invokes `cargo build`. End-users installing
-   from source must have Rust/Cargo installed. Pre-compiled binary gems (see
-   ci-configuration.md) bypass this requirement.
+   from source must have Rust/Cargo installed. The gem shipped as a
+   source-only gem (see [ci-configuration.md](./ci-configuration.md)), so this
+   requirement is real for every installer, not just a hypothetical.
 
-2. **Does rb_sys/mkmf need to be required before mkmf?** The rust_blank example
-   requires `mkmf` first, then `rb_sys/mkmf`. This ordering should be followed.
+2. **Does rb_sys/mkmf need to be required before mkmf?** Yes, confirmed —
+   [`ext/duckling/extconf.rb` on `main`](https://github.com/cpb/duckling/blob/03a69e157a1543862c734ca8ac278a84600af315/ext/duckling/extconf.rb)
+   requires `mkmf` first, then `rb_sys/mkmf`, exactly matching the
+   "Content needed" prediction above and the rust_blank reference ordering.
