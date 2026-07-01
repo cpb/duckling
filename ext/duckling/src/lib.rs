@@ -5,6 +5,11 @@ use duckling::{
 };
 use magnus::{function, prelude::*, scan_args, Error, RArray, Ruby, Value};
 
+// `Duckling` is the gem's whole public surface today (one module, one method),
+// so Magnus defines it directly rather than nesting a separate binding module
+// underneath it — there's no second Ruby-level API to keep stable independent
+// of the native layer yet. Revisit if/when the gem grows enough public Ruby
+// behavior (e.g. locale/dimension helpers) to warrant its own file.
 #[magnus::init]
 fn init(ruby: &Ruby) -> Result<(), Error> {
     let module = ruby.define_module("Duckling")?;
@@ -12,6 +17,14 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     Ok(())
 }
 
+/// `Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)`
+///
+/// - `locale`: BCP-47 tag (e.g. `"en"`, `"en-GB"`); unsupported codes raise `ArgumentError`.
+/// - `dims`: dimension names to extract; only `"time"` is implemented in 0.2.0,
+///   other values raise `ArgumentError`.
+/// - `reference_time`: Unix seconds anchoring relative expressions like "tomorrow";
+///   defaults to `Context::default()` (now, UTC).
+/// - `with_latent`: include ambiguous/latent matches (e.g. bare "morning").
 fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let args = scan_args::scan_args::<(String,), (), (), (), _, ()>(args)?;
     let kw = scan_args::get_kwargs::<

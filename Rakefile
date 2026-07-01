@@ -12,4 +12,4 @@ Minitest::TestTask.create
 
 require "standard/rake"
 
-task default: %i[compile test standard]
+task default: %i[standard compile test]
