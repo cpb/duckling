@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "cpb": {
+      "source": {
+        "source": "github",
+        "repo": "cpb/claude-plugins"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "cpb@cpb": true
+  }
+}
