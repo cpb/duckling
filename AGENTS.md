@@ -31,19 +31,20 @@ real implementation lands (see "Keeping this file current").
 | `lib/duckling/version.rb` | `Duckling::VERSION` constant — single source of truth for the gem version, read by `duckling.gemspec` and (once built) the release pipeline. |
 | `test/` | Minitest suite. `test_helper.rb` sets up the load path and requires `minitest/autorun`; test files currently follow `test_<name>.rb` / `class Test<Name> < Minitest::Test` naming. |
 | `bin/` | Two kinds of scripts living side by side — see "bin/ scripts" below. Don't confuse the dev-workflow scripts (`worktree`, `check-worktree`, `claude-code-web-setup`, `lint`) with the gem's own build/test entrypoints (`setup`, `console`, `test`). |
-| `duckling.gemspec` | Gem spec. Declares `spec.extensions = ["ext/duckling/extconf.rb"]` (the native-extension build entrypoint), depends on `rb_sys ~> 0.9.39`, dev-depends on `rake-compiler ~> 1.2.0`. Packaged files come from `git ls-files`, excluding `bin/`, `Gemfile`, `.gitignore`, `test/`, `.github/`, `.standard.yml`. |
-| `Rakefile` | `task default: %i[test standard]` — runs Minitest then StandardRB lint. **(planned)** Once the Rust extension lands, this gains a `compile` task (via `Rake::ExtensionTask`) and the default becomes `%i[compile test standard]`. |
+| `duckling.gemspec` | Gem spec. Declares `spec.extensions = ["ext/duckling/extconf.rb"]` (the native-extension build entrypoint), depends on `rb_sys ~> 0.9.39`, dev-depends on `rake-compiler ~> 1.2.0`. Packaged files come from `git ls-files`, excluding `bin/`, `Gemfile`, `.gitignore`, `test/`, `.github/`, `.standard.yml`, `hk.pkl`. |
+| `Rakefile` | `task default: %i[standard compile test]` — runs StandardRB lint, compiles the Rust extension, then Minitest. |
 | `.standard.yml` | StandardRB config (`ruby_version: 3.3`). StandardRB wraps RuboCop internally; there is no separate `.rubocop.yml`. |
-| `.github/workflows/main.yml` | CI: runs `bundle exec rake` on Ruby 3.3.6 for every push to `main` and every PR. |
+| `hk.pkl` | `hk` config (StandardRB + rustfmt + clippy via `hk`'s builtin steps) — single source of truth for local lint/format enforcement. `bin/lint` runs `hk fix` against it; not used by CI (CI runs the underlying tools directly, see below). |
+| `.github/workflows/main.yml` | CI: on Ruby 3.3.6, sets up Rust (`dtolnay/rust-toolchain@stable` with `clippy`/`rustfmt` components), runs `cargo fmt --check` and `cargo clippy -- -D warnings` against `ext/duckling/`, then `bundle exec rake`. Runs for every push to `main` and every PR. |
 
 ## Build and test commands
 
 - **`bin/setup`** — `bundle install`. Run this first in a fresh checkout/worktree.
 - **`bin/console`** — loads the gem and drops you into IRB for interactive experimentation.
 - **`bin/test [file:line]`** — runs `bundle exec ruby -I test "$@"`. With no args this needs a target file (it's a thin wrapper, not a full suite runner); for the full suite use `rake test` or `bundle exec rake`.
-- **`bin/lint`** — currently a **no-op stub** (`exit 0`). It's a cpb-harness PostToolUse hook skeleton, not yet wired to StandardRB/RuboCop. Don't rely on it for linting; use `bundle exec standardrb` or `rake standard` instead.
-- **`rake` / `bundle exec rake`** — default task: `test` (Minitest) + `standard` (StandardRB lint). **(planned)** will also run `compile` once the Rust extension exists.
-- **Compiling the native extension**: not yet wired up. **(planned)** once `ext/duckling/Cargo.toml` exists, `rake compile` (via `Rake::ExtensionTask`) will build it and place the compiled artifact under `lib/duckling/`. Until then there's nothing to compile.
+- **`bin/lint`** — the cpb-harness PostToolUse hook, invoked after every Edit/Write with `$CLAUDE_FILE_PATHS`. Runs `HK_PKL_BACKEND=pklr hk fix $CLAUDE_FILE_PATHS`, auto-correcting via `hk.pkl` (StandardRB for `.rb`, rustfmt for `.rs`). Requires `hk` on `PATH` (not installed via `bin/setup`/Gemfile — expected to be present on the dev machine, same as `cargo`/`rustc`).
+- **`rake` / `bundle exec rake`** — default task: `standard` (StandardRB lint) + `compile` (builds the Rust extension via `Rake::ExtensionTask`) + `test` (Minitest).
+- **Compiling the native extension**: `rake compile` (via `Rake::ExtensionTask`, wired in the `Rakefile`) builds `ext/duckling/` and places the compiled artifact under `lib/duckling/`.
 
 ## Rust/Magnus wiring
 
@@ -62,7 +63,7 @@ real implementation lands (see "Keeping this file current").
 - **Build model**: ships as a **source gem**, not precompiled binaries — installers need a Rust toolchain. `rake-compiler-dock` is already pulled in transitively (via `rb_sys` in `Gemfile.lock`) for possible future cross-compiled binary-gem support, but that's out of scope for now.
 - **Known gotchas**:
   - `rb_sys` is already a runtime gemspec dependency (`~> 0.9.39`) even though the Rust crate doesn't exist yet — this is intentional, not a leftover.
-  - CI does not yet install a Rust toolchain (`.github/workflows/main.yml` only sets up Ruby) — adding a `dtolnay/rust-toolchain@stable` step is required once the extension lands.
+  - CI installs a Rust toolchain via `dtolnay/rust-toolchain@stable` (with `clippy`/`rustfmt` components) and runs `cargo fmt --check` + `cargo clippy -- -D warnings` against `ext/duckling/` before `bundle exec rake`.
   - `.gitignore` does not yet exclude Rust build artifacts (`target/`, compiled `lib/duckling/*.bundle`/`*.so`) — add these when the crate is added.
   - `.github/workflows/main.yml` pins `actions/checkout@v6`; double-check this is a real, current action version before copying it into new workflows.
 
