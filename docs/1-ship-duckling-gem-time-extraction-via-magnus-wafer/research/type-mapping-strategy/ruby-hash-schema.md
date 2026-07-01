@@ -111,7 +111,7 @@ This is the common case for phrases like "tomorrow", "next Monday", "at 3pm".
 **Decision (0.2.0): Option N1 — strip timezone, return bare ISO8601**
 
 pyduckling always returns a timezone-aware ISO8601 string, applying the reference timezone
-even to wall-clock times. wafer-inc-duckling's `NaiveDateTime` has no timezone. Two options:
+even to wall-clock times. [duckling](https://github.com/wafer-inc/duckling)'s `NaiveDateTime` has no timezone. Two options:
 
 **Option N1 (chosen): bare ISO8601, no offset**
 

@@ -1,6 +1,6 @@
 # Type Mapping Strategy
 
-Research into converting wafer-inc-duckling's Rust types to Ruby values via Magnus.
+Research into converting [duckling](https://github.com/wafer-inc/duckling)'s Rust types to Ruby values via Magnus.
 
 ## Documents
 

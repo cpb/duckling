@@ -1,11 +1,11 @@
 # FFI Binding Risks — Hypotheses and Test Results
 
-This document evaluates the technical risks of the Magnus + wafer-inc-duckling binding
+This document evaluates the technical risks of the Magnus + [duckling](https://github.com/wafer-inc/duckling) binding
 strategy. Each concern from preliminary Gemini research is treated as a **hypothesis to
 test**, not a premise to confirm. For each: what was tested, what was found, whether the
 risk is real, and which milestone (if any) should address it.
 
-All benchmarks were run against the compiled release binary of wafer-inc-duckling 0.4.0
+All benchmarks were run against the compiled release binary of [duckling](https://github.com/wafer-inc/duckling) 0.4.0
 on this machine using Criterion. All code observations were from
 [wafer-inc/duckling@c96b068](https://github.com/wafer-inc/duckling/tree/c96b0681ab9a097712b20fe838786a2c65efc537)
 and [matsadler/magnus@4e46772](https://github.com/matsadler/magnus/tree/4e46772050e47cd6cd988fa935263cc5c583e388).
@@ -27,12 +27,12 @@ and [matsadler/magnus@4e46772](https://github.com/matsadler/magnus/tree/4e467720
 
 ## Risk 1: Incomplete Port and Maintenance
 
-**Hypothesis:** wafer-inc-duckling is an unofficial community port that lacks feature parity
+**Hypothesis:** [duckling](https://github.com/wafer-inc/duckling) is an unofficial community port that lacks feature parity
 with Meta's Haskell engine, and maintenance burden will block the LLM validation use case.
 
 ### What was tested
 
-Ran wafer-inc-duckling 0.4.0 against a set of 2026–2030 date expressions from the LLM
+Ran [duckling](https://github.com/wafer-inc/duckling) 0.4.0 against a set of 2026–2030 date expressions from the LLM
 validation use case:
 
 ```
@@ -81,7 +81,7 @@ Haskell original as well.
 **The "incomplete port" risk is FALSE for the LLM date validation use case.** Calendar
 math, relative expressions, and holidays work correctly through 2030+.
 
-The maintenance risk is also lower than Gemini stated: wafer-inc-duckling is an independent
+The maintenance risk is also lower than Gemini stated: [duckling](https://github.com/wafer-inc/duckling) is an independent
 Rust implementation (not a binding to Meta's Haskell code), published on crates.io as
 `duckling 0.4.0` on 2026-04-16. It is not dependent on Meta's frozen 2021 Haskell release
 (see Risk 6).
@@ -100,7 +100,7 @@ concurrent Ruby threads — Puma workers, Sidekiq jobs — are meaningfully dela
 
 Criterion benchmarks from
 [`benches/parse.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/benches/parse.rs)
-in wafer-inc-duckling (release build):
+in [duckling](https://github.com/wafer-inc/duckling) (release build):
 
 | Input | Median time |
 |-------|-------------|
@@ -167,12 +167,12 @@ Add a note that GVL release is not available in Magnus 0.9.
 
 ## Risk 3: Panic Boundary Catastrophe
 
-**Hypothesis:** An internal panic in wafer-inc-duckling crosses the FFI boundary and crashes
+**Hypothesis:** An internal panic in [duckling](https://github.com/wafer-inc/duckling) crosses the FFI boundary and crashes
 the Ruby process (segfault or hard abort).
 
 ### What was found in the source
 
-From `wafer-inc-duckling/src/lib.rs` (already documented in
+From [`src/lib.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/lib.rs) (already documented in
 [public-functions.md](./wafer-inc-duckling-api/public-functions.md)):
 
 ```rust
@@ -295,7 +295,7 @@ with custom serialization as a 0.3.0 alternative API path.
 
 ## Risk 5: Date Rot (Hardcoded 2020–2025 Ranges)
 
-**Hypothesis:** wafer-inc-duckling has hardcoded holiday ranges or relative-date calculations
+**Hypothesis:** [duckling](https://github.com/wafer-inc/duckling) has hardcoded holiday ranges or relative-date calculations
 that break or produce wrong results for 2026+ dates.
 
 ### What was tested
@@ -317,7 +317,7 @@ Holidays are detected by name matching, not by year range.
 
 ### Verdict
 
-**FALSIFIED.** There is no date rot observable in wafer-inc-duckling 0.4.0 for dates through
+**FALSIFIED.** There is no date rot observable in [duckling](https://github.com/wafer-inc/duckling) 0.4.0 for dates through
 2031. Calendar arithmetic is fully algorithmic.
 
 **No action needed.**
@@ -338,7 +338,7 @@ Gemini conflated two distinct projects:
 | `facebook/duckling` (Haskell) | Last release 2021; effectively frozen |
 | `wafer-inc/duckling` (Rust rewrite) | Actively maintained; 0.4.0 published crates.io **2026-04-16** |
 
-wafer-inc-duckling is not a binding to Meta's Haskell binary. It is an independent Rust
+[duckling](https://github.com/wafer-inc/duckling) is not a binding to Meta's Haskell binary. It is an independent Rust
 reimplementation. Its authors read the Haskell source for rule parity but compile everything
 to native Rust. The Meta project being frozen does not prevent wafer-inc from making their
 own releases.

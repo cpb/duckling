@@ -4,8 +4,8 @@
 
 Wire the native extension using Magnus 0.9 + rb-sys `stable-api-compiled-fallback`,
 mirroring the canonical `rust_blank` example from the Magnus repo. The extension
-crate lives at `ext/duckling/` as a `cdylib` that depends on the local
-`wafer-inc-duckling` rlib via a Cargo path dependency. No `build.rs` is added to
+crate lives at `ext/duckling/` as a `cdylib` that depends on the
+[duckling](https://github.com/wafer-inc/duckling) rlib via a crates.io dependency. No `build.rs` is added to
 the extension crate; Magnus's own `build.rs` propagates `rb_sys_env::activate()`
 transitively.
 
@@ -131,13 +131,13 @@ Insert a Rust toolchain step between the Ruby setup step and the rake step:
 ```
 
 No additional apt packages needed: `stable-api-compiled-fallback` uses
-pre-compiled bindings, and wafer-inc-duckling's dependencies (regex, chrono,
+pre-compiled bindings, and [duckling](https://github.com/wafer-inc/duckling)'s dependencies (regex, chrono,
 serde, serde_json, once_cell, smallvec) are pure Rust with no system library
 requirements.
 
 ## Open Questions
 
-1. ~~**wafer-inc-duckling not on crates.io.**~~ **Resolved**: The crate is
+1. ~~**[duckling](https://github.com/wafer-inc/duckling) not on crates.io.**~~ **Resolved**: The crate is
    published on crates.io as `duckling = "0.4"` (https://crates.io/crates/duckling).
    Use `duckling = "0.4"` in Cargo.toml — no path or git dependency needed.
    No crates.io blocker for RubyGems publication.

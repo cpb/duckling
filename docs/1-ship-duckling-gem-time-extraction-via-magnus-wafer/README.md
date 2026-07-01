@@ -1,7 +1,7 @@
 # Research & Planning — Issue #1: Ship duckling gem (time extraction via Magnus + wafer-inc-duckling)
 
 **What this PR answers:** How to ship a Ruby gem that extracts time/date entities from
-text using the wafer-inc-duckling Rust crate wrapped via Magnus — no Haskell runtime, no
+text using the [duckling](https://github.com/wafer-inc/duckling) Rust crate wrapped via Magnus — no Haskell runtime, no
 HTTP call — and publish it as `duckling` 0.2.0.
 
 ## Reading Order
@@ -24,7 +24,7 @@ Start here, then follow the path for your role:
     - [types.md](./research/wafer-inc-duckling-api/types.md) — All public types with Mermaid diagrams; Naive vs Instant distinction.
     - [locale-system.md](./research/wafer-inc-duckling-api/locale-system.md) — 49 Lang variants, 25 Region variants, Context, Options (with_latent defaults false).
   - [research/build-wiring/](./research/build-wiring/README.md) — Magnus + rb-sys native extension build plumbing.
-    - [extension-crate.md](./research/build-wiring/extension-crate.md) — cdylib crate layout; wafer-inc-duckling path dep; crates.io blocker.
+    - [extension-crate.md](./research/build-wiring/extension-crate.md) — cdylib crate layout; [duckling](https://github.com/wafer-inc/duckling) path dep; crates.io blocker.
     - [extconf-rb.md](./research/build-wiring/extconf-rb.md) — Verified 3-line extconf.rb from rust_blank example.
     - [rakefile-setup.md](./research/build-wiring/rakefile-setup.md) — ExtensionTask and lib_dir.
     - [ci-configuration.md](./research/build-wiring/ci-configuration.md) — Rust toolchain action; source vs. binary gem tradeoff.
@@ -33,7 +33,7 @@ Start here, then follow the path for your role:
     - [ruby-hash-schema.md](./research/type-mapping-strategy/ruby-hash-schema.md) — Target Ruby hash shape; NaiveDateTime tension; Grain string mapping.
     - [magnus-type-conversions.md](./research/type-mapping-strategy/magnus-type-conversions.md) — IntoValue table; chrono feature; working Rust example for entity hash.
   - [research/test-coverage/](./research/test-coverage/README.md) — Test cases and minitest design.
-    - [corpus-cases.md](./research/test-coverage/corpus-cases.md) — wafer-inc-duckling time corpus; 10 categories; Rust test helper patterns.
+    - [corpus-cases.md](./research/test-coverage/corpus-cases.md) — [duckling](https://github.com/wafer-inc/duckling) time corpus; 10 categories; Rust test helper patterns.
     - [ruby-test-design.md](./research/test-coverage/ruby-test-design.md) — REFERENCE_TIME, assertion helpers, 8 test classes.
     - [pyduckling-reference.md](./research/test-coverage/pyduckling-reference.md) — pyduckling test inventory; port vs. skip decisions.
   - [research/ffi-risks.md](./research/ffi-risks.md) — Tested evaluation of FFI binding risks (GVL blocking, panic safety, GC pressure, date rot, day-of-week validation gap).
@@ -48,7 +48,7 @@ Start here, then follow the path for your role:
 
 ## Settled Decisions (were open; now closed)
 
-- **wafer-inc-duckling on crates.io** — Published as `duckling = "0.4"`. Use crates.io
+- **[duckling](https://github.com/wafer-inc/duckling) on crates.io** — Published as `duckling = "0.4"`. Use crates.io
   dep in Cargo.toml. No publish blocker. (Resolved in commit b17070e.)
 - **Symbol vs. String keys** — All entity hash keys and dim/type/grain values are Ruby
   Symbols (`:body`, `:dim`, `:value`, `:type`, `:grain`, `:day`, etc.). Settled by the

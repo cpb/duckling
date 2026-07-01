@@ -12,7 +12,7 @@ Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_lat
 - `locale:` — BCP-47 tag string; default `"en"`. Split on `-` to produce `Lang` + optional `Region`. Validated at call time; unknown codes raise `ArgumentError`.
 - `dims:` — Array of dimension name strings; default `["time"]`. Unknown strings raise `ArgumentError` in 0.2.0 (fail loud rather than silently skip).
 - `reference_time:` — Ruby `Integer` (Unix seconds). When `nil`, falls back to `Context::default()` (`Utc::now()` + EN-US locale). **Include in 0.2.0** for testability (see Open Questions).
-- `with_latent:` — Boolean; default `false`. Mirrors `Options { with_latent }` in wafer-inc-duckling. When `false`, latent/ambiguous entities are excluded (matches `Options::default()`).
+- `with_latent:` — Boolean; default `false`. Mirrors `Options { with_latent }` in [duckling](https://github.com/wafer-inc/duckling). When `false`, latent/ambiguous entities are excluded (matches `Options::default()`).
 - Returns `Array<Hash>` — one hash per entity, with **Symbol keys and Symbol values** for dim/type/grain. See [ruby-hash-schema.md](../research/type-mapping-strategy/ruby-hash-schema.md).
 
 ### 2. Type Conversion — Manual Magnus Mapping (Option B)

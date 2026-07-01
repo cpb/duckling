@@ -120,12 +120,12 @@ here for test-suite ordering: bump VERSION after tests are green).
 
 - **"now" expected value**: `TimePoint::Instant` for `"now"` should equal the
   reference time `"2013-02-12T04:30:00-02:00"`. Confirm this is what
-  wafer-inc-duckling actually returns (the corpus `check_time_instant` helper
+  [duckling](https://github.com/wafer-inc/duckling) actually returns (the corpus `check_time_instant` helper
   confirms this but verify the offset representation in Rust → Ruby round-trip).
 
 - **"in 2 hours" grain**: The Rust corpus expects `Grain::Minute` for "in 2 hours"
   (not `Hour`). Verify: `"in 2 hours"` resolves to `06:30:00` at minute grain,
-  because wafer-inc-duckling uses Minute for hour-offset calculations. The test
+  because [duckling](https://github.com/wafer-inc/duckling) uses Minute for hour-offset calculations. The test
   above expects `"hour"` — check corpus-cases.md and fix before implementation.
 
 - **Standard linter**: New test methods use string interpolation inside assertions.

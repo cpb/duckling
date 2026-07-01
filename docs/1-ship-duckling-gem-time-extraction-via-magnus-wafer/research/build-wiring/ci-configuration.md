@@ -59,7 +59,7 @@ Insert before the "Run the default task" step:
 
 Alternatively, `actions-rust-lang/setup-rust-toolchain` provides caching
 of the Cargo registry and build artifacts. For a gem that compiles a non-trivial
-crate (wafer-inc-duckling pulls in regex, chrono, serde, serde_json,
+crate ([duckling](https://github.com/wafer-inc/duckling) pulls in regex, chrono, serde, serde_json,
 once_cell, smallvec), build artifact caching would meaningfully speed up CI.
 
 ### 2. Ensure compile runs before tests
@@ -95,9 +95,9 @@ bindings and does NOT require libclang or bindgen at build time. The
 ubuntu-latest runner should have everything needed (gcc, make, libssl-dev).
 No additional `apt-get install` step is expected to be required.
 
-If wafer-inc-duckling's dependencies introduce a build requirement (e.g.
+If [duckling](https://github.com/wafer-inc/duckling)'s dependencies introduce a build requirement (e.g.
 openssl-sys needs libssl-dev headers), an apt step would be needed. Current
-wafer-inc-duckling dependencies (regex, chrono, serde, etc.) are pure Rust
+[duckling](https://github.com/wafer-inc/duckling) dependencies (regex, chrono, serde, etc.) are pure Rust
 and have no known system library requirements.
 
 ## Rust version pinning
@@ -158,7 +158,7 @@ Pros:
 
 Cons:
 - Users must have Rust toolchain installed (unusual requirement for a Ruby gem)
-- Compile time at install: wafer-inc-duckling is a non-trivial crate
+- Compile time at install: [duckling](https://github.com/wafer-inc/duckling) is a non-trivial crate
 - `bundle exec rake compile` required before running tests locally
 
 ### Pre-compiled binary gems (rake-compiler-dock)
@@ -199,13 +199,13 @@ Document the Rust/Cargo requirement prominently in the README for 0.2.0 users.
    caching complexity.
 
 2. **Cargo cache in CI**: Without caching, every CI run recompiles
-   wafer-inc-duckling and all its transitive dependencies from source. A
+   [duckling](https://github.com/wafer-inc/duckling) and all its transitive dependencies from source. A
    `~/.cargo/registry` cache would reduce this significantly. `ruby/setup-ruby`
    with `bundler-cache: true` already caches the Ruby side; Rust needs separate
    caching (either via `actions-rust-lang/setup-rust-toolchain` or a manual
    `actions/cache` step).
 
-3. **Git dependency in Cargo.toml**: If wafer-inc-duckling is referenced as a
+3. **Git dependency in Cargo.toml**: If [duckling](https://github.com/wafer-inc/duckling) is referenced as a
    git dependency, Cargo will clone it on every CI run unless the
    `~/.cargo/git` directory is cached.
 

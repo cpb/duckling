@@ -1,12 +1,13 @@
 # Serialization Options: Rust to Ruby
 
-Three approaches for converting `Vec<Entity>` from wafer-inc-duckling into a Ruby Array of Hashes.
+Three approaches for converting `Vec<Entity>` from [duckling](https://github.com/wafer-inc/duckling) into a Ruby Array of Hashes.
 
 ## Verified Serde Attribute Analysis
 
 Before evaluating options, the actual serde attributes on the relevant types in
-`wafer-inc-duckling/src/types.rs` and `dimensions/time_grain/mod.rs` must be known. Here
-is what the source shows:
+[`src/types.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/types.rs)
+and [`dimensions/time_grain/mod.rs`](https://github.com/wafer-inc/duckling/blob/c96b0681ab9a097712b20fe838786a2c65efc537/src/dimensions/time_grain/mod.rs)
+must be known. Here is what the source shows:
 
 **`Entity`** (`#[derive(serde::Serialize)]`, no container attributes):
 - Field-level: `#[serde(skip_serializing_if = "Option::is_none")]` on `latent`
@@ -104,10 +105,10 @@ fn parse_time(ruby: &Ruby, text: String, ...) -> Result<Value, Error> {
 **Cons:**
 - As verified above, the output shape does NOT match pyduckling. All enum types use
   externally-tagged format; Grain uses PascalCase variant names
-- Fixing the shape requires adding serde container attributes to wafer-inc-duckling types
+- Fixing the shape requires adding serde container attributes to [duckling](https://github.com/wafer-inc/duckling) types
   (`#[serde(tag = "type", rename_all = "lowercase")]` on DimensionValue, TimeValue,
   TimePoint; `#[serde(rename_all = "lowercase")]` on Grain)
-- Those changes belong in wafer-inc-duckling, not this gem — either upstream them as a PR
+- Those changes belong in [duckling](https://github.com/wafer-inc/duckling), not this gem — either upstream them as a PR
   or fork the crate; neither is trivial for 0.2.0
 
 **When to use:** Only if the shape mismatch is acceptable (tests that don't cross-validate
@@ -130,7 +131,7 @@ and structure.
 **Cons:**
 - More Rust code: must implement a match arm for every `DimensionValue` variant (or at
   minimum the Time variant and a fallthrough)
-- Ongoing maintenance cost when wafer-inc-duckling adds new variants
+- Ongoing maintenance cost when [duckling](https://github.com/wafer-inc/duckling) adds new variants
 
 See [magnus-type-conversions.md](./magnus-type-conversions.md) for example Rust code.
 
@@ -170,7 +171,7 @@ serde_json = "1"  # already a transitive dep of wafer-inc-duckling
 
 Rationale:
 1. The verified serde attributes confirm that Option A (serde_magnus) produces the wrong
-   shape without changes to wafer-inc-duckling that are out of scope for 0.2.0.
+   shape without changes to [duckling](https://github.com/wafer-inc/duckling) that are out of scope for 0.2.0.
 2. Manual mapping for 0.2.0 is bounded in scope: only `DimensionValue::Time` needs deep
    handling; other variants can return an opaque hash or be omitted.
 3. Manual mapping makes the NaiveDateTime representation a first-class decision rather than
@@ -178,6 +179,6 @@ Rationale:
 4. Option B keeps the native bridge benefit (no JSON parsing in Ruby) and is idiomatic for
    Magnus extensions.
 
-Option A becomes practical in a later release if wafer-inc-duckling adds appropriate serde
+Option A becomes practical in a later release if [duckling](https://github.com/wafer-inc/duckling) adds appropriate serde
 container attributes. At that point, serde_magnus can replace the manual mapping with much
 less code.

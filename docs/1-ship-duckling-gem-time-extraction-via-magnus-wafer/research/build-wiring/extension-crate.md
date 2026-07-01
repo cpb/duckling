@@ -4,7 +4,7 @@
 
 The gem needs a dedicated Rust crate at `ext/duckling/` that compiles to a
 native shared library (`.so` on Linux, `.bundle` on macOS). This is separate
-from the wafer-inc-duckling library crate, which stays as an rlib dependency.
+from the [duckling](https://github.com/wafer-inc/duckling) library crate, which stays as an rlib dependency.
 
 ## Verified reference: rust_blank example
 
@@ -122,13 +122,13 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
 
 ## Open Questions
 
-1. ~~**Path vs. git dependency**: wafer-inc-duckling is not on crates.io.~~
+1. ~~**Path vs. git dependency**: [duckling](https://github.com/wafer-inc/duckling) is not on crates.io.~~
    **Resolved**: The crate is published on crates.io as `duckling = "0.4"`.
    Use the crates.io dep — no path or git dependency needed.
    [wafer-inc/duckling@c96b068](https://github.com/wafer-inc/duckling/tree/c96b0681ab9a097712b20fe838786a2c65efc537)
    is the development source for the same 0.4.0 release.
 
-2. ~~**Does wafer-inc-duckling need to be published to crates.io?**~~
+2. ~~**Does [duckling](https://github.com/wafer-inc/duckling) need to be published to crates.io?**~~
    **Resolved**: Already published. No crates.io blocker for gem publication.
 
 3. **Is a build.rs needed in ext/duckling/?** The rust_blank example has NO
@@ -140,6 +140,6 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
    Requires adding `rb-sys-env = "0.2"` to `[build-dependencies]`.
 
 4. **Rust edition**: rust_blank uses `edition = "2024"` (requires rustc 1.85+).
-   wafer-inc-duckling uses `edition = "2021"`. The extension crate can use
+   [duckling](https://github.com/wafer-inc/duckling) uses `edition = "2021"`. The extension crate can use
    either, but mixing editions in a workspace is allowed. Using 2024 aligns with
    the Magnus example.

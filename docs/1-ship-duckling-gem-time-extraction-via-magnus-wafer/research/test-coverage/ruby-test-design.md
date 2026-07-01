@@ -1,6 +1,6 @@
 # Ruby Minitest Test Suite Design
 
-This document designs the minitest test suite for the Ruby duckling gem (`0.2.0`), based on the wafer-inc-duckling corpus and pyduckling reference tests.
+This document designs the minitest test suite for the Ruby duckling gem (`0.2.0`), based on the [duckling](https://github.com/wafer-inc/duckling) corpus and pyduckling reference tests.
 
 Source state examined:
 - `test/test_duckling.rb` — current state: version check + intentionally failing placeholder
@@ -11,7 +11,7 @@ Source state examined:
 
 ## 1. Fixed Reference Time
 
-All time-parsing tests must use the same reference time as the wafer-inc-duckling corpus:
+All time-parsing tests must use the same reference time as the [duckling](https://github.com/wafer-inc/duckling) corpus:
 
 ```ruby
 # In test/test_helper.rb (to be added):
@@ -32,7 +32,7 @@ The public API for the gem is not yet implemented, but the acceptance criteria i
 Duckling.parse(text, locale: "en") extracts time/date entities from English text
 ```
 
-Based on patterns from pyduckling (`parse(text, context, dims, with_latent)`) and the wafer-inc-duckling Rust API (`parse(text, locale, dims, context, options)`), the expected Ruby signature is one of:
+Based on patterns from pyduckling (`parse(text, context, dims, with_latent)`) and the [duckling](https://github.com/wafer-inc/duckling) Rust API (`parse(text, locale, dims, context, options)`), the expected Ruby signature is one of:
 
 ```ruby
 # Option A: keyword args, context embedded
@@ -49,7 +49,7 @@ The test design below uses **Option A** (keyword args). If the API lands differe
 
 ## 3. Return Value Shape
 
-The gem should return an array of entity hashes. Based on the wafer-inc-duckling `Entity` struct and pyduckling's return format:
+The gem should return an array of entity hashes. Based on the [duckling](https://github.com/wafer-inc/duckling) `Entity` struct and pyduckling's return format:
 
 ```ruby
 # For "today" with reference 2013-02-12 04:30 UTC-2:
@@ -466,7 +466,7 @@ Keeping all time tests in one file reduces require overhead while keeping the cl
 
 ## 7. Parity Strategy
 
-The acceptance criteria requires tests that "validate parity" with wafer-inc-duckling. The approach:
+The acceptance criteria requires tests that "validate parity" with [duckling](https://github.com/wafer-inc/duckling). The approach:
 
 1. **Port subset, not all**: The 100+ Rust integration tests are comprehensive. For Ruby 0.2.0, target ~30-40 representative cases: one or two per category, plus the edge cases that distinguish naive/instant behavior.
 

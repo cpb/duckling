@@ -2,7 +2,7 @@
 
 Source examined: [`duckling/tests/test_duckling.py`](https://github.com/cpb/pyduckling/blob/bbe06d2deb75d556cf324fe5e4edc04962e7192f/duckling/tests/test_duckling.py) (171 lines)
 
-pyduckling is a Python FFI wrapper around the **Haskell** duckling binary (`hs_init` / GHC runtime). It is NOT the same codebase as wafer-inc-duckling (which is a Rust port). Both aim to be compatible with the Haskell original, but they are independent implementations.
+pyduckling is a Python FFI wrapper around the **Haskell** duckling binary (`hs_init` / GHC runtime). It is NOT the same codebase as [duckling](https://github.com/wafer-inc/duckling) (which is a Rust port). Both aim to be compatible with the Haskell original, but they are independent implementations.
 
 ---
 
@@ -83,7 +83,7 @@ This fallback behavior ("unknown language → EN") should be replicated in the R
 tzdb = load_time_zones("/usr/share/zoneinfo")
 ```
 
-pyduckling needs to load the system TZ database because the Haskell GHC runtime requires it for timezone-aware reference time construction. wafer-inc-duckling does NOT require this: the Rust `Context` takes a `DateTime<FixedOffset>` directly — there is no TZ database lookup at parse time.
+pyduckling needs to load the system TZ database because the Haskell GHC runtime requires it for timezone-aware reference time construction. [duckling](https://github.com/wafer-inc/duckling) does NOT require this: the Rust `Context` takes a `DateTime<FixedOffset>` directly — there is no TZ database lookup at parse time.
 
 **Do not port**: `test_load_time_zones`, `test_get_current_ref_time`, `test_parse_ref_time`. These test pyduckling-specific infrastructure that has no equivalent in the Ruby/Rust gem.
 
@@ -140,7 +140,7 @@ class TestDucklingDimensions < Minitest::Test
 end
 ```
 
-Note: In wafer-inc-duckling's integration tests, the `Options::default()` does not filter dims — `DimensionKind` is a Rust enum and invalid strings are a type error at compile time. In the Ruby bridge, string-to-enum conversion will happen at runtime, and the behavior for unknown strings (raise vs. drop) must be decided by the bridge author. The pyduckling behavior is to silently drop.
+Note: In [duckling](https://github.com/wafer-inc/duckling)'s integration tests, the `Options::default()` does not filter dims — `DimensionKind` is a Rust enum and invalid strings are a type error at compile time. In the Ruby bridge, string-to-enum conversion will happen at runtime, and the behavior for unknown strings (raise vs. drop) must be decided by the bridge author. The pyduckling behavior is to silently drop.
 
 ### 3b. `with_latent=false` default behavior
 
@@ -207,7 +207,7 @@ end
 
 ## 4. Known Differences: Haskell Duckling vs. wafer-inc-duckling
 
-From reading wafer-inc-duckling README and `src/corpus/time_en.rs`:
+From reading [duckling](https://github.com/wafer-inc/duckling) README and `src/corpus/time_en.rs`:
 
 ### Acknowledgement from README
 
@@ -220,20 +220,20 @@ No explicit list of divergences is documented in the README.
 The comment at the top of `tests/time_corpus.rs` (line 3) reads:
 > `// All expected values from Haskell corpus at /tmp/duckling-haskell/Duckling/Time/EN/Corpus.hs`
 
-This confirms the wafer-inc-duckling test suite was authored by comparing against the Haskell corpus output. The intent is parity with Haskell.
+This confirms the [duckling](https://github.com/wafer-inc/duckling) test suite was authored by comparing against the Haskell corpus output. The intent is parity with Haskell.
 
 The comment at line 1 of `time_en.rs`:
 > `/// English time training corpus, ported from Duckling/Time/EN/Corpus.hs.`
 
 ### Practical implications for Ruby tests
 
-- For simple cases (today, tomorrow, at 3pm, in 2 hours), wafer-inc-duckling and pyduckling should return identical results.
-- The Ruby acceptance criteria (`pr_context.md`) explicitly says: "matching what wafer-inc-duckling produces" — so Ruby tests compare against the Rust output, not the Haskell/pyduckling output.
-- For edge cases (unusual timezone handling, very far-future dates, BC years), divergence is possible. The Ruby test suite should not include edge cases unless the exact expected value has been verified against the wafer-inc-duckling Rust binary.
+- For simple cases (today, tomorrow, at 3pm, in 2 hours), [duckling](https://github.com/wafer-inc/duckling) and pyduckling should return identical results.
+- The Ruby acceptance criteria (`pr_context.md`) explicitly says: "matching what [duckling](https://github.com/wafer-inc/duckling) produces" — so Ruby tests compare against the Rust output, not the Haskell/pyduckling output.
+- For edge cases (unusual timezone handling, very far-future dates, BC years), divergence is possible. The Ruby test suite should not include edge cases unless the exact expected value has been verified against the [duckling](https://github.com/wafer-inc/duckling) Rust binary.
 
 ### Specific known scope difference
 
-wafer-inc-duckling's English corpus covers holiday logic (`datetime_holiday`) with the same datetime check as regular dates. pyduckling does not have tests for holidays. This is a potential divergence area for future 0.3.0+ testing.
+[duckling](https://github.com/wafer-inc/duckling)'s English corpus covers holiday logic (`datetime_holiday`) with the same datetime check as regular dates. pyduckling does not have tests for holidays. This is a potential divergence area for future 0.3.0+ testing.
 
 ---
 

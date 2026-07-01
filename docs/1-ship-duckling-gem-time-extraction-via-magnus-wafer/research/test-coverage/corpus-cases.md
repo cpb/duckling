@@ -323,7 +323,7 @@ The English time corpus (`time_en.rs`) does not define explicit latent test case
 
 The `latent` field on `Entity` is `Option<bool>`. The test helper functions (`check_time_naive`, `check_time_instant`, etc.) do not assert on the latent flag.
 
-From wafer-inc-duckling's README: an explicit timezone (e.g. "3pm CET") promotes a naive time to an instant. Conversely, bare hour references without AM/PM disambiguation may produce latent entities (e.g. parsing "3" alone as a time without context). The `with_latent: true` option in `Options` enables these to appear in results.
+From [duckling](https://github.com/wafer-inc/duckling)'s README: an explicit timezone (e.g. "3pm CET") promotes a naive time to an instant. Conversely, bare hour references without AM/PM disambiguation may produce latent entities (e.g. parsing "3" alone as a time without context). The `with_latent: true` option in `Options` enables these to appear in results.
 
 The pyduckling API exposes this as the 4th argument to `parse()`:
 ```python
@@ -350,7 +350,7 @@ The corpus also covers holidays via `datetime_holiday` (which maps to `datetime`
 "mardi gras" / "pancake day 2013"         -> 2013-02-12 [day]
 ```
 
-These are lower priority for Ruby 0.2.0 since they depend on holiday calendar logic in wafer-inc-duckling and are not core to the time extraction API shape.
+These are lower priority for Ruby 0.2.0 since they depend on holiday calendar logic in [duckling](https://github.com/wafer-inc/duckling) and are not core to the time extraction API shape.
 
 ---
 
