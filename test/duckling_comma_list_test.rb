@@ -70,17 +70,29 @@ class DucklingCommaListReliableTest < Minitest::Test
 end
 
 class DucklingCommaListKnownLimitationTest < Minitest::Test
-  # See the file-level comment above for the root-cause trace. Each test here
-  # asserts the *correct* extraction (four distinct dates) and is expected to
-  # fail against current wafer-inc-duckling behavior. Skipped so they don't
-  # break CI, but left in the suite as a living regression check — if
-  # wafer-inc-duckling ever changes this behavior, delete the `skip` line and
-  # this test should start passing.
+  # See the file-level comment above for the root-cause trace. Each shape below
+  # is documented by a *pair* of tests:
+  #
+  #   - `test_current_actual_*` — passing, pins today's real (wrong) output.
+  #     If wafer-inc-duckling's grammar or ranking ever changes, this test
+  #     starts failing, which is the signal to revisit the paired skip below.
+  #   - `test_*` (skipped) — asserts the *correct* extraction (four distinct
+  #     dates) we actually want. Skipped so it doesn't break CI. Delete the
+  #     `skip` line once the current-actual test above starts failing, to
+  #     confirm the fix and re-enable the real assertion.
 
   def extracted_dates(text)
     Duckling.parse(text, locale: "en", reference_time: COMMA_LIST_REFERENCE_TIME)
       .select { |r| r[:dim] == :time }
       .map { |r| r[:value][:value] }
+  end
+
+  def test_current_actual_extraction_for_bare_comma_separated_dates
+    # The trailing "and may 5" isn't part of the comma chain, so it survives
+    # as its own entity; the three comma-joined dates before it collapse into
+    # one, keeping only the first (March 3).
+    text = "birthdays are march 3, march 9, april 12 and may 5"
+    assert_equal(["2013-03-03T00:00:00", "2013-05-05T00:00:00"], extracted_dates(text))
   end
 
   def test_bare_comma_separated_dates_collapse_into_one_entity
@@ -93,11 +105,17 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
     )
   end
 
+  def test_current_actual_extraction_when_only_the_first_date_is_named
+    # A name before the *first* date isn't enough — the rest of the run is
+    # still a bare comma-to-comma chain and collapses just the same, leaving
+    # only the first date (March 3) in the result.
+    text = "Birthdays: Emma March 3, March 9, April 12, May 5"
+    assert_equal(["2013-03-03T00:00:00"], extracted_dates(text))
+  end
+
   def test_naming_only_the_first_date_still_collapses_the_rest
     skip "known upstream limitation: bare comma-to-comma date runs collapse into one Entity (see file comment)"
 
-    # A name before the *first* date isn't enough — the rest of the run is
-    # still a bare comma-to-comma chain and collapses just the same.
     text = "Birthdays: Emma March 3, March 9, April 12, May 5"
     assert_equal(
       ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"],
@@ -105,13 +123,18 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
     )
   end
 
+  def test_current_actual_extraction_for_ambiguous_leading_date_format
+    # Beyond losing dates, the single :value that *does* survive isn't even
+    # reliably the leftmost one: the ambiguous "3/3" here causes the SECOND
+    # date (March 9) to win instead of the first, with nothing in the output
+    # signaling that happened.
+    text = "Birthdays: Emma 3/3, March 9, April 12, May 5"
+    assert_equal(["2013-03-09T00:00:00"], extracted_dates(text))
+  end
+
   def test_ambiguous_leading_date_format_is_not_reliably_the_resolved_value
     skip "known upstream limitation: the composed :value is not reliably the leftmost date (see file comment)"
 
-    # Beyond losing dates, the single :value that *does* survive isn't even
-    # reliably the leftmost one: an ambiguous "3/3" here causes the SECOND
-    # date (March 9) to win instead of the first, with nothing in the output
-    # signaling that happened.
     text = "Birthdays: Emma 3/3, March 9, April 12, May 5"
     assert_equal(
       ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"],
