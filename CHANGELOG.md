@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-01
+
+## What's Changed
+* Ship duckling gem: time extraction via Magnus + wafer-inc-duckling by @cpb in https://github.com/cpb/duckling/pull/2
+
+
+**Full Changelog**: https://github.com/cpb/duckling/compare/v0.1.2...v0.2.0
+
+
 ## [0.1.2] - 2026-07-01
 
 ## What's Changed
