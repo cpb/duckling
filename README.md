@@ -125,11 +125,13 @@ date in the collapsed run.
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Building
-the native Rust extension requires a Rust toolchain; run `rake compile` to
-build it before running `rake test`, or just run `rake` (or
-`bundle exec rake`) with no arguments to lint, compile, and test in order. You
-can also run `bin/console` for an interactive prompt that will allow you to
-experiment.
+the native Rust extension requires a Rust toolchain; on macOS with Homebrew
+installed, `bin/setup` installs it automatically via `brew bundle` and the
+project's `Brewfile` (no-op if Homebrew isn't present). Then run
+`rake compile` to build the extension before running `rake test`, or just run
+`rake` (or `bundle exec rake`) with no arguments to lint, compile, and test in
+order. You can also run `bin/console` for an interactive prompt that will
+allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version: bump `Duckling::VERSION` in `version.rb`, merge that change to `main`, then run `bundle exec rake release` (or push a matching `vX.Y.Z` tag directly) to create and push the git tag. Pushing the tag triggers a GitHub Actions pipeline that re-runs CI as a gate, verifies the tag matches `Duckling::VERSION`, builds and publishes the gem to [rubygems.org](https://rubygems.org), cuts a GitHub release, and opens a PR appending an entry to `CHANGELOG.md`.
 

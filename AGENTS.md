@@ -27,6 +27,7 @@ real implementation lands (see "Keeping this file current").
 | `lib/duckling/version.rb` | `Duckling::VERSION` constant — single source of truth for the gem version, read by `duckling.gemspec` and (once built) the release pipeline. |
 | `test/` | Minitest suite. `test_helper.rb` sets up the load path and requires `minitest/autorun`; test files currently follow `test_<name>.rb` / `class Test<Name> < Minitest::Test` naming. |
 | `bin/` | Two kinds of scripts living side by side — see "bin/ scripts" below. Don't confuse the dev-workflow scripts (`worktree`, `check-worktree`, `claude-code-web-setup`, `lint`) with the gem's own build/test entrypoints (`setup`, `console`, `test`). |
+| `Brewfile` | Homebrew deps for building the native extension locally on macOS (currently just `rust`, which bundles `cargo`/`rustc`/`rustfmt`/`clippy` together). `bin/setup` runs `brew bundle` against it when Homebrew is present. |
 | `duckling.gemspec` | Gem spec. Declares `spec.extensions = ["ext/duckling/extconf.rb"]` (the native-extension build entrypoint), depends on `rb_sys` and dev-depends on `rake-compiler` — see the gemspec's `add_dependency`/`add_development_dependency` lines for the current version constraints. Packaged files come from `git ls-files`, excluding `bin/`, `Gemfile`, `.gitignore`, `test/`, `.github/`, `.standard.yml`, `hk.pkl`. |
 | `Rakefile` | `task default: %i[standard compile test]` — runs StandardRB lint, compiles the Rust extension, then Minitest. |
 | `.standard.yml` | StandardRB config — see its `ruby_version:` field for the Ruby version StandardRB targets. StandardRB wraps RuboCop internally; there is no separate `.rubocop.yml`. |
@@ -37,7 +38,7 @@ real implementation lands (see "Keeping this file current").
 
 ## Build and test commands
 
-- **`bin/setup`** — `bundle install`. Run this first in a fresh checkout/worktree.
+- **`bin/setup`** — runs `brew bundle` (installing the Rust toolchain per `Brewfile`) when Homebrew is present, then `bundle install`. No-ops the Homebrew step gracefully on machines without `brew` (e.g. CI runners, which install Rust separately — see below). Run this first in a fresh checkout/worktree.
 - **`bin/console`** — loads the gem and drops you into IRB for interactive experimentation.
 - **`bin/test [file:line]`** — runs `bundle exec ruby -I test "$@"`. With no args this needs a target file (it's a thin wrapper, not a full suite runner); for the full suite use `rake test` or `bundle exec rake`.
 - **`bin/lint`** — the cpb-harness PostToolUse hook, invoked after every Edit/Write with `$CLAUDE_FILE_PATHS`. Runs `HK_PKL_BACKEND=pklr hk fix $CLAUDE_FILE_PATHS`, auto-correcting via `hk.pkl` (StandardRB for `.rb`, rustfmt for `.rs`). Requires `hk` on `PATH` (not installed via `bin/setup`/Gemfile — expected to be present on the dev machine, same as `cargo`/`rustc`).
