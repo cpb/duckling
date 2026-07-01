@@ -31,8 +31,14 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
       - name: Set up Rust
+        # Pinned to match the Rust version pre-installed in the Claude Code
+        # Web sandbox image, so CI tests the same toolchain an agent can run
+        # there without installing anything extra. When the sandbox image's
+        # Rust version changes, bump `toolchain:` below to match (check via
+        # `rustc --version` / `rustup show` in a fresh Claude Code Web session).
         uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable as of 2026-06-30
         with:
+          toolchain: '1.94.1'
           components: clippy, rustfmt
       - name: Check Rust formatting
         run: cargo fmt --manifest-path ext/duckling/Cargo.toml --check
