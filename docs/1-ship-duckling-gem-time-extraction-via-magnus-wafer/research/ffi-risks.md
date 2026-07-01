@@ -147,6 +147,49 @@ directly. This is non-trivial and bypasses Magnus's safety guarantees.
 At low concurrency (1–4 threads) and short inputs, 500µs is acceptable. At higher concurrency
 or when passing long prose strings, it degrades meaningful parallelism.
 
+#### Falcon (Fiber-based, not thread-based)
+
+The Puma analysis above assumes OS-thread concurrency: other threads keep running (just
+waiting on the GVL) while one thread holds it. **Falcon is a different concurrency model**
+— it's built on the `async` gem and multiplexes many Fibers onto a small number of OS
+threads (often just one per worker), cooperatively yielding at I/O boundaries rather than
+relying on the OS scheduler.
+
+A blocking, synchronous native-extension call that doesn't yield the GVL (which is what
+`Duckling.parse` is, absent an unsafe `rb_sys` GVL-release wrapper) does not yield the
+Fiber scheduler either. During that ~500µs–3ms window, **every other Fiber sharing that
+reactor thread is blocked**, not just contending for the GVL among several OS threads.
+This is a meaningfully different failure mode than the Puma case: Falcon's entire
+concurrency story depends on handlers yielding promptly, and a blocking call effectively
+"de-fiberizes" that stretch of wall-clock time for the whole reactor, not just one logical
+thread of execution.
+
+Practical implication: on Falcon, the "8 threads serialized" row above doesn't apply the
+same way — there's no serialization queue in the usual sense, just one reactor thread
+stalled for the call's duration, which delays *every* concurrent request on that worker,
+not up to N of them. For short inputs this is likely still negligible in absolute terms
+(~500µs), but for long prose (~3ms) it's a larger fraction of a Falcon worker's available
+scheduling slice than the equivalent Puma-thread contention, precisely because Falcon
+workers are typically provisioned assuming handlers don't block synchronously for
+multiple milliseconds at a time.
+
+#### Sidekiq (background job threads)
+
+Sidekiq's default worker model is thread-based, similar to Puma (a configurable pool,
+commonly 5–25 threads per process). The GVL-contention analysis above applies directly:
+one job thread holding the GVL for ~500µs–3ms delays other job threads in the same
+process by that amount, serialized.
+
+The practical impact differs from the Puma/web-request case because Sidekiq jobs are
+typically throughput-oriented rather than latency-sensitive — a few hundred microseconds
+to a few milliseconds of added serialization per job is unlikely to matter unless a
+worker process is running at very high job throughput (many thousands of jobs/sec) or
+processing latency-sensitive jobs (e.g. webhook delivery with a tight SLA) alongside
+`Duckling.parse` calls. At typical Sidekiq concurrency and job rates, this risk is
+**negligible** — closer to the "Single Puma thread" row than the "8 Puma threads" row,
+since most Sidekiq deployments are not saturating every worker thread with
+back-to-back `Duckling.parse` calls.
+
 ### Verdict
 
 **PLAUSIBLE but not a blocker for 0.2.0.** The risk is real at scale but there is no
