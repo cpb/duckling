@@ -11,13 +11,9 @@ NER/entity-extraction engine via [Magnus](https://github.com/matsadler/magnus)
 and `rb-sys`, so Ruby code can extract entities (times, numbers, money,
 emails, etc.) without running a separate HTTP service.
 
-**Current state: early bootstrap.** As of this writing the repo is close to
-the stock `bundle gem duckling` skeleton — the Ruby API surface
-(`lib/duckling.rb`), gemspec, and Rakefile exist, but the Rust extension
-itself has not been implemented yet (`ext/duckling/extconf.rb` is an empty
-placeholder) and the tag-triggered release pipeline has not been wired up.
-Both are tracked as separate GitHub issues (#1 for the Rust extension, #4 for
-the release pipeline) and may land as separate PRs. Sections below that
+**Current state:** the Ruby API surface (`lib/duckling.rb`), gemspec, and
+Rakefile exist, and the tag-triggered release pipeline (issue #4) has landed
+and is live — see "Gem release conventions" below. Sections below that
 describe not-yet-built pieces are marked **(planned)** — verify against the
 actual files before relying on exact contents, and update this file once the
 real implementation lands (see "Keeping this file current").
@@ -36,6 +32,8 @@ real implementation lands (see "Keeping this file current").
 | `.standard.yml` | StandardRB config (`ruby_version: 3.3`). StandardRB wraps RuboCop internally; there is no separate `.rubocop.yml`. |
 | `hk.pkl` | `hk` config (StandardRB + rustfmt + clippy via `hk`'s builtin steps) — single source of truth for local lint/format enforcement. `bin/lint` runs `hk fix` against it; not used by CI (CI runs the underlying tools directly, see below). |
 | `.github/workflows/main.yml` | CI: on Ruby 3.3.6, sets up Rust (`dtolnay/rust-toolchain@stable` with `clippy`/`rustfmt` components), runs `cargo fmt --check` and `cargo clippy -- -D warnings` against `ext/duckling/`, then `bundle exec rake`. Runs for every push to `main` and every PR. |
+| `.github/workflows/release.yml` | Tag-triggered release: builds and pushes the gem to RubyGems and cuts a GitHub release. See "Gem release conventions" below. |
+| `.github/scripts/apply-tag-ruleset.sh` | Idempotent `gh api` script that creates/updates the GitHub tag ruleset restricting `v*.*.*` tag creation/update to repo admins. Source of truth for that ruleset's config — re-run it to change the config rather than editing it by hand in the GitHub UI. |
 
 ## Build and test commands
 
@@ -78,6 +76,7 @@ real implementation lands (see "Keeping this file current").
   4. Appends a dated entry to `CHANGELOG.md` by committing to a `changelog/vX.Y.Z` branch, opening a PR (`gh pr create`), and auto-merging it (`gh pr merge --auto --squash`) — it does **not** push to `main` directly, since `main` requires PRs (see below).
   - **Release trigger going forward**: bump `Duckling::VERSION`, merge to `main`, then push a matching `vX.Y.Z` tag.
 - **Branch protection on `main`** (issue #11): direct pushes are blocked — all changes, including the release pipeline's CHANGELOG commit, land via PR. Merging requires the `Ruby 3.3.6` status check to pass; branch deletion and force-pushes are disabled. No required review count (single-maintainer repo), so PRs merge as soon as CI is green.
+- **Tag ruleset** (issue #12): a GitHub tag ruleset named "Protect release tags" restricts creation/update of `v*.*.*` tags to repo admins, so only authorized pushers can trigger the pipeline above. Configured via `.github/scripts/apply-tag-ruleset.sh` (`gh api repos/{owner}/{repo}/rulesets`) — re-run that script to change the ruleset rather than editing it by hand in the GitHub UI, so the config stays reviewable in version control. Signing tags is out of scope (deferred).
 
 ## `bin/` scripts (dev-workflow tooling, not part of the gem)
 
