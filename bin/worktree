@@ -1,0 +1,881 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "open3"
+require "fileutils"
+require "shellwords"
+require "json"
+require "set"
+
+BASE_PORT = 3001
+SERVER_LOG = "log/dev_server.log"
+SERVER_PID = "tmp/pids/dev_server.pid"
+
+def git_root
+  @git_root ||= `git rev-parse --show-toplevel`.strip
+end
+
+def main_worktree_path
+  @main_worktree_path ||= File.expand_path("..", `git rev-parse --git-common-dir`.strip)
+end
+
+def slugify(text)
+  text.downcase.strip.gsub(/[^a-z0-9]+/, "-").gsub(/^-+|-+$/, "")
+end
+
+def gh_json(command)
+  out, status = Open3.capture2("gh #{command}")
+  return nil unless status.success?
+  JSON.parse(out)
+rescue => e
+  warn "Error fetching GH info: #{e.message}"
+  nil
+end
+
+def check_tmux
+  abort "ERROR: not inside tmux — run this from inside a tmux session" unless ENV["TMUX"]
+end
+
+def tmux_window_target(wt_path, recorded_window)
+  # Look for window by name first (authoritative)
+  if recorded_window
+    out, _ = Open3.capture2("tmux list-windows -a -F '\#{session_name}:\#{window_index} \#{window_name}'")
+    target = out.lines.find { |l| l.split[1] == recorded_window }&.split&.first
+    return target if target
+  end
+
+  # Fallback to pane path (more strict)
+  wt_path = File.realdirpath(wt_path) rescue wt_path
+  out, _ = Open3.capture2("tmux list-panes -a -F '\#{session_name}:\#{window_index} \#{pane_current_path}'")
+
+  target = out.lines.find do |l|
+    parts = l.split
+    next false if parts.size < 2
+    pane_path = File.realdirpath(parts[1]) rescue parts[1]
+    pane_path == wt_path || pane_path.start_with?(File.join(wt_path, ""))
+  end&.split&.first
+
+  target
+end
+
+# Returns [{path:, branch:}, ...] for all worktrees
+def worktrees
+  out, = Open3.capture2("git worktree list --porcelain")
+  entries = []
+  current = {}
+  out.each_line do |line|
+    line.chomp!
+    if line.start_with?("worktree ")
+      current = { path: line.sub("worktree ", "") }
+    elsif line.start_with?("branch ")
+      current[:branch] = line.sub("branch refs/heads/", "")
+    elsif line.empty? && current[:path]
+      entries << current
+      current = {}
+    end
+  end
+  entries << current if current[:path]
+  entries
+end
+
+def find_worktree(name)
+  worktrees.find do |wt|
+    File.basename(wt[:path]) == name || wt[:branch] == name
+  end
+end
+
+def env_local_port(path)
+  env_file = File.join(path, ".env.local")
+  return nil unless File.exist?(env_file)
+  File.read(env_file).match(/^PORT=(\d+)/)&.captures&.first&.to_i
+end
+
+def load_session
+  return nil unless File.exist?(".worktree-session.json")
+  JSON.parse(File.read(".worktree-session.json"))
+rescue => e
+  warn "Error loading session: #{e.message}"
+  nil
+end
+
+def next_free_port
+  used = worktrees.filter_map { |wt| env_local_port(wt[:path]) }.to_set
+  port = BASE_PORT
+  port += 1 while used.include?(port)
+  port
+end
+
+def server_pid(wt_path)
+  pid_file = File.join(wt_path, SERVER_PID)
+  return nil unless File.exist?(pid_file)
+  pid_file_content = File.read(pid_file).strip
+  return nil if pid_file_content.empty?
+  pid_file_content.to_i
+end
+
+def server_running?(wt_path)
+  pid = server_pid(wt_path)
+  return false unless pid
+  Process.kill(0, pid)
+  true
+rescue Errno::ESRCH, Errno::EPERM
+  false
+end
+
+TEST_FIRST_HILL_PROTOCOL = <<~MD
+  ---
+
+  ## Test-first hill required
+
+  This issue carries the `test-first` label. **You must not write any
+  implementation code until the hill draft PR has been reviewed.**
+
+  Your plan must contain **exactly one step**: invoke `/hill-first` with the
+  layers described in the acceptance criteria above. **Do not include
+  implementation steps, architecture steps, or any other steps in your plan.**
+  The plan ends at `/hill-first` — full stop.
+
+  After `/hill-first` completes, a draft PR will be open with failing tests.
+  Implementation planning happens in a separate session after the operator
+  reviews and removes the `hill-ready` label (via `/continue-pr`).
+
+  **If your plan includes implementation steps, delete them. The plan is wrong.**
+MD
+
+CLOSING_PROTOCOL_NEW_PR = <<~MD
+  ---
+
+  ## Closing protocol
+
+  Once all acceptance criteria above are met and the test suite passes:
+
+  1. **Make atomic commits as you go** — commit logical units of work as you complete them rather than one monolithic commit at the end. Each commit should be self-contained and aid review.
+  2. **Open the PR automatically** — when work is complete, push the branch and open a non-draft PR without waiting for a human prompt:
+     ```sh
+     git push -u origin HEAD
+     gh pr create --title "<descriptive title>" --body "<summary of changes>"
+     ```
+     Do not stop and ask permission — completing the work means opening the PR.
+MD
+
+CLOSING_PROTOCOL_EXISTING_PR = <<~MD
+  ---
+
+  ## Closing protocol
+
+  Once all acceptance criteria above are met and the test suite passes:
+
+  1. **Make atomic commits as you go** — commit logical units of work as you complete them rather than one monolithic commit at the end. Each commit should be self-contained and aid review.
+  2. **Push automatically when done** — once complete, push the branch without waiting for a human prompt:
+     ```sh
+     git push
+     ```
+     The PR is already open — do not stop and ask permission.
+MD
+
+def build_pr_context(type, info, test_first: false)
+  number = info["number"]
+  title  = info["title"]
+  url    = info["url"]
+  body   = (info["body"] || "").strip
+  labels = (info["labels"] || []).map { |l| l["name"] }
+
+  kind = type == "issue" ? "Issue" : "PR"
+  label_str = labels.empty? ? "(none)" : labels.join(", ")
+
+  context = <<~MD
+    # #{kind} ##{number} — #{title}
+
+    **URL:** #{url}
+    **Labels:** #{label_str}
+
+    #{body}
+  MD
+
+  if type == "issue" && test_first
+    context += "\n#{TEST_FIRST_HILL_PROTOCOL}"
+  elsif type == "issue"
+    context += "\n#{CLOSING_PROTOCOL_NEW_PR}"
+  elsif type == "pr"
+    context += "\n#{CLOSING_PROTOCOL_EXISTING_PR}"
+  end
+
+  context
+end
+
+# ── subcommands ────────────────────────────────────────────────────────────────
+
+def cmd_prepare(args)
+  check_tmux
+  id = args.shift
+  abort "Usage: bin/worktree prepare <id> [--pr|--issue] [--test-first]" unless id
+
+  is_pr = args.delete("--pr")
+  is_issue = args.delete("--issue")
+  test_first_arg = args.delete("--test-first")
+
+  type = is_pr ? "pr" : (is_issue ? "issue" : nil)
+
+  info = nil
+  if type == "pr" || type.nil?
+    info = gh_json("pr view #{id} --json number,title,body,url,labels,state,headRefName")
+    type = "pr" if info
+  end
+
+  if info.nil? && (type == "issue" || type.nil?)
+    info = gh_json("issue view #{id} --json number,title,body,url,labels,state")
+    type = "issue" if info
+  end
+
+  abort "Could not find Issue/PR #{id}" unless info
+
+  number = info["number"]
+  title = info["title"]
+  slug = slugify(title)
+
+  labels = info["labels"] || []
+  hill_ready = labels.any? { |l| l["name"] == "hill-ready" }
+  test_first_label = labels.any? { |l| l["name"] == "test-first" }
+
+  test_first = test_first_arg || test_first_label
+
+  branch = type == "pr" ? info["headRefName"] : "issue-#{number}/#{slug[0..49]}"
+  prefix = type == "pr" ? "x" : "o"
+
+  rc_slug = slug[0..29]
+  remote_control = "#{prefix}-#{number}-#{rc_slug}"
+  tmux_window = "#{type}-#{number}"
+
+  # Ensure worktree exists
+  wt = find_worktree(branch)
+  if wt
+    wt_path = wt[:path]
+  else
+    safe_branch = branch.gsub("/", "_")
+    app_name = File.basename(git_root).gsub(/[^a-z0-9_-]/i, "_")
+    wt_path = File.expand_path("../../#{app_name}_#{safe_branch}", main_worktree_path)
+    cmd_add([branch, wt_path])
+  end
+
+  # Resolve/Create tmux window
+  target = tmux_window_target(wt_path, tmux_window)
+  unless target
+    system("tmux new-window -n #{tmux_window.shellescape} -c #{wt_path.shellescape}")
+    target = tmux_window
+  end
+
+  session = {
+    remote_control: remote_control,
+    tmux_window: tmux_window,
+    tmux_target: target,
+    worktree_path: wt_path,
+    type: type,
+    number: number,
+    title: title,
+    headRefName: branch,
+    url: info["url"],
+    test_first: test_first,
+    hill_ready: hill_ready
+  }
+  File.write(File.join(wt_path, ".worktree-session.json"), JSON.pretty_generate(session))
+  File.write(File.join(wt_path, "pr_context.md"), build_pr_context(type, info, test_first: test_first))
+
+  puts JSON.pretty_generate(session.merge(info: info))
+end
+
+def cmd_harness(args)
+  check_tmux
+
+  prompt_file_arg = nil
+  if (idx = args.index("--prompt-file"))
+    args.delete_at(idx)
+    prompt_file_arg = args.delete_at(idx)
+  end
+
+  window_name_override = nil
+  if (idx = args.index("--window"))
+    args.delete_at(idx)
+    window_name_override = args.delete_at(idx)
+  end
+
+  use_gemini = args.delete("--gemini")
+  fresh_window = args.delete("--fresh")
+
+  id = args.shift
+
+  if id
+    wts = worktrees
+    wt = wts.find { |w| w[:branch] && (w[:branch] =~ /^(?:refs\/heads\/)?(?:issue|pr)-#{Regexp.escape(id)}(?:\/|$)/ || w[:branch] == id) }
+    unless wt
+      wt = wts.find do |w|
+        sf = File.join(w[:path], ".worktree-session.json")
+        next false unless File.exist?(sf)
+        JSON.parse(File.read(sf))["number"].to_s == id.to_s
+      rescue JSON::ParserError
+        false
+      end
+    end
+    abort "Could not find worktree or session file for '#{id}'" unless wt
+    session_file = File.join(wt[:path], ".worktree-session.json")
+    abort "Could not find .worktree-session.json for '#{id}'" unless File.exist?(session_file)
+    session = JSON.parse(File.read(session_file))
+  else
+    session = load_session
+    id = session["number"] if session
+  end
+
+  abort "Usage: bin/worktree harness [id] [--prompt-file <path>] [--window <name>] [--fresh] [--gemini]" unless session
+
+  wt_path        = session["worktree_path"]
+  tmux_target    = session["tmux_target"] || session["tmux_window"]
+  remote_control = session["remote_control"]
+  type           = session["type"]
+  prompt_file    = prompt_file_arg || File.join(wt_path, "pr_context.md")
+  window_name    = window_name_override || tmux_target
+
+  # --fresh: kill any existing window with this name before creating a new one
+  if fresh_window
+    out, _ = Open3.capture2("tmux list-windows -a -F '\#{session_name}:\#{window_index} \#{window_name}'")
+    out.lines.each do |l|
+      parts = l.split
+      next unless parts.size >= 2 && parts[1] == window_name
+      system("tmux kill-window -t #{parts[0].shellescape}")
+    end
+    sleep 0.2
+    target = nil
+  else
+    actual_target = tmux_window_target(wt_path, session["tmux_window"])
+    target = actual_target || tmux_target
+  end
+
+  unless target && system("tmux has-session -t #{target.shellescape} 2>/dev/null")
+    puts "→ Creating new tmux window '#{window_name}'..."
+    system("tmux new-window -n #{window_name.shellescape} -c #{wt_path.shellescape}")
+    target = window_name
+  end
+
+  # Write launcher script — avoids shell-quoting layers when passing prompt through tmux send-keys
+  launcher = "/tmp/harness-#{remote_control}.sh"
+  if use_gemini
+    cmd_str = "exec gemini --skip-trust"
+    cmd_str += " --approval-mode plan" if type == "issue"
+    cmd_str += " --prompt-interactive \"$(< #{Shellwords.escape(prompt_file)})\""
+  else
+    cmd_str = "exec claude --remote-control #{Shellwords.escape(remote_control)}"
+    cmd_str += " --permission-mode plan" if type == "issue"
+    cmd_str += " \"$(< #{Shellwords.escape(prompt_file)})\""
+  end
+  File.write(launcher, "#!/usr/bin/env bash\n#{cmd_str}\n")
+  FileUtils.chmod(0755, launcher)
+
+  puts "→ Launching in tmux window '#{target}' via #{launcher}"
+  system("tmux send-keys -t #{target.shellescape} #{"bash #{launcher}".shellescape} Enter")
+end
+
+def cmd_check_hill(args)
+  check_tmux
+  number = args.shift
+  if !number && (session = load_session)
+    number = session["number"]
+  end
+  abort "Usage: bin/worktree check-hill [number]" unless number
+
+  puts "→ Waiting for CI checks on PR ##{number}..."
+  system("gh pr checks #{number} --watch")
+
+  checks, _ = Open3.capture2("gh pr checks #{number}")
+  info = gh_json("pr view #{number} --json body")
+
+  puts "\n--- CI Check Summary ---"
+  puts checks
+  puts "\n--- PR Description (Expected Failures) ---"
+  puts info["body"] if info
+end
+
+def cmd_cleanup(args)
+  check_tmux
+  id = args.shift
+  session = nil
+  if File.exist?(".worktree-session.json")
+    session = JSON.parse(File.read(".worktree-session.json"))
+    id ||= session["number"]
+  end
+
+  abort "Usage: bin/worktree cleanup <id>" unless id
+
+  is_pr = session ? (session["type"] == "pr") : true
+  if is_pr
+    puts "→ Waiting for CI checks on PR ##{id}..."
+    system("gh pr checks #{id} --watch")
+    out, status = Open3.capture2("gh pr checks #{id}")
+    unless status.success?
+      puts out
+      abort "CI failed on PR ##{id}. Fix failures before cleaning up."
+    end
+  end
+
+  unless session
+    info = gh_json("pr view #{id} --json number,title,headRefName") || gh_json("issue view #{id} --json number,title")
+    abort "Could not find PR/Issue ##{id}" unless info
+    session = { "number" => info["number"], "headRefName" => info["headRefName"], "type" => info["headRefName"] ? "pr" : "issue" }
+  end
+
+  number = session["number"]
+  branch = session["headRefName"]
+  wt_path = session["worktree_path"] || (branch && find_worktree(branch)&.fetch(:path))
+
+  if session["type"] == "pr"
+    puts "→ Merging PR ##{number}..."
+    system("gh pr merge #{number} --squash") || abort("Merge failed")
+
+    if branch
+      puts "→ Deleting remote branch #{branch}..."
+      system("git push origin --delete #{branch}") rescue nil
+    end
+
+    main_wt = `git rev-parse --git-common-dir`.strip
+    main_wt = File.expand_path("..", main_wt)
+    puts "→ Updating main in #{main_wt}..."
+    system("git -C #{main_wt.shellescape} fetch origin main && git -C #{main_wt.shellescape} merge --ff-only origin/main")
+  end
+
+  if wt_path
+    target = tmux_window_target(wt_path, session["tmux_window"])
+    if target
+      current_target = `tmux display-message -p "\#{session_name}:\#{window_index}"`.strip rescue ""
+      if target == current_target
+        puts "→ Scheduling self-destruct of this window..."
+        system("(sleep 3 && tmux kill-window -t #{target.shellescape}) &")
+      else
+        puts "→ Closing tmux window #{target}..."
+        system("tmux kill-window -t #{target.shellescape}")
+      end
+    end
+
+    cmd_down([branch || File.basename(wt_path)])
+  end
+
+  puts "Done."
+end
+
+def cmd_add(args)
+  parent_branch = nil
+  if (idx = args.index("--parent"))
+    args.delete_at(idx)
+    parent_branch = args.delete_at(idx)
+  end
+
+  branch = args.shift
+  abort "Usage: bin/worktree add [--parent <branch>] <branch> [path]" unless branch
+
+  app_name = File.basename(git_root).gsub(/[^a-z0-9_-]/i, "_")
+  wt_path = args.shift || File.expand_path("../../#{app_name}_#{branch}", main_worktree_path)
+  wt_path = File.expand_path(wt_path)
+
+  port = next_free_port
+
+  existing_branches, = Open3.capture2("git branch --list #{branch}")
+  remote_branches, = Open3.capture2("git branch -r --list origin/#{branch}")
+
+  git_cmd = if existing_branches.strip.empty? && remote_branches.strip.empty?
+    ["git", "worktree", "add", wt_path, "-b", branch]
+  elsif !existing_branches.strip.empty?
+    ["git", "worktree", "add", wt_path, branch]
+  else
+    ["git", "worktree", "add", "--track", "-b", branch, wt_path, "origin/#{branch}"]
+  end
+
+  puts "→ #{git_cmd.join(" ")}"
+  system(*git_cmd) || abort("git worktree add failed")
+
+  env_local = File.join(wt_path, ".env.local")
+  File.write(env_local, "PORT=#{port}\n")
+  puts "→ Wrote #{env_local} (PORT=#{port})"
+
+  puts "→ Running bin/setup --skip-server in #{wt_path}"
+  system("cd #{wt_path.shellescape} && bin/setup --skip-server") ||
+    warn("  Warning: bin/setup exited non-zero")
+
+  if parent_branch
+    parent_wt = find_worktree(parent_branch) || abort("Parent worktree '#{parent_branch}' not found")
+    children_file = File.join(parent_wt[:path], ".worktree-children")
+    children = File.exist?(children_file) ? JSON.parse(File.read(children_file)) : []
+    children << branch unless children.include?(branch)
+    File.write(children_file, JSON.generate(children))
+    puts "→ Registered as child of '#{parent_branch}'"
+  end
+
+  puts
+  puts "Worktree ready:"
+  puts "  Path:   #{wt_path}"
+  puts "  Port:   #{port}"
+  puts "  Server: bin/worktree server #{branch}"
+  puts "  Shell:  eval \"$(bin/worktree cd #{branch})\""
+end
+
+def cmd_down_children(args)
+  parent = args.shift
+  abort "Usage: bin/worktree down-children <parent>" unless parent
+  parent_wt = find_worktree(parent) || abort("No worktree found for '#{parent}'")
+  children_file = File.join(parent_wt[:path], ".worktree-children")
+  unless File.exist?(children_file)
+    puts "No children recorded for '#{parent}'."
+    return
+  end
+  children = JSON.parse(File.read(children_file))
+  children.each do |child_branch|
+    if find_worktree(child_branch)
+      puts "→ Tearing down child worktree: #{child_branch}"
+      cmd_down([child_branch])
+    else
+      puts "→ Skipping '#{child_branch}' (already removed)"
+    end
+  end
+  File.delete(children_file)
+  puts "All children of '#{parent}' removed."
+end
+
+def cmd_cd(args)
+  name = args.shift
+  if !name && (session = load_session)
+    name = File.basename(session["worktree_path"])
+  end
+  abort "Usage: bin/worktree cd [name]" unless name
+  wt = find_worktree(name) || abort("No worktree found for '#{name}'")
+  puts "cd #{wt[:path]}"
+end
+
+def cmd_server(args)
+  name = args.shift
+  if !name && (session = load_session)
+    name = File.basename(session["worktree_path"])
+  end
+  abort "Usage: bin/worktree server [name]" unless name
+  wt = find_worktree(name) || abort("No worktree found for '#{name}'")
+  wt_path = wt[:path]
+
+  if server_running?(wt_path)
+    port = env_local_port(wt_path) || "unknown"
+    abort "Server already running for '#{name}' on port #{port} (PID #{server_pid(wt_path)})"
+  end
+
+  FileUtils.mkdir_p(File.join(wt_path, "log"))
+  FileUtils.mkdir_p(File.join(wt_path, "tmp/pids"))
+
+  log_path = File.join(wt_path, SERVER_LOG)
+  pid_file = File.join(wt_path, SERVER_PID)
+  port = env_local_port(wt_path) || 3000
+
+  pid = spawn(
+    {"PORT" => port.to_s},
+    "bin/dev",
+    chdir: wt_path,
+    out: [log_path, "a"],
+    err: [log_path, "a"],
+    pgroup: true
+  )
+  Process.detach(pid)
+  File.write(pid_file, pid.to_s)
+
+  puts "Started server for '#{name}' (PID #{pid})"
+  puts "  Port: #{port}"
+  puts "  Log:  #{log_path}"
+  puts "  Logs: bin/worktree logs #{name}"
+end
+
+def cmd_logs(args)
+  name = args.shift
+  if !name && (session = load_session)
+    name = File.basename(session["worktree_path"])
+  end
+  abort "Usage: bin/worktree logs [name]" unless name
+  wt = find_worktree(name) || abort("No worktree found for '#{name}'")
+  log_path = File.join(wt[:path], SERVER_LOG)
+  abort "No log file at #{log_path}" unless File.exist?(log_path)
+  exec "tail", "-f", log_path
+end
+
+def cmd_stop(args)
+  name = args.shift
+  if !name && (session = load_session)
+    name = File.basename(session["worktree_path"])
+  end
+  abort "Usage: bin/worktree stop [name]" unless name
+  wt = find_worktree(name) || abort("No worktree found for '#{name}'")
+  wt_path = wt[:path]
+
+  pid = server_pid(wt_path)
+  if pid && server_running?(wt_path)
+    puts "→ Stopping server (PID #{pid})"
+    Process.kill("TERM", -Process.getpgid(pid))
+    sleep 1
+  else
+    puts "No running server found for '#{name}'"
+  end
+
+  pid_file = File.join(wt_path, SERVER_PID)
+  File.delete(pid_file) if File.exist?(pid_file)
+  puts "Done."
+end
+
+def cmd_down(args)
+  name = args.shift
+  if !name && (session = load_session)
+    name = File.basename(session["worktree_path"])
+  end
+  abort "Usage: bin/worktree down [name]" unless name
+  wt = find_worktree(name) || abort("No worktree found for '#{name}'")
+  wt_path = wt[:path]
+
+  if (pid = server_pid(wt_path)) && server_running?(wt_path)
+    puts "→ Stopping server (PID #{pid})"
+    Process.kill("TERM", -Process.getpgid(pid))
+    sleep 1
+  end
+  pid_file = File.join(wt_path, SERVER_PID)
+  File.delete(pid_file) if File.exist?(pid_file)
+
+  puts "→ git worktree remove #{wt_path}"
+  out, err, status = Open3.capture3("git -C #{git_root.shellescape} worktree remove --force #{wt_path.shellescape}")
+  unless status.success?
+    warn out
+    warn err
+    abort "git worktree remove failed"
+  end
+
+  system("git -C #{git_root.shellescape} worktree prune")
+  puts "Worktree '#{name}' removed."
+end
+
+def cmd_handoff(args)
+  id = args.shift
+
+  unless id
+    session_file = ".worktree-session.json"
+    if File.exist?(session_file)
+      id = JSON.parse(File.read(session_file))["number"].to_s
+    else
+      id = `gh pr view --json number --jq '.number' 2>/dev/null`.strip
+      id = nil if id.empty?
+    end
+  end
+  id = id.to_s if id
+
+  info = nil
+  if id && !id.empty?
+    info = gh_json("pr view #{id} --json number,title,url,body")
+  end
+
+  branch = `git branch --show-current`.strip
+  base = `git merge-base origin/main HEAD 2>/dev/null || git merge-base main HEAD`.strip
+
+  commits = []
+  unless base.empty?
+    out, _ = Open3.capture2("git log #{base}..HEAD --reverse --oneline")
+    out.each_line { |line| commits << line.strip }
+  end
+
+  files = []
+  unless base.empty?
+    out, _ = Open3.capture2("git diff #{base}..HEAD --name-only")
+    files = out.lines.map(&:strip).uniq
+  end
+
+  session = File.exist?(".worktree-session.json") ? JSON.parse(File.read(".worktree-session.json")) : nil
+
+  result = {
+    pr: info,
+    branch: branch,
+    commits: commits,
+    changed_files: files,
+    session: session
+  }
+
+  puts JSON.pretty_generate(result)
+end
+
+def cmd_list(_args)
+  wts = worktrees
+  puts "%-30s %-20s %-6s %s" % ["BRANCH", "PATH", "PORT", "SERVER"]
+  wts.each do |wt|
+    branch = wt[:branch] || "(detached)"
+    path = wt[:path]
+    port = env_local_port(path)&.to_s || "-"
+    status = server_running?(path) ? "running (PID #{server_pid(path)})" : "-"
+    puts "%-30s %-20s %-6s %s" % [branch, File.basename(path), port, status]
+  end
+end
+
+# ── heal-ci subcommands ────────────────────────────────────────────────────────
+
+HEAL_STATE_FILE = "/tmp/heal-ci-state.json"
+HEAL_MAX_ATTEMPTS = 5
+
+def heal_state
+  return {} unless File.exist?(HEAL_STATE_FILE)
+  JSON.parse(File.read(HEAL_STATE_FILE))
+rescue JSON::ParserError
+  {}
+end
+
+def heal_write_state(state)
+  File.write(HEAL_STATE_FILE, JSON.pretty_generate(state))
+end
+
+# Poll CI until settled. Writes state.json with failing job info.
+# Exits 0 = all green, 1 = failures found, 2 = attempt limit reached.
+def cmd_heal_poll(args)
+  pr = args.shift
+  abort "Usage: bin/worktree heal-poll <pr>" unless pr
+
+  state = heal_state
+  if (state["attempt"] || 0) >= HEAL_MAX_ATTEMPTS
+    warn "heal-poll: attempt limit (#{HEAL_MAX_ATTEMPTS}) reached"
+    exit 2
+  end
+
+  puts "→ Waiting for CI on PR ##{pr}..."
+  system("gh pr checks #{pr.shellescape} --watch --interval 10")
+
+  raw, = Open3.capture2("gh pr checks #{pr.shellescape} --json name,state,detailsUrl 2>/dev/null")
+  checks = raw.empty? ? [] : JSON.parse(raw)
+  failures = checks.select { |c| c["state"] == "FAILURE" }
+
+  if failures.empty?
+    tabular, = Open3.capture2("gh pr checks #{pr.shellescape}")
+    if tabular.match?(/\bfail\b/i)
+      puts "→ Detected failures via tabular output (gh --json unsupported or empty)"
+      failures = tabular.lines.select { |l| l.match?(/\bfail\b/i) }.map { |l| { "name" => l.split.first, "detailsUrl" => nil } }
+    end
+  end
+
+  if failures.empty?
+    puts "✓ CI green for PR ##{pr}"
+    heal_write_state(state.merge("pr" => pr, "status" => "green"))
+    exit 0
+  end
+
+  puts "✗ #{failures.size} failing job(s): #{failures.map { |f| f["name"] }.join(", ")}"
+  heal_write_state(state.merge("pr" => pr, "status" => "failing", "failures" => failures))
+  exit 1
+rescue JSON::ParserError => e
+  warn "heal-poll: could not parse gh output — #{e.message}"
+  exit 1
+end
+
+# Run the failing test via bin/test, write result to state.json.
+# Exits 0 = test passes, 1 = test still failing.
+def cmd_heal_reproduce(args)
+  pr = args.shift
+  test_ref = args.shift  # "path/to/test.rb:42"
+  abort "Usage: bin/worktree heal-reproduce <pr> <file:line>" unless pr && test_ref
+
+  state = heal_state
+
+  info = gh_json("pr view #{pr.shellescape} --json headRefName") || {}
+  branch = info["headRefName"]
+  wt = branch && find_worktree(branch)
+  wt_path = wt&.fetch(:path) || Dir.pwd
+
+  attempt = state["attempt"] || 0
+  log_file = "/tmp/heal-ci-attempt-#{attempt}.log"
+  cmd = "bin/test #{test_ref.shellescape}"
+
+  puts "→ [attempt #{attempt}] #{cmd}"
+  output, status = Open3.capture2e("cd #{wt_path.shellescape} && #{cmd}")
+  File.write(log_file, output)
+  puts output
+
+  passed = status.success?
+  heal_write_state(state.merge(
+    "wt_path"     => wt_path,
+    "test_ref"    => test_ref,
+    "last_log"    => log_file,
+    "last_passed" => passed
+  ))
+
+  exit passed ? 0 : 1
+end
+
+# Stage a specific file, commit, push. Increments attempt counter.
+# Exits 0 = committed+pushed, 5 = limit reached (do not push).
+def cmd_heal_commit(args)
+  pr      = args.shift
+  file    = args.shift
+  message = args.shift
+  abort "Usage: bin/worktree heal-commit <pr> <file> <message>" unless pr && file && message
+
+  state = heal_state
+  attempt = (state["attempt"] || 0) + 1
+
+  if attempt > HEAL_MAX_ATTEMPTS
+    warn "heal-commit: attempt limit (#{HEAL_MAX_ATTEMPTS}) reached — escalate"
+    heal_write_state(state.merge("attempt" => attempt, "status" => "limit_reached"))
+    exit 5
+  end
+
+  wt_path = state["wt_path"] || Dir.pwd
+  info    = gh_json("pr view #{pr.shellescape} --json headRefName") || {}
+  branch  = info["headRefName"]
+
+  Dir.chdir(wt_path) do
+    system("git add #{file.shellescape}") || abort("git add failed")
+    system("git commit -m #{message.shellescape}") || abort("git commit failed")
+    system("git push origin HEAD:#{branch.shellescape}") || abort("git push failed")
+  end
+
+  heal_write_state(state.merge("attempt" => attempt, "status" => "pushed"))
+  puts "→ Committed and pushed [attempt #{attempt}/#{HEAL_MAX_ATTEMPTS}]"
+  exit 0
+end
+
+# ── dispatch ───────────────────────────────────────────────────────────────────
+
+USAGE = <<~USAGE
+  Usage: bin/worktree <subcommand> [args]
+
+  Subcommands:
+    prepare <id> [--pr|--issue] [--test-first]
+                              Fetch GH info, create worktree, output JSON
+    harness [id] [--prompt-file <path>] [--window <name>] [--fresh] [--gemini]
+                              Find/create tmux window and launch Claude (or Gemini) via launcher script
+    check-hill [number]       Wait for CI and report status for hill PRs
+    cleanup <id>              Wait for CI, merge PR, and tear down worktree/window
+    add [--parent <p>] <branch> [path]
+                              Create isolated worktree with .env.local + setup;
+                              --parent records this worktree as a child of <p>
+    down-children <parent>    Tear down all child worktrees recorded under <parent>
+    cd [name]                 Print cd command (eval "$(bin/worktree cd [name])")
+    server [name]             Start dev server in background
+    logs [name]               Tail dev server log
+    stop [name]               Stop dev server (keeps worktree intact)
+    down [name]               Stop server and remove worktree
+    handoff [id]              Gather PR and git context for session handoff
+    list                      Show all worktrees with port and server status
+    heal-poll <pr>            Poll CI; exit 0=green 1=failing 2=limit; write /tmp/heal-ci-state.json
+    heal-reproduce <pr> <f:l> Run bin/test <f:l>; exit 0=pass 1=fail; update state.json
+    heal-commit <pr> <f> <m>  Stage file, commit, push; increment attempt counter; exit 5 at limit
+USAGE
+
+subcommand = ARGV.shift
+case subcommand
+when "prepare"    then cmd_prepare(ARGV)
+when "harness"    then cmd_harness(ARGV)
+when "check-hill" then cmd_check_hill(ARGV)
+when "cleanup"    then cmd_cleanup(ARGV)
+when "add"        then cmd_add(ARGV)
+when "cd"         then cmd_cd(ARGV)
+when "server"     then cmd_server(ARGV)
+when "logs"       then cmd_logs(ARGV)
+when "stop"       then cmd_stop(ARGV)
+when "down"           then cmd_down(ARGV)
+when "down-children"  then cmd_down_children(ARGV)
+when "handoff"        then cmd_handoff(ARGV)
+when "list"           then cmd_list(ARGV)
+when "heal-poll"      then cmd_heal_poll(ARGV)
+when "heal-reproduce" then cmd_heal_reproduce(ARGV)
+when "heal-commit"    then cmd_heal_commit(ARGV)
+else
+  puts USAGE
+  exit subcommand.nil? ? 0 : 1
+end
