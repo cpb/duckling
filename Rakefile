@@ -8,6 +8,10 @@ Rake::ExtensionTask.new("duckling") do |ext|
   ext.lib_dir = "lib/duckling"
 end
 
+task :dev do
+  ENV["RB_SYS_CARGO_PROFILE"] = "dev"
+end
+
 Minitest::TestTask.create
 
 require "standard/rake"

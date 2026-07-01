@@ -131,6 +131,10 @@ build it before running `rake test`, or just run `rake` (or
 can also run `bin/console` for an interactive prompt that will allow you to
 experiment.
 
+For a faster edit-compile-test loop, run `bundle exec rake dev compile test`
+to build the extension in Cargo's dev profile instead of release — slower at
+runtime, but much faster to compile while iterating.
+
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version: bump `Duckling::VERSION` in `version.rb`, merge that change to `main`, then run `bundle exec rake release` (or push a matching `vX.Y.Z` tag directly) to create and push the git tag. Pushing the tag triggers a GitHub Actions pipeline that re-runs CI as a gate, verifies the tag matches `Duckling::VERSION`, builds and publishes the gem to [rubygems.org](https://rubygems.org), cuts a GitHub release, and opens a PR appending an entry to `CHANGELOG.md`.
 
 ## Contributing
