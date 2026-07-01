@@ -32,5 +32,11 @@ jobs:
           bundler-cache: true
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path ext/duckling/Cargo.toml --check
+      - name: Run clippy
+        run: cargo clippy --manifest-path ext/duckling/Cargo.toml -- -D warnings
       - name: Run the default task
         run: bundle exec rake
