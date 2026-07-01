@@ -27,11 +27,11 @@ real implementation lands (see "Keeping this file current").
 | `lib/duckling/version.rb` | `Duckling::VERSION` constant — single source of truth for the gem version, read by `duckling.gemspec` and (once built) the release pipeline. |
 | `test/` | Minitest suite. `test_helper.rb` sets up the load path and requires `minitest/autorun`; test files currently follow `test_<name>.rb` / `class Test<Name> < Minitest::Test` naming. |
 | `bin/` | Two kinds of scripts living side by side — see "bin/ scripts" below. Don't confuse the dev-workflow scripts (`worktree`, `check-worktree`, `claude-code-web-setup`, `lint`) with the gem's own build/test entrypoints (`setup`, `console`, `test`). |
-| `duckling.gemspec` | Gem spec. Declares `spec.extensions = ["ext/duckling/extconf.rb"]` (the native-extension build entrypoint), depends on `rb_sys ~> 0.9.39`, dev-depends on `rake-compiler ~> 1.2.0`. Packaged files come from `git ls-files`, excluding `bin/`, `Gemfile`, `.gitignore`, `test/`, `.github/`, `.standard.yml`, `hk.pkl`. |
+| `duckling.gemspec` | Gem spec. Declares `spec.extensions = ["ext/duckling/extconf.rb"]` (the native-extension build entrypoint), depends on `rb_sys` and dev-depends on `rake-compiler` — see the gemspec's `add_dependency`/`add_development_dependency` lines for the current version constraints. Packaged files come from `git ls-files`, excluding `bin/`, `Gemfile`, `.gitignore`, `test/`, `.github/`, `.standard.yml`, `hk.pkl`. |
 | `Rakefile` | `task default: %i[standard compile test]` — runs StandardRB lint, compiles the Rust extension, then Minitest. |
-| `.standard.yml` | StandardRB config (`ruby_version: 3.3`). StandardRB wraps RuboCop internally; there is no separate `.rubocop.yml`. |
+| `.standard.yml` | StandardRB config — see its `ruby_version:` field for the Ruby version StandardRB targets. StandardRB wraps RuboCop internally; there is no separate `.rubocop.yml`. |
 | `hk.pkl` | `hk` config (StandardRB + rustfmt + clippy via `hk`'s builtin steps) — single source of truth for local lint/format enforcement. `bin/lint` runs `hk fix` against it; not used by CI (CI runs the underlying tools directly, see below). |
-| `.github/workflows/main.yml` | CI: on Ruby 3.3.6, sets up Rust (`dtolnay/rust-toolchain@stable` with `clippy`/`rustfmt` components), runs `cargo fmt --check` and `cargo clippy -- -D warnings` against `ext/duckling/`, then `bundle exec rake`. Runs for every push to `main` and every PR. |
+| `.github/workflows/main.yml` | CI: on the Ruby version(s) in the `ruby:` matrix, sets up Rust (`dtolnay/rust-toolchain@stable` with `clippy`/`rustfmt` components), runs `cargo fmt --check` and `cargo clippy -- -D warnings` against `ext/duckling/`, then `bundle exec rake`. Runs for every push to `main` and every PR. |
 | `.github/workflows/release.yml` | Tag-triggered release: builds and pushes the gem to RubyGems and cuts a GitHub release. See "Gem release conventions" below. |
 | `.github/scripts/apply-tag-ruleset.sh` | Idempotent `gh api` script that creates/updates the GitHub tag ruleset restricting `v*.*.*` tag creation/update to repo admins. Source of truth for that ruleset's config — re-run it to change the config rather than editing it by hand in the GitHub UI. |
 
@@ -47,7 +47,7 @@ real implementation lands (see "Keeping this file current").
 ## Rust/Magnus wiring
 
 - **Rust crate location**: `ext/duckling/` (crate name `duckling_ext` in the planned design, to avoid clashing with the wrapped `duckling` crate).
-- **The wrapped crate**: `wafer-inc/duckling`, published on crates.io as `duckling = "0.4"` (pure-Rust deps: regex, chrono, serde, serde_json, once_cell, smallvec — no bindgen/libclang required). Its main entrypoint is `duckling::parse(text, locale, dims, context, options) -> Vec<Entity>`; in release builds it wraps the parse in `catch_unwind` and returns `vec![]` on panic.
+- **The wrapped crate**: `wafer-inc/duckling`, published on crates.io as `duckling` (pure-Rust deps: regex, chrono, serde, serde_json, once_cell, smallvec — no bindgen/libclang required); see `ext/duckling/Cargo.toml` for the pinned version constraint. Its main entrypoint is `duckling::parse(text, locale, dims, context, options) -> Vec<Entity>`; in release builds it wraps the parse in `catch_unwind` and returns `vec![]` on panic.
 - **`extconf.rb` wiring (planned)**: `rb_sys/mkmf`'s `create_rust_makefile` ties Cargo into the Ruby `mkmf` build:
   ```ruby
   require "mkmf"
@@ -56,14 +56,14 @@ real implementation lands (see "Keeping this file current").
   create_rust_makefile("duckling/duckling")
   ```
   The `"duckling/duckling"` argument controls the output path: the compiled artifact lands at `lib/duckling/duckling.bundle` (macOS) / `lib/duckling/duckling.so` (Linux), which is what `lib/duckling.rb` will `require_relative`.
-- **`Cargo.toml` (planned)**: `cdylib` crate type, depends on `magnus` (`"0.8"`, with `features = ["chrono"]`), `duckling` (0.4, the wrapped crate), and `rb-sys` (`default-features = false, features = ["stable-api-compiled-fallback"]` — avoids needing libclang/bindgen on the build machine).
+- **`Cargo.toml` (planned)**: `cdylib` crate type, depends on `magnus` (with `features = ["chrono"]`), `duckling` (the wrapped crate), and `rb-sys` (`default-features = false, features = ["stable-api-compiled-fallback"]` — avoids needing libclang/bindgen on the build machine); see `ext/duckling/Cargo.toml` for exact version constraints.
   - **Do not use `magnus = "0.9"`** — despite what some early design docs assumed, 0.9 has never been published to crates.io (only 0.8.2 is released as of this writing); pinning `"0.9"` will fail to resolve. The 0.8.2 API creates symbols via `ruby.to_symbol("key")`, not the 0.9-only `ruby.sym("key")`. Everything else (scan_args, get_kwargs, function!, RHash::aset, Ruby::ary_new, hash_new, chrono FixedOffset IntoValue) is unchanged between 0.8.2 and 0.9. Before trusting a magnus API claim from design docs, spot-check it against the actual published source (`~/.cargo/registry/src/index.crates.io-*/magnus-0.8.2/`).
 - **Build model**: ships as a **source gem**, not precompiled binaries — installers need a Rust toolchain. `rake-compiler-dock` is already pulled in transitively (via `rb_sys` in `Gemfile.lock`) for possible future cross-compiled binary-gem support, but that's out of scope for now.
 - **Known gotchas**:
-  - `rb_sys` is already a runtime gemspec dependency (`~> 0.9.39`) even though the Rust crate doesn't exist yet — this is intentional, not a leftover.
+  - `rb_sys` is already a runtime gemspec dependency (see `duckling.gemspec` for the version constraint) even though the Rust crate doesn't exist yet — this is intentional, not a leftover.
   - CI installs a Rust toolchain via `dtolnay/rust-toolchain@stable` (with `clippy`/`rustfmt` components) and runs `cargo fmt --check` + `cargo clippy -- -D warnings` against `ext/duckling/` before `bundle exec rake`.
   - `.gitignore` does not yet exclude Rust build artifacts (`target/`, compiled `lib/duckling/*.bundle`/`*.so`) — add these when the crate is added.
-  - Third-party actions in `.github/workflows/*.yml` are pinned to full commit SHAs (with the version as a trailing comment, e.g. `actions/checkout@<sha> # v6.0.3`), not floating tags — `.github/dependabot.yml`'s `github-actions` ecosystem entry opens PRs to bump these pins; don't hand-edit a `uses:` line back to a bare tag when copying it into new workflows.
+  - Third-party actions in `.github/workflows/*.yml` are pinned to full commit SHAs (with the version as a trailing comment, e.g. `actions/checkout@<sha> # vX.Y.Z`), not floating tags — see the workflow files themselves for what's currently pinned. `.github/dependabot.yml`'s `github-actions` ecosystem entry opens PRs to bump these pins; don't hand-edit a `uses:` line back to a bare tag when copying it into new workflows.
 
 ## Gem release conventions
 
@@ -75,7 +75,7 @@ real implementation lands (see "Keeping this file current").
   3. `gem build` + `gem push` (via `RUBYGEMS_API_KEY` secret) and creates a GitHub release with `gh release create ... --generate-notes`.
   4. Appends a dated entry to `CHANGELOG.md` by committing to a `changelog/vX.Y.Z` branch, opening a PR (`gh pr create`), and auto-merging it (`gh pr merge --auto --squash`) — it does **not** push to `main` directly, since `main` requires PRs (see below).
   - **Release trigger going forward**: bump `Duckling::VERSION`, merge to `main`, then push a matching `vX.Y.Z` tag.
-- **Branch protection on `main`** (issue #11): direct pushes are blocked — all changes, including the release pipeline's CHANGELOG commit, land via PR. Merging requires the `Ruby 3.3.6` status check to pass; branch deletion and force-pushes are disabled. No required review count (single-maintainer repo), so PRs merge as soon as CI is green.
+- **Branch protection on `main`** (issue #11): direct pushes are blocked — all changes, including the release pipeline's CHANGELOG commit, land via PR. Merging requires the CI status check to pass — named `Ruby <version>`, where `<version>` comes from the `ruby:` matrix in `main.yml`; branch deletion and force-pushes are disabled. No required review count (single-maintainer repo), so PRs merge as soon as CI is green.
 - **Tag ruleset** (issue #12): a GitHub tag ruleset named "Protect release tags" restricts creation/update of `v*.*.*` tags to repo admins, so only authorized pushers can trigger the pipeline above. Configured via `.github/scripts/apply-tag-ruleset.sh` (`gh api repos/{owner}/{repo}/rulesets`) — re-run that script to change the ruleset rather than editing it by hand in the GitHub UI, so the config stays reviewable in version control. Signing tags is out of scope (deferred).
 
 ## `bin/` scripts (dev-workflow tooling, not part of the gem)
@@ -96,6 +96,7 @@ part of that PR** (don't leave it for someone else):
 - Build/test commands (`bin/test`, `bin/lint`, `Rakefile` tasks)
 - The Rust/Magnus wiring (`Cargo.toml`, `extconf.rb`, CI Rust toolchain setup) — in particular, once issue #1's native extension lands, replace the **(planned)** Rust sections above with the actual, verified file contents
 - The release process — once issue #4's tag-triggered pipeline lands, replace the **(planned)** release section above with the actual, verified workflow behavior
+- Version numbers for tools/crates/gems — these belong in their own config files (`duckling.gemspec`, `ext/duckling/Cargo.toml`/`Cargo.lock`, `.standard.yml`, `hk.pkl`, CI workflow matrices), not here. If you need to reference a version, point to the file/field that holds it rather than copying the number, so this doc can't go stale when Dependabot or a manual bump changes it.
 
 If you're an agent and notice this file is out of date with what you just
 observed in the repo, fix it in the same PR rather than working around the
