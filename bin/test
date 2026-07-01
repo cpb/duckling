@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Called by bin/worktree heal-reproduce to run a single test by file:line.
+# Override this script in your project to change the test runner or add setup steps.
+#
+# Default: bin/rails test (Minitest)
+# Other examples:
+#   bundle exec rspec "$@"
+#   bundle exec pytest "$@"
+
+exec bundle exec ruby -I test "$@"

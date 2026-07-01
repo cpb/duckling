@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# PostToolUse lint hook skeleton — cpb plugin default (no-op).
+#
+# Called after Edit/Write tool calls with $CLAUDE_FILE_PATHS containing
+# the space-separated paths of modified files. Copy this to ./bin/lint
+# in your project (via /cpb:init) and implement formatting.
+#
+# Examples:
+#   HK_PKL_BACKEND=pklr hk fix $CLAUDE_FILE_PATHS
+#   prettier --write $CLAUDE_FILE_PATHS
+#   rubocop --autocorrect $CLAUDE_FILE_PATHS
+#   ruff check --fix $CLAUDE_FILE_PATHS
+exit 0
