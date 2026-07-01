@@ -65,7 +65,7 @@ real implementation lands (see "Keeping this file current").
   - `rb_sys` is already a runtime gemspec dependency (`~> 0.9.39`) even though the Rust crate doesn't exist yet — this is intentional, not a leftover.
   - CI installs a Rust toolchain via `dtolnay/rust-toolchain@stable` (with `clippy`/`rustfmt` components) and runs `cargo fmt --check` + `cargo clippy -- -D warnings` against `ext/duckling/` before `bundle exec rake`.
   - `.gitignore` does not yet exclude Rust build artifacts (`target/`, compiled `lib/duckling/*.bundle`/`*.so`) — add these when the crate is added.
-  - `.github/workflows/main.yml` pins `actions/checkout@v6`; double-check this is a real, current action version before copying it into new workflows.
+  - Third-party actions in `.github/workflows/*.yml` are pinned to full commit SHAs (with the version as a trailing comment, e.g. `actions/checkout@<sha> # v6.0.3`), not floating tags — `.github/dependabot.yml`'s `github-actions` ecosystem entry opens PRs to bump these pins; don't hand-edit a `uses:` line back to a bare tag when copying it into new workflows.
 
 ## Gem release conventions
 
