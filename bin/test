@@ -9,14 +9,17 @@
 #   bundle exec rspec "$@"
 #   bundle exec pytest "$@"
 
+# Bash tool calls don't trigger the Edit/Write-gated bin/claude-code-web-setup
+# PreToolUse hook, so a fresh Claude Code Web session needs its own JIT setup
+# here too — both the no-arg full-suite path and the file:line path need
+# gems and the compiled extension, so this isn't conditional on $#.
+if [ "${CLAUDE_CODE_REMOTE:-}" = true ]; then
+  . "$(dirname "$0")/claude-web-deps.sh"
+  install_gems
+  compile_extension
+fi
+
 if [ $# -eq 0 ]; then
-  # Bash tool calls don't trigger the Edit/Write-gated
-  # bin/claude-code-web-setup PreToolUse hook, so a bare `bin/test` in a
-  # fresh Claude Code Web session needs its own JIT gem install.
-  if [ "${CLAUDE_CODE_REMOTE:-}" = true ]; then
-    . "$(dirname "$0")/claude-web-deps.sh"
-    install_gems
-  fi
   exec bundle exec rake
 fi
 
