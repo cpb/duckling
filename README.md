@@ -18,11 +18,118 @@ gem install duckling
 
 ## Usage
 
-TODO: Write usage instructions here
+```ruby
+require "duckling"
+
+Duckling.parse("tomorrow", locale: "en")
+# =>
+# [{ body: "tomorrow", start: 0, end: 8, dim: :time,
+#    value: { type: :value, value: "2026-07-02T00:00:00", grain: :day, values: [...] } }]
+# (the date resolves relative to now; pass reference_time: for a fixed anchor)
+```
+
+`Duckling.parse` takes required text plus keyword options, and returns an
+`Array` of entity `Hash`es (empty if nothing matched):
+
+```ruby
+Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)
+```
+
+### Keyword arguments
+
+- `locale:` (String, default `"en"`) — a `lang[-region]` tag, e.g. `"en"` or
+  `"en-GB"`. An unrecognized language or region raises `ArgumentError`.
+- `dims:` (Array of String, default `["time"]`) — which dimensions to
+  extract. See "Supported dimensions" below — only `"time"` currently
+  produces a populated `:value`. An unrecognized dimension name raises
+  `ArgumentError`.
+- `reference_time:` (Integer Unix seconds, default `nil`) — anchors relative
+  expressions like "tomorrow" or "next week". Defaults to the current UTC
+  time; pass an explicit value for deterministic output.
+- `with_latent:` (Boolean, default `false`) — include ambiguous/latent
+  matches (e.g. a bare "morning") in the results.
+
+There is no `Duckling::Error` class — invalid `locale:`/`dims:` values raise
+plain `ArgumentError`.
+
+### Return value
+
+Each entity in the returned array is a `Hash` with:
+
+- `:body` (String) — the matched substring.
+- `:start` / `:end` (Integer) — character offsets into the input text.
+- `:dim` (Symbol) — the dimension, e.g. `:time`.
+- `:latent` (Boolean) — present only when the match is latent.
+- `:value` (Hash) — present only for the `:time` dimension today. Shape
+  depends on whether it's a single point in time or an interval:
+
+  ```ruby
+  # a single point in time, e.g. "tomorrow"
+  { type: :value, value: "2026-07-02T00:00:00", grain: :day, values: [...] }
+
+  # an interval, e.g. "from 3pm to 5pm"
+  { type: :interval,
+    from: { type: :value, value: "2013-02-12T15:00:00", grain: :hour },
+    to:   { type: :value, value: "2013-02-12T18:00:00", grain: :hour } }
+  ```
+
+  `grain` is one of `second`, `minute`, `hour`, `day`, `week`, `month`,
+  `quarter`, `year`.
+
+  **Gotcha:** an interval's `:to` is the *exclusive* boundary, not the
+  literal named time — `"from 3pm to 5pm"` resolves `:to` to `18:00`, not
+  `17:00`. This matches upstream [duckling](https://github.com/wafer-inc/duckling)
+  behavior.
+
+### Supported dimensions
+
+In 0.2.0, only `"time"` is fully supported — it's the only dimension whose
+entities come back with a populated `:value`. Other dimension names
+(`number`, `ordinal`, `temperature`, `distance`, `volume`, `quantity`,
+`amount-of-money`, `email`, `phone-number`, `url`, `credit-card-number`,
+`time-grain`, `duration`) are accepted by `dims:` without error, but their
+entities currently have no `:value` key. Broader dimension support is
+planned for future releases.
+
+### Known limitation: bare comma-separated lists
+
+A run of date/time expressions joined by bare commas, with nothing else
+between them, collapses into a single entity — every date after the first
+in that run is silently dropped:
+
+```ruby
+Duckling.parse("birthdays are march 3, march 9, april 12 and may 5", locale: "en")
+  .select { |r| r[:dim] == :time }
+  .map { |r| r[:value][:value] }
+# => ["2013-03-03T00:00:00", "2013-05-05T00:00:00"]
+# (march 9 and april 12 are silently dropped)
+```
+
+This is an upstream grammar/ranking behavior in the wrapped
+[duckling](https://github.com/wafer-inc/duckling) engine, not something this
+gem can work around. Joining
+dates with "and", periods, or a name/label immediately before each date
+avoids the collapse:
+
+```ruby
+Duckling.parse("march 3 and march 9 and april 12 and may 5", locale: "en")
+  .select { |r| r[:dim] == :time }
+  .map { |r| r[:value][:value] }
+# => ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"]
+```
+
+See `test/duckling_comma_list_test.rb` for the full characterization,
+including cases where the surviving value isn't even reliably the leftmost
+date in the collapsed run.
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies. Building
+the native Rust extension requires a Rust toolchain; run `rake compile` to
+build it before running `rake test`, or just run `rake` (or
+`bundle exec rake`) with no arguments to lint, compile, and test in order. You
+can also run `bin/console` for an interactive prompt that will allow you to
+experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
