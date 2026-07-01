@@ -39,7 +39,7 @@ real implementation lands (see "Keeping this file current").
 
 - **`bin/setup`** — `bundle install`. Run this first in a fresh checkout/worktree.
 - **`bin/console`** — loads the gem and drops you into IRB for interactive experimentation.
-- **`bin/test [file:line]`** — runs `bundle exec ruby -I test "$@"`. With no args this needs a target file (it's a thin wrapper, not a full suite runner); for the full suite use `rake test` or `bundle exec rake`.
+- **`bin/test [file:line]`** — with an argument, runs `bundle exec ruby -I test "$@"` against that target. With no arguments, runs the full suite via `bundle exec rake` instead (equivalent to `rake test`/`bundle exec rake`) — in a remote Claude Code Web session (`CLAUDE_CODE_REMOTE=true`) this first JIT-installs gems via `bin/claude-web-deps.sh`, since a bare Bash call doesn't trigger the Edit/Write-gated `bin/claude-code-web-setup` PreToolUse hook.
 - **`bin/lint`** — the cpb-harness PostToolUse hook, invoked after every Edit/Write with `$CLAUDE_FILE_PATHS`. Runs `HK_PKL_BACKEND=pklr hk fix $CLAUDE_FILE_PATHS`, auto-correcting via `hk.pkl` (StandardRB for `.rb`, rustfmt for `.rs`). Requires `hk` on `PATH` (not installed via `bin/setup`/Gemfile — expected to be present on the dev machine, same as `cargo`/`rustc`).
 - **`rake` / `bundle exec rake`** — default task: `standard` (StandardRB lint) + `compile` (builds the Rust extension via `Rake::ExtensionTask`) + `test` (Minitest).
 - **Compiling the native extension**: `rake compile` (via `Rake::ExtensionTask`, wired in the `Rakefile`) builds `ext/duckling/` and places the compiled artifact under `lib/duckling/`.
@@ -84,7 +84,7 @@ These come from the cpb Claude Code plugin's harness (commit `d69ba38`) and mana
 
 - `bin/worktree` — large CLI (`add`, `cd`, `harness`, `cleanup`, `heal-poll`, etc.) for creating per-issue git worktrees and driving Claude/Gemini sessions in tmux.
 - `bin/check-worktree` — PreToolUse hook that blocks `Edit`/`Write` when on the `main` branch, steering you toward `bin/worktree add <branch>` instead.
-- `bin/claude-code-web-setup` — PreToolUse hook for remote/web Claude Code sessions. Before each `Edit`/`Write`, just-in-time installs gems (`bundle install`), compiles the native extension (`bundle exec rake compile`), and provisions `hk` (installing the binary and running `hk install` if missing) — each step cached via receipt files in `tmp/claude-web-receipts/` so it's a no-op after the first call per session.
+- `bin/claude-code-web-setup` — PreToolUse hook for remote/web Claude Code sessions. Before each `Edit`/`Write`, just-in-time installs gems (`bundle install`), compiles the native extension (`bundle exec rake compile`), and provisions `hk` (installing the binary and running `hk install` if missing, best-effort — a failure here warns but doesn't block the edit) — each step cached via receipt files in `tmp/claude-web-receipts/` so it's a no-op after the first call per session. The gems/extension installers live in `bin/claude-web-deps.sh` (sourced, not directly executable), shared with `bin/test`'s no-arg path since Bash tool calls don't trigger this Edit/Write-gated hook.
 
 ## Keeping this file current
 

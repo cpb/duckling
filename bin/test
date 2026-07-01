@@ -1,10 +1,23 @@
 #!/usr/bin/env bash
 # Called by bin/worktree heal-reproduce to run a single test by file:line.
-# Override this script in your project to change the test runner or add setup steps.
+# With no arguments, runs the full suite via `bundle exec rake` (standard +
+# compile + test) instead. Override this script in your project to change
+# the test runner or add setup steps.
 #
 # Default: bin/rails test (Minitest)
 # Other examples:
 #   bundle exec rspec "$@"
 #   bundle exec pytest "$@"
+
+if [ $# -eq 0 ]; then
+  # Bash tool calls don't trigger the Edit/Write-gated
+  # bin/claude-code-web-setup PreToolUse hook, so a bare `bin/test` in a
+  # fresh Claude Code Web session needs its own JIT gem install.
+  if [ "${CLAUDE_CODE_REMOTE:-}" = true ]; then
+    . "$(dirname "$0")/claude-web-deps.sh"
+    install_gems
+  fi
+  exec bundle exec rake
+fi
 
 exec bundle exec ruby -I test "$@"

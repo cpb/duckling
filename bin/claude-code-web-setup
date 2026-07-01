@@ -10,36 +10,7 @@ set -eu
 INPUT=$(cat)
 TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null || true)
 
-RECEIPTS_DIR="tmp/claude-web-receipts"
-mkdir -p "$RECEIPTS_DIR"
-
-install_gems() {
-  local lock_hash receipt
-  lock_hash=$(sha256sum Gemfile.lock 2>/dev/null | cut -c1-8 || echo "no-lock")
-  receipt="$RECEIPTS_DIR/gems-$lock_hash"
-
-  [ -f "$receipt" ] && return 0
-
-  bundle install
-  touch "$receipt"
-}
-
-compile_extension() {
-  local src_hash receipt
-  src_hash=$(
-    find ext/duckling -type f \( -name '*.rs' -o -name '*.toml' -o -name '*.lock' -o -name 'extconf.rb' \) \
-      | sort \
-      | xargs sha256sum \
-      | sha256sum \
-      | cut -c1-8
-  )
-  receipt="$RECEIPTS_DIR/ext-$src_hash"
-
-  [ -f "$receipt" ] && return 0
-
-  bundle exec rake compile
-  touch "$receipt"
-}
+. "$(dirname "$0")/claude-web-deps.sh"
 
 install_hk() {
   local hk_version receipt
@@ -52,11 +23,11 @@ install_hk() {
 
   if ! command -v hk > /dev/null 2>&1; then
     if command -v brew > /dev/null 2>&1; then
-      brew install hk
+      brew install hk || return 1
     else
       curl -fsSL \
         "https://github.com/jdx/hk/releases/download/v${hk_version}/hk-x86_64-unknown-linux-gnu.tar.gz" \
-        | tar -xz -C /usr/local/bin hk
+        | tar -xz -C /usr/local/bin hk || return 1
     fi
   fi
 
@@ -67,6 +38,7 @@ install_hk_hooks() {
   local receipt="$RECEIPTS_DIR/hk-hooks"
   [ -f "$receipt" ] && return 0
 
+  command -v hk > /dev/null 2>&1 || return 0
   hk install
   touch "$receipt"
 }
@@ -75,7 +47,10 @@ case "$TOOL_NAME" in
   Edit|Write)
     install_gems
     compile_extension
-    install_hk
-    install_hk_hooks
+    # hk provisioning is best-effort: e.g. the sandbox's network egress
+    # allowlist may not permit the GitHub release-asset redirect target, and
+    # that shouldn't block the edit or fail every subsequent bin/lint call.
+    install_hk || echo "Warning: hk install failed, bin/lint may not work until hk is available" >&2
+    install_hk_hooks || echo "Warning: hk install (git hooks) failed" >&2
     ;;
 esac
