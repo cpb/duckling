@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Compares Duckling.parse's speed and per-call object-allocation count across
+# representative inputs. Written for issue #32's Option B (manual RHash
+# construction) vs. Option D (serde_magnus + symbolize + Data objects)
+# comparison -- run before and after that kind of conversion-layer change to
+# get real "before"/"after" numbers instead of guessing. Not part of `rake
+# test`; run directly with `bin/benchmark_parse`.
+
+require "bundler/setup"
+require "duckling"
+require "benchmark/ips"
+
+REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00").to_i
+
+INPUTS = {
+  "single time value" => ["tomorrow", {locale: "en", reference_time: REFERENCE_TIME}],
+  "time interval" => ["from 3pm to 5pm", {locale: "en", reference_time: REFERENCE_TIME}],
+  "email" => ["user@example.com", {locale: "en", dims: ["email"]}]
+}.freeze
+
+def allocations_for(text, opts)
+  GC.start
+  before = GC.stat(:total_allocated_objects)
+  Duckling.parse(text, **opts)
+  GC.stat(:total_allocated_objects) - before
+end
+
+puts "== Object allocations per Duckling.parse call (GC.stat[:total_allocated_objects] diff) =="
+INPUTS.each do |label, (text, opts)|
+  puts format("%-20s %6d objects", label, allocations_for(text, opts))
+end
+
+puts
+puts "== benchmark-ips =="
+Benchmark.ips do |x|
+  INPUTS.each do |label, (text, opts)|
+    x.report(label) { Duckling.parse(text, **opts) }
+  end
+  x.compare!
+end

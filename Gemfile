@@ -12,3 +12,5 @@ gem "rake"
 gem "minitest"
 
 gem "standard"
+
+gem "benchmark-ips"
