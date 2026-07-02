@@ -122,6 +122,16 @@ See `test/duckling_comma_list_test.rb` for the full characterization,
 including cases where the surviving value isn't even reliably the leftmost
 date in the collapsed run.
 
+## Performance
+
+Benchmarked with [benchmark-ips](https://github.com/evanphx/benchmark-ips)
+against `Duckling.parse`, including Magnus/Ruby conversion overhead (not
+just the underlying Rust engine), plus GC pressure and threaded-worker-pool
+throughput. See [`docs/benchmarks/`](docs/benchmarks/) for the latest
+numbers, broken out by environment (GitHub Actions CI, Claude Code Web,
+local dev) — results vary enough by machine that comparing across
+environments is more meaningful than a single blended trend.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Building
@@ -143,6 +153,19 @@ edit `.env.local` to opt back into a release-profile local build, or run
 `.env.local` in place.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version: bump `Duckling::VERSION` in `version.rb`, merge that change to `main`, then run `bundle exec rake release` (or push a matching `vX.Y.Z` tag directly) to create and push the git tag. Pushing the tag triggers a GitHub Actions pipeline that re-runs CI as a gate, cross-compiles `x86_64-linux`/`x86_64-darwin` binary gems, verifies the tag matches `Duckling::VERSION`, builds and publishes the gems (source + both binary platforms) to [rubygems.org](https://rubygems.org), cuts a GitHub release, and opens a PR appending an entry to `CHANGELOG.md`.
+
+`bin/benchmark` (or `bundle exec rake benchmark`) runs the `benchmark-ips`
+suite locally and prints results to the console — no files written.
+`bin/benchmark record` (or `rake benchmark:record`) additionally writes
+`docs/benchmarks/<environment>/<version>.json` and regenerates
+`docs/benchmarks/README.md`. `bin/benchmark record-pr` (or `rake
+benchmark:record_pr`) does the same against a fresh branch off `origin/main`
+and opens (and auto-merges) a PR via `gh` — this is what the release
+pipeline runs automatically, and what you'd also run from a Claude Code Web
+session or a local dev machine to contribute that environment's numbers
+ahead of a release. `gh` needs to be installed (`bin/setup` does this via
+the `Brewfile` on macOS) and authenticated (`gh auth login`) for the
+`record-pr` variant.
 
 ## Contributing
 
