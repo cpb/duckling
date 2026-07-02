@@ -21,6 +21,13 @@ end
 
 Minitest::TestTask.create
 
+# Minitest::TestTask has no built-in way to declare a task dependency, and
+# `task default: %i[standard compile test]`'s array ordering only protects
+# `bundle exec rake` itself — `bundle exec rake test` run directly has no
+# guarantee `compile` ran first, which would surface as a confusing
+# LoadError/stale-behavior failure unrelated to the code under test.
+task test: :compile
+
 require "standard/rake"
 
 task default: %i[standard compile test]
