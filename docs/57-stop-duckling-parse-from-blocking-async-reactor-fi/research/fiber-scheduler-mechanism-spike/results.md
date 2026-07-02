@@ -1,8 +1,8 @@
 # Raw measurements
 
 Every row is a run of `test/falcon_fiber_blocking_test.rb` (the pre-existing
-failing test from issue #38/#57 — see the
-[README](README.md#test-fixture) for what it measures). `max_gap` is the
+failing test from issue #38/#57 — see
+[Fiber-Scheduler Mechanism Spike](README.md#test-fixture) for what it measures). `max_gap` is the
 largest observed wall-clock gap between successive ticks of the sibling
 "ticker" `Fiber`; `parse_duration` is the wall-clock time the single
 `Duckling.parse` call itself took. The test's pass threshold is

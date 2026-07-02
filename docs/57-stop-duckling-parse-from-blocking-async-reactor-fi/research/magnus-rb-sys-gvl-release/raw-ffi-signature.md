@@ -43,7 +43,7 @@ handing `Box::into_raw` across an `extern "C"` boundary as `*mut c_void`,
 and reconstituting it with `Box::from_raw` on the other side (see
 [`thread.rs`'s `wrap_closure`](https://github.com/matsadler/magnus/blob/0.8.2/src/thread.rs)).
 One difference matters for the sketch in
-[implementation-sketch.md](implementation-sketch.md): `thread_create_from_fn`'s
+[Illustrative Sketch: Releasing the GVL Around `duckling::parse`](implementation-sketch.md): `thread_create_from_fn`'s
 `func` parameter has a compiler-enforced `F: 'static + Send + FnOnce(&Ruby) -> R`
 bound. `rb_thread_call_without_gvl`'s `func` is a plain C function pointer
 (see below) — there is no such compiler-enforced bound; `Send`-safety of
@@ -124,7 +124,7 @@ a blocking `read(2)` is waiting on). It does not fire automatically or
 repeatedly while `func` runs. Passing `NULL` (`None` in Rust, see below)
 means there is no way to interrupt the call from outside — it will run to
 completion. See the "Open follow-ups" section of the parent
-[README.md](README.md) for why the implementation sketch here intentionally
+[Releasing the GVL Around `duckling::parse` with Magnus + rb-sys](README.md) for why the implementation sketch here intentionally
 leaves this as `None` rather than trying to implement a real `ubf`.
 
 ### The exact generated Rust signature (verified against this repo's own build)
@@ -186,7 +186,7 @@ rb-sys = { version = "*", default-features = false, features = ["stable-api-comp
 ```
 
 No dependency or feature changes are required to write the sketch in
-[implementation-sketch.md](implementation-sketch.md).
+[Illustrative Sketch: Releasing the GVL Around `duckling::parse`](implementation-sketch.md).
 
 ## Magnus's documented escape hatch: `magnus::rb_sys`
 
@@ -317,7 +317,7 @@ it's not the outright unsafety the C header's blanket warning ("you cannot
 use most of Ruby C APIs... from any of the functions passed to it") might
 suggest at first read.
 
-That said, the sketch in [implementation-sketch.md](implementation-sketch.md)
+That said, the sketch in [Illustrative Sketch: Releasing the GVL Around `duckling::parse`](implementation-sketch.md)
 still deliberately avoids storing a `magnus::Error` (or any other
 Magnus/Ruby type) in the boxed payload that crosses the off-GVL boundary,
 in favor of a plain `Option<String>` panic message, for two reasons

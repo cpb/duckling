@@ -5,7 +5,7 @@ content, and not written into the actual crate as part of this docs-only PR.
 It maps the existing `parse` function's before/during/after structure (see
 `ext/duckling/src/lib.rs`, current lines 28–64) onto the raw
 `rb_thread_call_without_gvl` FFI documented in
-[raw-ffi-signature.md](raw-ffi-signature.md).
+[The Raw `rb_thread_call_without_gvl` FFI Surface](raw-ffi-signature.md).
 
 ## Today's structure, for reference
 
@@ -199,6 +199,6 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
   assumed from this sketch alone.
 - **Benchmarking** whether the GVL-release/reacquire overhead is worth
   paying for a ~500µs–3ms call — flagged as an open follow-up in
-  [README.md](README.md).
+  [Releasing the GVL Around `duckling::parse` with Magnus + rb-sys](README.md).
 - **A real `ubf`** for `Thread#raise`/`Thread#kill` cancellation — also
-  flagged as an open follow-up in [README.md](README.md).
+  flagged as an open follow-up in [Releasing the GVL Around `duckling::parse` with Magnus + rb-sys](README.md).

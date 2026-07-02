@@ -67,7 +67,7 @@ happens only after `rb_thread_call_without_gvl` returns, GVL held again.
   executing `duckling_parse`'s machine code, so the ticker Fiber sharing
   that thread never runs. `rb_thread_call_without_gvl` alone failed on both
   Ruby 3.3.6 and 3.4.5 (`max_gap` tracked `parse_duration` almost exactly —
-  see [results.md](../research/fiber-scheduler-mechanism-spike/results.md#approach-a-alone-rb_thread_call_without_gvl-around-duckling_parse-no-ruby-level-thread-spawn)).
+  see [Raw measurements](../research/fiber-scheduler-mechanism-spike/results.md#approach-a-alone-rb_thread_call_without_gvl-around-duckling_parse-no-ruby-level-thread-spawn)).
   Ruby 3.4's `Fiber::Scheduler#blocking_operation_wait` doesn't rescue this:
   it only fires when the lower-level `rb_nogvl` is called with
   `RB_NOGVL_OFFLOAD_SAFE`, which `rb_thread_call_without_gvl` never sets
@@ -77,7 +77,7 @@ happens only after `rb_thread_call_without_gvl` returns, GVL held again.
   around the *unmodified* call (GVL still held) also failed — a second OS
   thread exists but holds the GVL for the whole call, so the reactor's own
   OS thread has no safepoint to reclaim it at (see
-  [results.md](../research/fiber-scheduler-mechanism-spike/results.md#approach-b-alone-background-thread-but-gvl-not-released-in-the-native-call)).
+  [Raw measurements](../research/fiber-scheduler-mechanism-spike/results.md#approach-b-alone-background-thread-but-gvl-not-released-in-the-native-call)).
   Only the combination passed: releasing the GVL makes the background
   thread's blocking window non-exclusive, and `Thread#value`'s
   `block`/`unblock` scheduler hooks — present since Ruby 3.0, unlike
@@ -125,7 +125,7 @@ For the eventual implementation PR (not this one):
    then `Box::from_raw` to reclaim it. No `Cargo.toml` change is needed —
    `rb-sys` already exposes this unconditionally through the existing
    `stable-api-compiled-fallback` feature (see
-   [raw-ffi-signature.md](../research/magnus-rb-sys-gvl-release/raw-ffi-signature.md#the-exact-generated-rust-signature-verified-against-this-repos-own-build)).
+   [The Raw `rb_thread_call_without_gvl` FFI Surface](../research/magnus-rb-sys-gvl-release/raw-ffi-signature.md#the-exact-generated-rust-signature-verified-against-this-repos-own-build)).
 3. On the `Err(message)` branch, construct `magnus::Error::new(ruby.exception_fatal(), ...)`
    only after the box is reclaimed (GVL confirmed held) — never inside
    `parse_without_gvl`.
@@ -172,7 +172,7 @@ For the eventual implementation PR (not this one):
   This plan recommends the Ruby-level wrapper as the default — it's the
   variant actually measured passing, and avoids `thread_create_from_fn`'s
   `'static + Send + FnOnce` bound complications (see
-  [raw-ffi-signature.md](../research/magnus-rb-sys-gvl-release/raw-ffi-signature.md#magnus-082-has-no-safe-wrapper)) —
+  [The Raw `rb_thread_call_without_gvl` FFI Surface](../research/magnus-rb-sys-gvl-release/raw-ffi-signature.md#magnus-082-has-no-safe-wrapper)) —
   but the comparison itself hasn't been done.
 - **Downside for non-reactor callers** (a plain synchronous script, or a
   Puma app with no `Fiber::Scheduler` registered)? Every call pays ~70µs of

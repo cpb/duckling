@@ -65,7 +65,7 @@ reach inside a raw `extern "C"` callback handed to
 `rb_thread_call_without_gvl`, since that callback is a separate FFI boundary
 the macro-generated wrapper never sees. Any GVL-release implementation must
 add its own panic guard around the inner call; see
-[raw-ffi-signature.md](raw-ffi-signature.md) for exactly how, including a
+[The Raw `rb_thread_call_without_gvl` FFI Surface](raw-ffi-signature.md) for exactly how, including a
 correction to a naive first pass at that guard.
 
 ## Open follow-ups
@@ -75,7 +75,7 @@ research conventions — each should become a filed GitHub issue before or
 during implementation, not resolved silently inside this docs-only PR:
 
 - **No cancellation hook (`ubf`) in the sketch.** The illustrative sketch in
-  [implementation-sketch.md](implementation-sketch.md) passes `None` for
+  [Illustrative Sketch: Releasing the GVL Around `duckling::parse`](implementation-sketch.md) passes `None` for
   `rb_thread_call_without_gvl`'s `ubf` parameter, meaning `Thread#raise` /
   `Thread#kill` against the calling thread (e.g. a request timeout) cannot
   interrupt an in-flight `duckling::parse` call — it will run to completion
@@ -93,11 +93,11 @@ during implementation, not resolved silently inside this docs-only PR:
   operations" and for a short-running `func` it "might be faster to just
   call `func` with blocking everything else" — recommending benchmarking
   before committing to this approach. Given `duckling::parse` calls are
-  short (~3ms), this should be measured (e.g. via the existing
-  `docs/benchmarks/` harness) rather than assumed.
+  short (~3ms), this should be measured with a dedicated benchmark (this
+  branch doesn't have one yet) rather than assumed.
 - **Ruby-version-specific ABI drift.** The exact generated Rust signature
   for `rb_thread_call_without_gvl` was verified against this gem's actual
   `rb-sys`-generated bindings for Ruby 3.3.6 (see
-  [raw-ffi-signature.md](raw-ffi-signature.md)); it should be spot-checked
+  [The Raw `rb_thread_call_without_gvl` FFI Surface](raw-ffi-signature.md)); it should be spot-checked
   against the other Ruby versions in CI's test matrix if/when this lands,
   though the underlying C signature has been stable across modern Ruby 3.x.

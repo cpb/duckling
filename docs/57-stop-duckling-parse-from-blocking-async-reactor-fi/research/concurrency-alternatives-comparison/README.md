@@ -6,15 +6,13 @@ its native call, **what dispatches the call so it actually runs
 concurrently with the calling Fiber's sibling Fibers**, and which dispatch
 strategy should this gem ship first?
 
-## Provisional dependency on `fiber-scheduler-mechanism-spike`
+## Empirical confirmation from `fiber-scheduler-mechanism-spike`
 
-This document was written before the sibling research topic
-`fiber-scheduler-mechanism-spike` had produced output in this worktree (its
-doc lives at
-`docs/57-stop-duckling-parse-from-blocking-async-reactor-fi/research/fiber-scheduler-mechanism-spike/README.md`
-once merged, in a different agent's isolated worktree — not visible here).
-Everything below rests on that topic's **working hypothesis**, treated as
-provisional pending its empirical results:
+This document was originally written concurrently with, and provisionally
+ahead of, the sibling research topic
+[Fiber-Scheduler Mechanism Spike](../fiber-scheduler-mechanism-spike/README.md),
+which has since landed and **confirmed** the working hypothesis this
+document depends on:
 
 > Releasing the GVL alone (e.g. a raw `rb_thread_call_without_gvl` callback
 > invoked on the calling Fiber's own OS thread) is not sufficient. This
@@ -27,19 +25,22 @@ provisional pending its empirical results:
 > operation without stalling sibling fibers on the same OS thread — does
 > not exist in the [3.3 `Fiber::Scheduler` hook list](https://docs.ruby-lang.org/en/3.3/Fiber/Scheduler.html)
 > and is present in [3.4's](https://docs.ruby-lang.org/en/3.4/Fiber/Scheduler.html).
-> Confirmed directly against both doc pages while writing this document.
 > Without that hook, a GVL release on the calling thread doesn't hand
 > control back to the reactor's fiber scheduler — the OS thread is still
 > physically busy running Rust code either way, so sibling Fibers
 > cooperatively scheduled on that same OS thread still don't run. **The fix
-> therefore likely needs to dispatch each `Duckling.parse` call onto a
-> genuine background OS thread** (with the GVL released inside the native
-> call on that background thread), not just release the GVL in place.
+> therefore needs to dispatch each `Duckling.parse` call onto a genuine
+> background OS thread** (with the GVL released inside the native call on
+> that background thread), not just release the GVL in place.
 
-If `fiber-scheduler-mechanism-spike` lands with a different conclusion —
-e.g. that a bare GVL release turns out to be enough on this gem's supported
-Ruby versions for some other reason — this document's comparison of *how*
-to dispatch onto a thread becomes moot and should be revisited.
+[Fiber-Scheduler Mechanism Spike](../fiber-scheduler-mechanism-spike/README.md)
+went further than this working hypothesis: it found that GVL-release-alone
+fails even on Ruby 3.4.5, because `rb_thread_call_without_gvl`'s convenience
+wrapper never sets the `RB_NOGVL_OFFLOAD_SAFE` flag that
+`blocking_operation_wait`'s auto-offload requires. Only the combination of
+GVL release *and* a background `Thread` spawn passed, 11/11 runs across
+Ruby 3.3.6 and 3.4.5. This document's comparison of *how* to dispatch onto
+that thread stands as originally written.
 
 ## Where today's implementation stands
 
@@ -159,15 +160,13 @@ correlation, lifecycle) that the simpler approach avoids.
   against the benchmark-ips scenario latencies, not as a portable constant.
   If thread-per-call ships and a worker-pool is ever revisited, re-measure
   on the actual target environment rather than reusing this number.
-- Neither dispatch strategy has been prototyped against
-  `test/falcon_fiber_blocking_test.rb` (referenced in issue #57 as an
-  existing failing hill test on this branch) — this document reasons about
-  dispatch strategy in the abstract; the actual fix still needs to be
-  implemented and run against that test.
-- This document assumes the working hypothesis above (bare GVL release is
-  insufficient on Ruby 3.2/3.3) holds. If `fiber-scheduler-mechanism-spike`
-  empirically contradicts it, revisit whether thread dispatch is needed at
-  all before implementing either strategy here.
+- The thread-per-call *dispatch strategy comparison* itself (as opposed to
+  the underlying GVL-release + Thread-spawn mechanism, which
+  [Fiber-Scheduler Mechanism Spike](../fiber-scheduler-mechanism-spike/README.md)
+  did prototype and measure against `test/falcon_fiber_blocking_test.rb`)
+  has not been separately re-verified end-to-end in a real implementation
+  PR — this document reasons about the *choice* of thread-per-call vs.
+  worker-pool in the abstract, grounded in the spike's measurements.
 - Not investigated: whether a *bounded* worker pool (more than 1 thread,
   but fewer than "one per call") could capture most of thread-per-call's
   concurrency while amortizing spawn cost — this document only compared
