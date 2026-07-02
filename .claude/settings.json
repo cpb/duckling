@@ -1,0 +1,46 @@
+{
+  "extraKnownMarketplaces": {
+    "cpb": {
+      "source": {
+        "source": "github",
+        "repo": "cpb/claude-plugins"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "cpb@cpb": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "exec \"${CLAUDE_PROJECT_DIR}/bin/check-worktree\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"${CLAUDE_CODE_REMOTE:-}\" = true ] || exit 0; exec \"${CLAUDE_PROJECT_DIR}/bin/claude-code-web-setup\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "exec \"${CLAUDE_PROJECT_DIR}/bin/lint\""
+          }
+        ]
+      }
+    ]
+  }
+}
