@@ -1,5 +1,9 @@
 # Roadmap: Research → PR #2 Green
 
+**STALE — fully executed.** PR #2 merged and `v0.2.0` shipped; every step below is
+already done. Kept for historical record — see [`stale/README.md`](./README.md) and
+[`../README.md`](../README.md) for the live 0.2.x plan.
+
 This document is the single-page answer to "what must happen, in order, for PR #2's hill
 tests to go from failing to passing."
 
@@ -171,22 +175,27 @@ Before writing any Rust code, confirm:
 
 ## Post-PR-#2 follow-on work
 
-These do not need to be resolved to make PR #2 green but are natural next steps:
+These did not need to be resolved to make PR #2 green, and were natural next steps —
+all four are now tracked as GitHub issues rather than left as prose here:
 
 1. **Extended test corpus** — add `test/duckling_time_test.rb` with the full
    `TestDucklingParseTimeBasic`, `TestDucklingParseTimeWeekdays`, etc. classes from
-   [ruby-test-design.md](../research/test-coverage/ruby-test-design.md).
+   [ruby-test-design.md](../../research/test-coverage/ruby-test-design.md).
+   → [Issue #34](https://github.com/cpb/duckling/issues/34)
 
 2. **`reference_time:` timezone preservation** — accept a Ruby `Time` object and extract
    both `.to_i` (Unix seconds) and `.utc_offset` (seconds east of UTC) via Magnus to build
    a correct `DateTime<FixedOffset>`.
+   → [Issue #45](https://github.com/cpb/duckling/issues/45)
 
 3. **Additional dimensions** — the 14 `DimensionKind` variants. Each needs a
    `DimensionValue::Foo { ... }` arm in `entity_to_ruby`. The serde shape analysis in
-   [serialization-options.md](../research/type-mapping-strategy/serialization-options.md)
+   [serialization-options.md](../../research/type-mapping-strategy/serialization-options.md)
    shows that manual mapping is needed for all variants (not just Time).
+   → [Issue #46](https://github.com/cpb/duckling/issues/46)
 
 4. **Upstream serde attributes** — opening a PR to wafer-inc/duckling to add
    `#[serde(tag = "type", rename_all = "lowercase")]` to `DimensionValue`, `TimeValue`,
    `TimePoint`, and `#[serde(rename_all = "lowercase")]` to `Grain` would unlock Option A
    (serde_magnus) and reduce the manual mapping code substantially.
+   → [Issue #47](https://github.com/cpb/duckling/issues/47)

@@ -1,5 +1,12 @@
 # Plan 03: Test Suite and CI
 
+**STALE — fully executed.** Matches `test/duckling_test.rb` and
+`.github/workflows/main.yml` on `main`. The one item that's still genuinely open —
+extended test corpus coverage — is tracked as
+[issue #34](https://github.com/cpb/duckling/issues/34), not left as prose here. See
+[`stale/README.md`](./README.md) and [`../README.md`](../README.md) for the live 0.2.x
+plan.
+
 ## Decision
 
 **The hill tests already exist on branch `issue-1/ship-duckling-gem-time-extraction-via-magnus-wafer`
@@ -14,23 +21,23 @@ Key decisions locked by the hill tests:
 4. **NaiveDateTime format**: Bare ISO8601 without offset (Option N1). Hill test asserts
    `assert_match(/\A\d{4}-\d{2}-\d{2}/, entity[:value][:value])` — prefix only.
 5. **Latent default**: `Options::default()` has `with_latent: false` — latent excluded.
-   ([wafer-inc-duckling-api/public-functions.md](../research/wafer-inc-duckling-api/public-functions.md))
+   ([wafer-inc-duckling-api/public-functions.md](../../research/wafer-inc-duckling-api/public-functions.md))
 6. **CI**: Add `dtolnay/rust-toolchain@stable` before the rake step.
-   ([ci-configuration.md](../research/build-wiring/ci-configuration.md))
+   ([ci-configuration.md](../../research/build-wiring/ci-configuration.md))
 
 ## Rationale
 
 The corpus reference time (2013-02-12 04:30:00 UTC-2) is the same value used in the
 1300+ line `src/corpus/time_en.rs` Rust test file. Reusing it means test expected values
 can be verified directly against the Rust corpus without re-computing them.
-([corpus-cases.md](../research/test-coverage/corpus-cases.md))
+([corpus-cases.md](../../research/test-coverage/corpus-cases.md))
 
 The `assert false` placeholder in `test_it_does_something_useful` already causes CI
 failure — replacing it with real failing tests is a safe substitution that preserves
 the "red bar before green bar" intent.
 
-See [ruby-test-design.md](../research/test-coverage/ruby-test-design.md) for the full
-test class design and [pyduckling-reference.md](../research/test-coverage/pyduckling-reference.md)
+See [ruby-test-design.md](../../research/test-coverage/ruby-test-design.md) for the full
+test class design and [pyduckling-reference.md](../../research/test-coverage/pyduckling-reference.md)
 for the decision on which pyduckling tests to port vs. skip.
 
 ## Steps
@@ -63,7 +70,7 @@ assertions:
 | `DucklingCiTest` | `ext/duckling/Cargo.toml` exists with `[lib]` + `crate-type = ["cdylib"]` |
 
 For extended corpus coverage beyond the hill (post-PR-#2), add a separate
-`test/duckling_time_test.rb` using the classes in [ruby-test-design.md](../research/test-coverage/ruby-test-design.md),
+`test/duckling_time_test.rb` using the classes in [ruby-test-design.md](../../research/test-coverage/ruby-test-design.md),
 updated to use symbol keys.
 
 ### 3. Extended test helper (post-PR-#2)
@@ -118,18 +125,24 @@ here for test-suite ordering: bump VERSION after tests are green).
 
 ## Open Questions
 
+These specific corpus cases weren't exercised by the narrow hill-test suite that shipped
+in 0.2.0 (`test/duckling_test.rb`) — they're exactly the kind of case the extended test
+corpus needs to nail down. Rather than resolve them here in isolation, they're folded
+into the extended-corpus work:
+
 - **"now" expected value**: `TimePoint::Instant` for `"now"` should equal the
-  reference time `"2013-02-12T04:30:00-02:00"`. Confirm this is what
-  [duckling](https://github.com/wafer-inc/duckling) actually returns (the corpus `check_time_instant` helper
-  confirms this but verify the offset representation in Rust → Ruby round-trip).
+  reference time `"2013-02-12T04:30:00-02:00"`, offset included — which also depends
+  on [issue #45](https://github.com/cpb/duckling/issues/45) (reference_time offset
+  preservation) being resolved first.
 
 - **"in 2 hours" grain**: The Rust corpus expects `Grain::Minute` for "in 2 hours"
-  (not `Hour`). Verify: `"in 2 hours"` resolves to `06:30:00` at minute grain,
-  because [duckling](https://github.com/wafer-inc/duckling) uses Minute for hour-offset calculations. The test
-  above expects `"hour"` — check corpus-cases.md and fix before implementation.
+  (not `Hour`) — needs verifying against the actual corpus before asserting either way.
+
+Both → [Issue #34](https://github.com/cpb/duckling/issues/34) (extended test corpus).
 
 - **Standard linter**: New test methods use string interpolation inside assertions.
-  Run `bundle exec rake standard` to catch any style violations in test files.
+  Run `bundle exec rake standard` to catch any style violations — this remains good
+  practice for whoever implements #34, not a standalone open item.
 
 ## Verification
 

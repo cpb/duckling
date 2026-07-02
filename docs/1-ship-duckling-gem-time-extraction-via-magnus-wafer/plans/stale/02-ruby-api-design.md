@@ -1,5 +1,9 @@
 # Plan 02: Ruby API Design — `Duckling.parse`
 
+**STALE — fully executed.** Matches `ext/duckling/src/lib.rs` on `main`. Kept for
+historical record — see [`stale/README.md`](./README.md) and [`../README.md`](../README.md)
+for the live 0.2.x plan.
+
 ## Decision
 
 ### 1. API Signature
@@ -13,13 +17,13 @@ Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_lat
 - `dims:` — Array of dimension name strings; default `["time"]`. Unknown strings raise `ArgumentError` in 0.2.0 (fail loud rather than silently skip).
 - `reference_time:` — Ruby `Integer` (Unix seconds). When `nil`, falls back to `Context::default()` (`Utc::now()` + EN-US locale). **Include in 0.2.0** for testability (see Open Questions).
 - `with_latent:` — Boolean; default `false`. Mirrors `Options { with_latent }` in [duckling](https://github.com/wafer-inc/duckling). When `false`, latent/ambiguous entities are excluded (matches `Options::default()`).
-- Returns `Array<Hash>` — one hash per entity, with **Symbol keys and Symbol values** for dim/type/grain. See [ruby-hash-schema.md](../research/type-mapping-strategy/ruby-hash-schema.md).
+- Returns `Array<Hash>` — one hash per entity, with **Symbol keys and Symbol values** for dim/type/grain. See [ruby-hash-schema.md](../../research/type-mapping-strategy/ruby-hash-schema.md).
 
 ### 2. Type Conversion — Manual Magnus Mapping (Option B)
 
-Do **not** use `serde_magnus`. The verified serde attributes on `DimensionValue`, `TimeValue`, `TimePoint`, and `Grain` produce externally-tagged enum shapes (`{"Time": {"Single": {...}}}`) and PascalCase grain names (`"Day"`) that do not match the target schema. See [serialization-options.md](../research/type-mapping-strategy/serialization-options.md) for the verified analysis.
+Do **not** use `serde_magnus`. The verified serde attributes on `DimensionValue`, `TimeValue`, `TimePoint`, and `Grain` produce externally-tagged enum shapes (`{"Time": {"Single": {...}}}`) and PascalCase grain names (`"Day"`) that do not match the target schema. See [serialization-options.md](../../research/type-mapping-strategy/serialization-options.md) for the verified analysis.
 
-Use manual `RHash`/`RArray` construction via the Magnus API. Full helper code is in [magnus-type-conversions.md](../research/type-mapping-strategy/magnus-type-conversions.md).
+Use manual `RHash`/`RArray` construction via the Magnus API. Full helper code is in [magnus-type-conversions.md](../../research/type-mapping-strategy/magnus-type-conversions.md).
 
 ### 3. NaiveDateTime — Option N1 (bare ISO8601, no offset)
 
@@ -39,7 +43,7 @@ Use manual `RHash`/`RArray` construction via the Magnus API. Full helper code is
 | Unknown dim/locale → `ArgumentError` | Fail loud. Silently dropping unknown dims produces confusing empty results. |
 | `reference_time:` in 0.2.0 | Without it, `Context::default()` uses `Utc::now()`, making assertions on relative expressions ("tomorrow") non-deterministic. |
 
-See [locale-system.md](../research/wafer-inc-duckling-api/locale-system.md) for supported `Lang`/`Region` pairs and [types.md](../research/wafer-inc-duckling-api/types.md) for the full `Entity`/`DimensionValue`/`TimeValue`/`TimePoint` type hierarchy.
+See [locale-system.md](../../research/wafer-inc-duckling-api/locale-system.md) for supported `Lang`/`Region` pairs and [types.md](../../research/wafer-inc-duckling-api/types.md) for the full `Entity`/`DimensionValue`/`TimeValue`/`TimePoint` type hierarchy.
 
 ---
 
@@ -92,7 +96,7 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
 
 **Locale parsing** — split `"en-GB"` on `-`; match the two-letter lang code to `Lang` via a `match` block; match the optional region code to `Region` similarly; call `Locale::new(lang, region)`. Return `ArgumentError` for unknown codes. `Locale::new` normalises unsupported `(Lang, Region)` pairs silently by setting `region = None`.
 
-**Dim parsing** — match strings to `DimensionKind` variants using their `Display` strings from [types.md](../research/wafer-inc-duckling-api/types.md) (`"time"` → `Time`, `"number"` → `Numeral`, `"amount-of-money"` → `AmountOfMoney`, etc.). Raise `ArgumentError` for unrecognised strings.
+**Dim parsing** — match strings to `DimensionKind` variants using their `Display` strings from [types.md](../../research/wafer-inc-duckling-api/types.md) (`"time"` → `Time`, `"number"` → `Numeral`, `"amount-of-money"` → `AmountOfMoney`, etc.). Raise `ArgumentError` for unrecognised strings.
 
 **Context construction** — when `reference_time` is `Some(unix_secs)`, construct
 `DateTime<FixedOffset>` as:
@@ -114,7 +118,7 @@ offset — a known limitation for 0.2.0. For the hill tests, this does not matte
 inputs don't span a date boundary under UTC vs. UTC-2). Revisit in 0.3.0 by accepting a
 Ruby `Time` object and extracting `.utc_offset` via Magnus.
 
-**Helper functions** — copy `entity_to_ruby`, `time_value_to_ruby`, `time_point_to_ruby` from [magnus-type-conversions.md](../research/type-mapping-strategy/magnus-type-conversions.md) verbatim. Use `ruby.to_symbol(grain.as_str())` for grain values (Symbol, not String). Use `ruby.to_symbol("body")` etc. for all hash keys. The `:dim` key must be added explicitly:
+**Helper functions** — copy `entity_to_ruby`, `time_value_to_ruby`, `time_point_to_ruby` from [magnus-type-conversions.md](../../research/type-mapping-strategy/magnus-type-conversions.md) verbatim. Use `ruby.to_symbol(grain.as_str())` for grain values (Symbol, not String). Use `ruby.to_symbol("body")` etc. for all hash keys. The `:dim` key must be added explicitly:
 ```rust
 let dim_str = entity.value.dim_kind().to_string();
 h.aset(ruby.to_symbol("dim"), ruby.to_symbol(&dim_str))?;
@@ -138,13 +142,16 @@ Change `VERSION = "0.1.0"` to `VERSION = "0.2.0"`.
 
 ## Open Questions
 
-- **`reference_time:` type**: The plan accepts an `i64` Unix timestamp to avoid Magnus `Time` object parsing complexity. An alternative is to accept a Ruby `Time` and extract `.tv_sec` via Magnus. Integer is simpler for 0.2.0; revisit for ergonomics in 0.3.0.
+- **`reference_time:` type**: The plan accepts an `i64` Unix timestamp to avoid Magnus `Time` object parsing complexity, losing the caller's UTC offset. Shipped as-is for 0.2.0.
+  → [Issue #45](https://github.com/cpb/duckling/issues/45) tracks accepting a Ruby `Time` object instead.
 
-- **Locale parsing implementation**: No `Lang::from_str` exists in the public API. Use a `match` block on the two-letter code string. This is ~50 match arms but is compile-time checked and zero-cost.
+- **Locale parsing implementation**: No `Lang::from_str` exists in the public API. Shipped using a `match` block on the two-letter code string, as planned.
 
-- **`NoGrain` string in output**: `Grain::NoGrain.as_str()` returns `"no_grain"`; pyduckling emits `"nosec"`. Use `"no_grain"` for 0.2.0 (clearer semantics) and document the divergence. Verify whether any real `Time` entities actually carry `NoGrain` before committing.
+- **`NoGrain` string in output**: `Grain::NoGrain.as_str()` returns `"no_grain"`; pyduckling emits `"nosec"`. Shipped `"no_grain"` for 0.2.0. Whether any real `Time` entity in the extended corpus actually carries `NoGrain` is now folded into the extended-corpus verification work.
+  → [Issue #34](https://github.com/cpb/duckling/issues/34)
 
-- **Non-Time dimensions in 0.2.0**: `entity_to_ruby` only handles `DimensionValue::Time`. When caller requests only `dims: ["time"]` (the default), non-Time entities are impossible. If a caller passes other dims explicitly, they get `ArgumentError` from the dim parser — acceptable for 0.2.0.
+- **Non-Time dimensions in 0.2.0**: `entity_to_ruby` only handles `DimensionValue::Time`, as shipped. Non-`dims: ["time"]` requests raise `ArgumentError`.
+  → [Issue #46](https://github.com/cpb/duckling/issues/46) tracks implementing the remaining 13 dimensions.
 
 ---
 

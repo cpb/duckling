@@ -1,5 +1,9 @@
 # Plan 01: Native Extension Setup
 
+**STALE — fully executed.** Matches `ext/duckling/` and `Rakefile` on `main`. Kept for
+historical record — see [`stale/README.md`](./README.md) and [`../README.md`](../README.md)
+for the live 0.2.x plan.
+
 ## Decision
 
 Wire the native extension using Magnus 0.9 + rb-sys `stable-api-compiled-fallback`,
@@ -15,25 +19,25 @@ transitively.
   `build.rs` at the extension level. Magnus's `build.rs` calls
   `rb_sys_env::activate()` and Cargo propagates link metadata up to the final
   cdylib.
-  ([extension-crate.md](../research/build-wiring/extension-crate.md))
+  ([extension-crate.md](../../research/build-wiring/extension-crate.md))
 
 - **stable-api-compiled-fallback**: Pre-compiled stable ABI bindings; no bindgen
   or libclang required at build time. Taken directly from the rust_blank
   `Cargo.toml`.
-  ([extension-crate.md](../research/build-wiring/extension-crate.md))
+  ([extension-crate.md](../../research/build-wiring/extension-crate.md))
 
 - **extconf.rb pattern**: `create_rust_makefile("duckling/duckling")` is the
   complete 3-line pattern from the verified rust_blank example.
-  ([extconf-rb.md](../research/build-wiring/extconf-rb.md))
+  ([extconf-rb.md](../../research/build-wiring/extconf-rb.md))
 
 - **Rake::ExtensionTask with lib_dir**: `lib_dir = "lib/duckling"` aligns the
   compiled artifact location with the extconf.rb path argument and the expected
   `require "duckling/duckling"` call.
-  ([rakefile-setup.md](../research/build-wiring/rakefile-setup.md))
+  ([rakefile-setup.md](../../research/build-wiring/rakefile-setup.md))
 
 - **CI Rust toolchain**: `dtolnay/rust-toolchain@stable` is the standard action.
   Magnus 0.9 requires rustc 1.85+ (edition 2024 stabilized there).
-  ([ci-configuration.md](../research/build-wiring/ci-configuration.md))
+  ([ci-configuration.md](../../research/build-wiring/ci-configuration.md))
 
 ## Steps
 
@@ -141,21 +145,17 @@ requirements.
    published on crates.io as `duckling = "0.4"` (https://crates.io/crates/duckling).
    Use `duckling = "0.4"` in Cargo.toml — no path or git dependency needed.
    No crates.io blocker for RubyGems publication.
-   ([extension-crate.md](../research/build-wiring/extension-crate.md))
+   ([extension-crate.md](../../research/build-wiring/extension-crate.md))
 
-2. **`edition = "2024"` and stable Rust.** Edition 2024 was stabilized in
-   Rust 1.85. Magnus 0.9 declares `rust-version = "1.85"`. The
-   `dtolnay/rust-toolchain@stable` step installs the current stable release
-   (1.85+ as of this writing). Verify this holds in CI before merging.
-   ([ci-configuration.md](../research/build-wiring/ci-configuration.md) — Rust
-   version pinning section)
+2. ~~**`edition = "2024"` and stable Rust.**~~ **Resolved**: the shipped
+   `ext/duckling/Cargo.toml` actually uses `edition = "2021"` and `magnus = "0.8"`
+   (not `"0.9"` — Magnus 0.9 was never published to crates.io), sidestepping the
+   1.85+ requirement question entirely. CI is green on `main` with this setup.
 
-3. **`actions/checkout@v6` in existing CI.** v6 is not a published release of
-   `actions/checkout` (v4 is current). This may be a forward-looking pin or a
-   typo in the existing workflow. Do not change in this plan — leave as-is and
-   flag for human review.
-   ([ci-configuration.md](../research/build-wiring/ci-configuration.md) — Open
-   Question 4)
+3. ~~**`actions/checkout@v6` in existing CI.**~~ **Resolved**: `main`'s CI now
+   pins `actions/checkout` to `v7.0.0` by commit SHA (kept current by
+   `dependabot`). See
+   [ci-configuration.md](../../research/build-wiring/ci-configuration.md).
 
 ## Verification
 
