@@ -46,4 +46,9 @@ Gem::Specification.new do |spec|
   # only needed when developing or packaging your gem
   spec.add_development_dependency "rake-compiler", "~> 1.3.1"
   spec.add_development_dependency "benchmark-ips"
+
+  # used only by test/falcon_fiber_blocking_test.rb to empirically test the
+  # claim that Duckling.parse blocks other Fibers sharing a Falcon/async-gem
+  # reactor thread — not a runtime dependency of the gem itself.
+  spec.add_development_dependency "async", "~> 2.41"
 end
