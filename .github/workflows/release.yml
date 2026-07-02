@@ -27,6 +27,13 @@ jobs:
           ruby-version: '3.3.6'
           bundler-cache: true
 
+      - name: Set up Rust
+        # Needed to compile the native extension for `rake benchmark:record_pr`
+        # below. Same pinned toolchain as main.yml's "Set up Rust" step.
+        uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable as of 2026-06-30
+        with:
+          toolchain: '1.94.1'
+
       - name: Verify tag matches gem version
         run: |
           tag_version="${GITHUB_REF_NAME#v}"
@@ -83,3 +90,11 @@ jobs:
             --title "Update CHANGELOG for ${{ github.ref_name }}" \
             --body "Automated changelog entry for ${{ github.ref_name }}."
           gh pr merge "$branch" --auto --squash
+
+      - name: Record GitHub Actions benchmark results and open a PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bundle exec rake benchmark:record_pr

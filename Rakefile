@@ -19,6 +19,56 @@ task :dev do
   ENV["RB_SYS_CARGO_PROFILE"] = "dev"
 end
 
+task :benchmark_env do
+  # Force a realistic release-profile build regardless of .env.local's
+  # RB_SYS_CARGO_PROFILE=dev (local dev checkouts only, never present in
+  # CI). Must reenable :compile in case it already ran earlier in this same
+  # rake process, so it's guaranteed to recompile under the forced profile
+  # rather than reusing a stale dev-profile build.
+  ENV.delete("RB_SYS_CARGO_PROFILE")
+  Rake::Task[:compile].reenable
+end
+
+desc "Run the benchmark-ips suite (console output only, no file writes)"
+task benchmark: [:benchmark_env, :compile] do
+  ruby "-Ilib", "benchmark/parse_benchmark.rb"
+end
+
+namespace :benchmark do
+  desc "Run benchmarks, write docs/benchmarks/<environment>/<version>.json, regenerate docs/benchmarks/README.md"
+  task record: [:benchmark_env, :compile] do
+    ruby "-Ilib", "benchmark/report.rb"
+  end
+
+  desc "Run :record on a fresh branch off origin/main, then commit/push and open+auto-merge a PR via gh"
+  task record_pr: ["release:guard_clean"] do
+    sh(<<~SH)
+      set -euo pipefail
+      original_ref="$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)"
+      git fetch origin main
+      git checkout -b "benchmark/pending-$(date +%s)" origin/main
+
+      bundle exec rake benchmark:record
+
+      version="$(ruby -Ilib -e 'require "duckling"; puts Duckling::VERSION')"
+      environment="$(ruby -Ilib -e 'require_relative "benchmark/report"; puts DucklingBenchmark::Report::ENVIRONMENT')"
+      branch="benchmark/${environment}/${version}-$(date +%s)"
+      git branch -m "$branch"
+
+      git add docs/benchmarks
+      git commit -m "Record ${environment} benchmark results for ${version}"
+      git push origin "$branch"
+      gh pr create --base main --head "$branch" \\
+        --title "Benchmark results (${environment}, ${version})" \\
+        --body "Automated benchmark recording from ${environment}."
+      gh pr merge "$branch" --auto --squash
+
+      git checkout "$original_ref"
+      git branch -D "$branch"
+    SH
+  end
+end
+
 Minitest::TestTask.create
 
 # Minitest::TestTask has no built-in way to declare a task dependency, and
