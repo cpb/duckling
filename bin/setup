@@ -5,13 +5,15 @@ set -vx
 
 if command -v brew >/dev/null 2>&1; then
   brew bundle
+  hk install
 fi
 
 bundle install
 
 # Seed .env.local (RB_SYS_CARGO_PROFILE=dev) so local compiles default to
 # Cargo's dev profile without having to run `rake dev compile`. Never
-# overwrite an existing .env.local — it may have local customizations.
-if [ ! -f .env.local ]; then
+# overwrite an existing .env.local — it may have local customizations. Skip
+# entirely in CI, which always wants the release profile.
+if [ "${CI:-}" != "true" ] && [ ! -f .env.local ]; then
   cp .env.local.example .env.local
 fi
