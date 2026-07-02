@@ -2,12 +2,13 @@ PATH
   remote: .
   specs:
     duckling (0.2.0)
-      rb_sys (~> 0.9.39)
+      rb_sys (~> 0.9.128)
 
 GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
+    benchmark-ips (2.15.1)
     dotenv (3.2.0)
     drb (2.2.3)
     erb (6.0.4)
@@ -93,6 +94,7 @@ PLATFORMS
   x86_64-darwin-24
 
 DEPENDENCIES
+  benchmark-ips
   dotenv
   duckling!
   irb
@@ -103,6 +105,7 @@ DEPENDENCIES
 
 CHECKSUMS
   ast (2.4.3) sha256=954615157c1d6a382bc27d690d973195e79db7f55e9765ac7c481c60bdb4d383
+  benchmark-ips (2.15.1) sha256=07a1a9f3c6105ecaf68c174fc3fbcddd71a0e9ada6236ae03093a0dcfd812d59
   dotenv (3.2.0) sha256=e375b83121ea7ca4ce20f214740076129ab8514cd81378161f11c03853fe619d
   drb (2.2.3) sha256=0b00d6fdb50995fe4a45dea13663493c841112e4068656854646f418fda13373
   duckling (0.2.0)

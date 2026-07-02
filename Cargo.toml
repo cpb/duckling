@@ -1,0 +1,9 @@
+# This Cargo.toml lets tools that operate from the repo root — `cargo fmt`
+# run without --manifest-path, IDEs, and RbSys::ExtensionTask's `cargo
+# metadata` call (which the Rakefile invokes at load time, before any
+# Dir.chdir into ext/duckling/) — discover the Rust project. Add extension
+# dependencies to ext/duckling/Cargo.toml instead; this file only points at
+# it as a workspace member.
+[workspace]
+members = ["ext/duckling"]
+resolver = "2"
