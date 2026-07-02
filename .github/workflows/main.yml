@@ -15,11 +15,30 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    name: ${{ matrix.name }}
     strategy:
+      fail-fast: false
       matrix:
-        ruby:
-          - '3.3.6'
+        include:
+          # Baseline: matches the Claude Code Web sandbox exactly (see #28).
+          # This is the only entry required by branch protection on `main`
+          # (context "Ruby 3.3.6") — keep this `name` unchanged, or update
+          # branch protection's required check to match before renaming it.
+          - name: "Ruby 3.3.6"
+            ruby: '3.3.6'
+            rust: '1.94.1'
+          # Forward-compat signal: newer Ruby ABI, same pinned Rust. Not
+          # required to merge — informational only (see issue #29).
+          - name: "Ruby 3.4 (informational)"
+            ruby: '3.4'
+            rust: '1.94.1'
+          - name: "Ruby latest (informational)"
+            ruby: 'ruby'
+            rust: '1.94.1'
+          # Forward-compat signal: newest stable rustc, same baseline Ruby.
+          - name: "Rust latest (informational)"
+            ruby: '3.3.6'
+            rust: 'stable'
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -31,14 +50,16 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
       - name: Set up Rust
-        # Pinned to match the Rust version pre-installed in the Claude Code
-        # Web sandbox image, so CI tests the same toolchain an agent can run
-        # there without installing anything extra. When the sandbox image's
-        # Rust version changes, bump `toolchain:` below to match (check via
-        # `rustc --version` / `rustup show` in a fresh Claude Code Web session).
+        # `rust` is 1.94.1 for every entry except "Rust latest", pinned to
+        # match the Claude Code Web sandbox's pre-installed Rust (see #28) so
+        # CI tests the same toolchain an agent can run there without
+        # installing anything extra. Bump the pinned value here when the
+        # sandbox image's Rust version changes (check via `rustc --version`
+        # in a fresh Claude Code Web session). The "Rust latest" entry floats
+        # on `stable` deliberately, as a forward-compat signal.
         uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable as of 2026-06-30
         with:
-          toolchain: '1.94.1'
+          toolchain: ${{ matrix.rust }}
           components: clippy, rustfmt
       - name: Check Rust formatting
         run: cargo fmt --manifest-path ext/duckling/Cargo.toml --check
