@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Thin wrapper around the benchmark Rake tasks.
+#   bin/benchmark            -> rake benchmark        (console output only)
+#   bin/benchmark record     -> rake benchmark:record  (writes docs/benchmarks/)
+#   bin/benchmark record-pr  -> rake benchmark:record_pr (writes + opens a PR via gh)
+set -euo pipefail
+
+# Bash tool calls don't trigger the Edit/Write-gated bin/claude-code-web-setup
+# PreToolUse hook, so a fresh Claude Code Web session needs its own JIT setup
+# here too, matching bin/test's convention.
+if [ "${CLAUDE_CODE_REMOTE:-}" = true ]; then
+  . "$(dirname "$0")/claude-web-deps.sh"
+  install_gems
+  compile_extension
+fi
+
+case "${1:-}" in
+  "") exec bundle exec rake benchmark ;;
+  record) exec bundle exec rake benchmark:record ;;
+  record-pr) exec bundle exec rake benchmark:record_pr ;;
+  *)
+    echo "Usage: bin/benchmark [record|record-pr]" >&2
+    exit 1
+    ;;
+esac
