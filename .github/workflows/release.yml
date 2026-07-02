@@ -14,9 +14,14 @@ jobs:
     name: Run CI
     uses: ./.github/workflows/main.yml
 
+  cross_gems:
+    name: Cross-compile native gems
+    needs: ci
+    uses: ./.github/workflows/cross-gem.yml
+
   publish:
     name: Publish to RubyGems and create release
-    needs: ci
+    needs: [ci, cross_gems]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -36,13 +41,26 @@ jobs:
             exit 1
           fi
 
-      - name: Build gem
-        run: gem build duckling.gemspec
+      - name: Download native gems
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: native-gem-*
+          path: pkg
+          merge-multiple: true
+
+      - name: Build source gem
+        run: |
+          mkdir -p pkg
+          gem build duckling.gemspec
+          mv duckling-*.gem pkg/
 
       - name: Publish to RubyGems
         env:
           GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-        run: gem push duckling-*.gem
+        run: |
+          for gem in pkg/*.gem; do
+            gem push "$gem"
+          done
 
       - name: Create GitHub Release
         env:
@@ -50,7 +68,7 @@ jobs:
         run: |
           gh release delete "${{ github.ref_name }}" --yes || true
           gh release create "${{ github.ref_name }}" \
-            duckling-*.gem \
+            pkg/*.gem \
             --title "${{ github.ref_name }}" \
             --generate-notes
 
