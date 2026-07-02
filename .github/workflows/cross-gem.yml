@@ -3,10 +3,6 @@ name: cross-gem
 on:
   workflow_call:
   workflow_dispatch:
-  # TEMPORARY: only present to smoke-test this new workflow on its own PR,
-  # since `gh workflow run` can't dispatch a workflow that doesn't exist on
-  # the default branch yet. Remove before merging.
-  pull_request:
 
 permissions:
   contents: read
