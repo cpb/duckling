@@ -1,30 +1,39 @@
-use chrono::DateTime;
-use duckling::{
-    parse as duckling_parse, Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options,
-    Region, TimePoint, TimeValue,
-};
-use magnus::{function, prelude::*, scan_args, Error, RArray, Ruby, Value};
+mod ruby_value;
 
-// `Duckling` is the gem's whole public surface today (one module, one method),
-// so Magnus defines it directly rather than nesting a separate binding module
-// underneath it — there's no second Ruby-level API to keep stable independent
-// of the native layer yet. Revisit if/when the gem grows enough public Ruby
-// behavior (e.g. locale/dimension helpers) to warrant its own file.
+use chrono::DateTime;
+use duckling::{Context, DimensionKind, Lang, Locale, Options, Region, parse as duckling_parse};
+use magnus::{Error, RArray, Ruby, Value, function, prelude::*, scan_args};
+use ruby_value::symbolize_keys_in_place;
+
+// `Duckling::Native.parse` is the raw, fast primitive: it returns a
+// symbol-keyed but otherwise unmodified serde_magnus serialization of
+// `Vec<Entity>` (externally-tagged, e.g. `{value: {Time: {Single: {...}}}}`).
+// `Duckling.parse`, the public API, is a pure-Ruby wrapper (lib/duckling.rb)
+// that pattern-matches this shape into `Data`-based value objects — see
+// lib/duckling/entities.rb. This split exists so the native layer stays a
+// thin, generic conversion (works for every DimensionValue variant, not just
+// Time) while the polished, opinionated Ruby-object shape lives in Ruby,
+// where `case/in` pattern matching belongs.
 #[magnus::init]
 fn init(ruby: &Ruby) -> Result<(), Error> {
     let module = ruby.define_module("Duckling")?;
-    module.define_singleton_method("parse", function!(parse, -1))?;
+    let native = module.define_module("Native")?;
+    native.define_singleton_method("parse", function!(parse, -1))?;
     Ok(())
 }
 
-/// `Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)`
+/// `Duckling::Native.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)`
 ///
 /// - `locale`: BCP-47 tag (e.g. `"en"`, `"en-GB"`); unsupported codes raise `ArgumentError`.
-/// - `dims`: dimension names to extract; only `"time"` is implemented in 0.2.0,
-///   other values raise `ArgumentError`.
+/// - `dims`: dimension names to extract; unsupported dimension names raise `ArgumentError`.
 /// - `reference_time`: Unix seconds anchoring relative expressions like "tomorrow";
 ///   defaults to `Context::default()` (now, UTC).
 /// - `with_latent`: include ambiguous/latent matches (e.g. bare "morning").
+///
+/// Returns each `Entity` as a symbol-keyed, externally-tagged `Hash` (via
+/// `serde_magnus::serialize` + `symbolize_keys_in_place`) — the raw shape
+/// `Duckling.parse` builds `Data` objects from. Not meant to be called
+/// directly except by advanced callers who want to skip that conversion.
 fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let args = scan_args::scan_args::<(String,), (), (), (), _, ()>(args)?;
     let kw = scan_args::get_kwargs::<
@@ -58,7 +67,9 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
 
     let out = ruby.ary_new();
     for e in &entities {
-        out.push(entity_to_ruby(ruby, e)?)?;
+        let raw = serde_magnus::serialize(ruby, e)?;
+        symbolize_keys_in_place(ruby, raw)?;
+        out.push(raw)?;
     }
     Ok(out)
 }
@@ -209,76 +220,4 @@ fn build_context(ruby: &Ruby, ref_time_i: Option<i64>) -> Result<Context, Error>
         }
         None => Ok(Context::default()),
     }
-}
-
-fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint) -> Result<Value, Error> {
-    let h = ruby.hash_new();
-    h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
-    match tp {
-        TimePoint::Naive { value, grain } => {
-            h.aset(
-                ruby.to_symbol("value"),
-                value.format("%Y-%m-%dT%H:%M:%S").to_string(),
-            )?;
-            h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
-        }
-        TimePoint::Instant { value, grain } => {
-            h.aset(ruby.to_symbol("value"), value.to_rfc3339())?;
-            h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
-        }
-    }
-    Ok(h.as_value())
-}
-
-fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue) -> Result<Value, Error> {
-    let h = ruby.hash_new();
-    match tv {
-        TimeValue::Single { value, values, .. } => {
-            h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
-            match value {
-                TimePoint::Naive { value: dt, grain } => {
-                    h.aset(
-                        ruby.to_symbol("value"),
-                        dt.format("%Y-%m-%dT%H:%M:%S").to_string(),
-                    )?;
-                    h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
-                }
-                TimePoint::Instant { value: dt, grain } => {
-                    h.aset(ruby.to_symbol("value"), dt.to_rfc3339())?;
-                    h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
-                }
-            }
-            let vals = ruby.ary_new();
-            for tp in values {
-                vals.push(time_point_to_ruby(ruby, tp)?)?;
-            }
-            h.aset(ruby.to_symbol("values"), vals)?;
-        }
-        TimeValue::Interval { from, to, .. } => {
-            h.aset(ruby.to_symbol("type"), ruby.to_symbol("interval"))?;
-            if let Some(tp) = from {
-                h.aset(ruby.to_symbol("from"), time_point_to_ruby(ruby, tp)?)?;
-            }
-            if let Some(tp) = to {
-                h.aset(ruby.to_symbol("to"), time_point_to_ruby(ruby, tp)?)?;
-            }
-        }
-    }
-    Ok(h.as_value())
-}
-
-fn entity_to_ruby(ruby: &Ruby, entity: &Entity) -> Result<Value, Error> {
-    let h = ruby.hash_new();
-    h.aset(ruby.to_symbol("body"), entity.body.clone())?;
-    h.aset(ruby.to_symbol("start"), entity.start)?;
-    h.aset(ruby.to_symbol("end"), entity.end)?;
-    let dim_str = entity.value.dim_kind().to_string();
-    h.aset(ruby.to_symbol("dim"), ruby.to_symbol(dim_str.as_str()))?;
-    if let Some(latent) = entity.latent {
-        h.aset(ruby.to_symbol("latent"), latent)?;
-    }
-    if let DimensionValue::Time(ref tv) = entity.value {
-        h.aset(ruby.to_symbol("value"), time_value_to_ruby(ruby, tv)?)?;
-    }
-    Ok(h.as_value())
 }
