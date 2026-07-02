@@ -152,7 +152,7 @@ edit `.env.local` to opt back into a release-profile local build, or run
 `bundle exec rake dev compile test` for a one-off dev-profile build without
 `.env.local` in place.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version: bump `Duckling::VERSION` in `version.rb`, merge that change to `main`, then run `bundle exec rake release` (or push a matching `vX.Y.Z` tag directly) to create and push the git tag. Pushing the tag triggers a GitHub Actions pipeline that re-runs CI as a gate, verifies the tag matches `Duckling::VERSION`, builds and publishes the gem to [rubygems.org](https://rubygems.org), cuts a GitHub release, and opens a PR appending an entry to `CHANGELOG.md`.
+To install this gem onto your local machine, run `bundle exec rake install`. To release a new version: bump `Duckling::VERSION` in `version.rb`, merge that change to `main`, then run `bundle exec rake release` (or push a matching `vX.Y.Z` tag directly) to create and push the git tag. Pushing the tag triggers a GitHub Actions pipeline that re-runs CI as a gate, cross-compiles `x86_64-linux`/`x86_64-darwin` binary gems, verifies the tag matches `Duckling::VERSION`, builds and publishes the gems (source + both binary platforms) to [rubygems.org](https://rubygems.org), cuts a GitHub release, and opens a PR appending an entry to `CHANGELOG.md`.
 
 `bin/benchmark` (or `bundle exec rake benchmark`) runs the `benchmark-ips`
 suite locally and prints results to the console — no files written.

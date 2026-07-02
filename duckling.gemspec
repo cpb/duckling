@@ -32,7 +32,16 @@ Gem::Specification.new do |spec|
   spec.extensions = ["ext/duckling/extconf.rb"]
 
   # needed until rubygems supports Rust support is out of beta
-  spec.add_dependency "rb_sys", "~> 0.9.39"
+  #
+  # Floor matters beyond semver: oxidize-rb/actions/cross-gem detects which
+  # rb_sys version to install by grepping Gemfile.lock for the first "rb_sys"
+  # match, which is this constraint as mirrored into the PATH section, not
+  # the actually-resolved GEM section version. Too low a floor here (e.g. the
+  # 0.9.39 this used to pin, from 2022, before `rb-sys-dock` existed) makes
+  # that heuristic install a stale rb_sys lacking rb-sys-dock entirely,
+  # breaking cross-gem.yml with "rb-sys-dock: command not found". Keep this
+  # close to whatever's actually locked in Gemfile.lock.
+  spec.add_dependency "rb_sys", "~> 0.9.128"
 
   # only needed when developing or packaging your gem
   spec.add_development_dependency "rake-compiler", "~> 1.3.1"
