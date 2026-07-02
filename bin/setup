@@ -9,4 +9,9 @@ fi
 
 bundle install
 
-# Do any other automated setup that you need to do here
+# Seed .env.local (RB_SYS_CARGO_PROFILE=dev) so local compiles default to
+# Cargo's dev profile without having to run `rake dev compile`. Never
+# overwrite an existing .env.local — it may have local customizations.
+if [ ! -f .env.local ]; then
+  cp .env.local.example .env.local
+fi

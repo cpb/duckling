@@ -5,6 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in duckling.gemspec
 gemspec
 
+gem "dotenv"
 gem "irb"
 gem "rake"
 

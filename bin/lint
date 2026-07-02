@@ -1,4 +1,26 @@
 #!/usr/bin/env bash
+# PostToolUse hook, invoked after every Edit/Write with $CLAUDE_FILE_PATHS.
+# Lints/fixes changed files directly with the underlying tools (same ones CI
+# runs) instead of going through hk, since hk's Pkl-based config requires
+# fetching its schema package from a GitHub release on every invocation.
 set -euo pipefail
 
-HK_PKL_BACKEND=pklr hk fix ${CLAUDE_FILE_PATHS:-}
+cd "$(dirname "$0")/.."
+
+ruby_files=()
+rust_files=()
+for f in ${CLAUDE_FILE_PATHS:-}; do
+  case "$f" in
+    *.rb) ruby_files+=("$f") ;;
+    *.rs) rust_files+=("$f") ;;
+  esac
+done
+
+if [ "${#ruby_files[@]}" -gt 0 ]; then
+  bundle exec standardrb --fix "${ruby_files[@]}"
+fi
+
+if [ "${#rust_files[@]}" -gt 0 ]; then
+  rustfmt "${rust_files[@]}"
+  cargo clippy --manifest-path ext/duckling/Cargo.toml --fix --allow-dirty --allow-staged -- -D warnings
+fi
