@@ -125,11 +125,13 @@ date in the collapsed run.
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Building
-the native Rust extension requires a Rust toolchain; run `rake compile` to
-build it before running `rake test`, or just run `rake` (or
-`bundle exec rake`) with no arguments to lint, compile, and test in order. You
-can also run `bin/console` for an interactive prompt that will allow you to
-experiment.
+the native Rust extension requires a Rust toolchain; on macOS with Homebrew
+installed, `bin/setup` installs it automatically via `brew bundle` and the
+project's `Brewfile` (no-op if Homebrew isn't present). Then run
+`rake compile` to build the extension before running `rake test`, or just run
+`rake` (or `bundle exec rake`) with no arguments to lint, compile, and test in
+order. You can also run `bin/console` for an interactive prompt that will
+allow you to experiment.
 
 `bin/setup` also seeds a `.env.local` file (from `.env.local.example`) with
 `RB_SYS_CARGO_PROFILE=dev`, so local `rake compile` runs build the extension
