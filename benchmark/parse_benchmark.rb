@@ -13,17 +13,51 @@ require "benchmark/ips"
 # Duckling::Benchmark would make a bare `Benchmark.ips` call resolve to this
 # module instead of the stdlib one.
 module DucklingBenchmark
+  # Realistic multi-date prose (18 time entities), from PR #53's
+  # bin/benchmark_parse -- stress-tests allocation/timing scaling with
+  # entity *count* per call, not just per-entity shape, since the
+  # conversion layer runs once per extracted Entity.
+  CAMPING_TRIP_EMAIL = <<~EMAIL
+    Hey everyone,
+
+    Wanted to loop you all in on our camping trip planning for the summer --
+    we've got a few weekends to lock down. First up, we're thinking Yosemite
+    from June 12th to June 15th, weather permitting; if that valley is too
+    crowded we could push it to June 19th instead. Then in July, maybe the
+    second week, say July 8th through July 12th, we could head down to Big Sur
+    along the coast -- I know a few of you can't make it until July 10th, so
+    we might just meet everyone there by lunchtime that day.
+
+    August is looking busy but I think the weekend of August 22nd to August
+    24th would work for a shorter trip up to the Sierras, and if the weather
+    holds we could extend it to August 25th. Let's also pencil in Labor Day
+    weekend, August 29th through September 1st, for one last trip before
+    school starts back up on September 3rd. If anyone's free the week before,
+    say September 2nd, we could even sneak in a day hike.
+
+    Reply by next Friday if any of these dates don't work for you, and we'll
+    finalize the full schedule by the end of the month. Looking forward to
+    seeing everyone out there!
+  EMAIL
+
   # Mirrors the upstream Rust Criterion corpus (wafer-inc/duckling's
-  # benches/parse.rs) for direct comparability with those numbers.
+  # benches/parse.rs) for direct comparability with those numbers, plus
+  # CAMPING_TRIP_EMAIL for realistic long-prose, multi-entity input.
   CORPUS = [
     {name: "short", input: "tomorrow at 3pm"},
     {name: "medium", input: "from 13 to 15 of July"},
     {name: "long", input: "meet me next Wednesday at 2:30pm for about 2 hours"},
     {name: "no_match", input: "the quick brown fox jumps over the lazy dog"},
-    {name: "empty", input: ""}
+    {name: "empty", input: ""},
+    {name: "camping_trip_email", input: CAMPING_TRIP_EMAIL}
   ].freeze
 
   GC_SAMPLE_ITERATIONS = 2_000
+  # camping_trip_email is ~550ms/call (long multi-entity prose, per PR #53's
+  # own measurement) -- 2000 iterations at that cost would take ~18 minutes.
+  # Sample it far fewer times; still gives a directionally useful per-call
+  # estimate without blowing up the suite's total runtime.
+  GC_SAMPLE_ITERATIONS_OVERRIDES = {"camping_trip_email" => 20}.freeze
   THREAD_COUNT = 10
   CONCURRENCY_DURATION = 3 # seconds
   CONCURRENCY_SCENARIO = "medium"
@@ -44,13 +78,14 @@ module DucklingBenchmark
     end
   end
 
-  def self.measure_gc(text:)
+  def self.measure_gc(name:, text:)
+    iterations = GC_SAMPLE_ITERATIONS_OVERRIDES.fetch(name, GC_SAMPLE_ITERATIONS)
     GC.start
     before = GC.stat
-    GC_SAMPLE_ITERATIONS.times { Duckling.parse(text, locale: "en") }
+    iterations.times { Duckling.parse(text, locale: "en") }
     after = GC.stat
     {
-      allocated_objects_per_call: (after[:total_allocated_objects] - before[:total_allocated_objects]) / GC_SAMPLE_ITERATIONS.to_f,
+      allocated_objects_per_call: (after[:total_allocated_objects] - before[:total_allocated_objects]) / iterations.to_f,
       minor_gc_count_delta: after[:minor_gc_count] - before[:minor_gc_count],
       major_gc_count_delta: after[:major_gc_count] - before[:major_gc_count]
     }
@@ -91,7 +126,7 @@ module DucklingBenchmark
     scenarios = CORPUS.map do |s|
       {name: s[:name], input: s[:input]}
         .merge(ips.fetch(s[:name].to_sym))
-        .merge(measure_gc(text: s[:input]))
+        .merge(measure_gc(name: s[:name], text: s[:input]))
     end
     {
       ruby_version: RUBY_VERSION,
@@ -108,10 +143,11 @@ if __FILE__ == $0
   results = DucklingBenchmark.run
   # (Benchmark.ips already streamed its own human-readable console output
   # during run_ips, above -- this just adds the GC/concurrency summary.)
-  puts "\nGC / allocation pressure (per call, sampled over #{DucklingBenchmark::GC_SAMPLE_ITERATIONS} iterations):"
+  puts "\nGC / allocation pressure (per call, sample size varies by scenario -- see GC_SAMPLE_ITERATIONS_OVERRIDES):"
   results[:scenarios].each do |s|
-    puts format("  %-10s %8.1f objects/call  minor_gc=%d major_gc=%d",
-      s[:name], s[:allocated_objects_per_call], s[:minor_gc_count_delta], s[:major_gc_count_delta])
+    iterations = DucklingBenchmark::GC_SAMPLE_ITERATIONS_OVERRIDES.fetch(s[:name], DucklingBenchmark::GC_SAMPLE_ITERATIONS)
+    puts format("  %-20s %8.1f objects/call  minor_gc=%d major_gc=%d  (n=%d)",
+      s[:name], s[:allocated_objects_per_call], s[:minor_gc_count_delta], s[:major_gc_count_delta], iterations)
   end
   c = results[:concurrency]
   puts "\nConcurrency (#{c[:thread_count]} threads x #{c[:duration_seconds]}s, #{c[:scenario_input]} input):"

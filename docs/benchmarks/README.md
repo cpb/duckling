@@ -25,20 +25,21 @@ Ruby 3.4.5 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` pro
 
 | Scenario | ips | µs/call | objects/call | minor GC | major GC |
 |---|---|---|---|---|---|
-| short | 1719.6 | 581.5 | 28.0 | 1 | 0 |
-| medium | 1627.0 | 614.6 | 31.0 | 1 | 0 |
-| long | 297.9 | 3356.3 | 31.0 | 1 | 0 |
-| no_match | 5360.4 | 186.6 | 3.0 | 0 | 0 |
-| empty | 56873.1 | 17.6 | 3.0 | 0 | 0 |
+| short | 1474.4 | 678.3 | 28.0 | 1 | 0 |
+| medium | 1448.1 | 690.5 | 31.0 | 2 | 0 |
+| long | 265.1 | 3772.4 | 31.0 | 2 | 0 |
+| no_match | 4686.9 | 213.4 | 3.0 | 0 | 0 |
+| empty | 41481.2 | 24.1 | 3.0 | 0 | 0 |
+| camping_trip_email | 1.3 | 791063.3 | 514.4 | 0 | 0 |
 
-10-thread throughput: 1611.3 ops/sec vs 1687.3 ops/sec single-threaded (0.95x, 9.5% of ideal linear scaling).
+10-thread throughput: 1661.0 ops/sec vs 1643.7 ops/sec single-threaded (1.01x, 10.1% of ideal linear scaling).
 
 ```mermaid
 xychart-beta
     title "Duckling.parse throughput (ips) -- latest run per environment"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
-    bar "local" [1719.6, 1627.0, 297.9, 5360.4, 56873.1]
+    bar "local" [1474.4, 1448.1, 265.1, 4686.9, 41481.2]
 ```
 
 ```mermaid
@@ -46,5 +47,5 @@ xychart-beta
     title "10-thread concurrency scaling efficiency (%) -- latest run per environment"
     x-axis [local]
     y-axis "efficiency %"
-    bar "efficiency_pct" [9.5]
+    bar "efficiency_pct" [10.1]
 ```

@@ -17,6 +17,7 @@ module DucklingBenchmark
     DEFAULT_DOCS_README_PATH = File.join(DEFAULT_DOCS_DIR, "README.md")
 
     ENVIRONMENT_ORDER = %w[github-actions claude-code-web local].freeze
+    CHART_EXCLUDED_SCENARIOS = %w[camping_trip_email].freeze
 
     def self.detect_environment(env = ENV)
       if env["GITHUB_ACTIONS"] == "true"
@@ -84,12 +85,22 @@ module DucklingBenchmark
       return "" if latest.empty?
 
       envs = sorted_environments(latest.keys)
-      scenario_names = latest.values.first[:scenarios].map { |s| s[:name] }
+      # camping_trip_email is ~5 orders of magnitude slower than the other
+      # scenarios (it's an entity-count allocation stress test, not a
+      # comparable per-call latency case) -- including it here would make
+      # every other bar visually disappear. Its exact numbers are still in
+      # the results table above.
+      chartable_scenarios = latest.values.first[:scenarios].reject { |s| CHART_EXCLUDED_SCENARIOS.include?(s[:name]) }
+      return "" if chartable_scenarios.empty?
+
+      scenario_names = chartable_scenarios.map { |s| s[:name] }
       lines = ["```mermaid", "xychart-beta", %(    title "Duckling.parse throughput (ips) -- latest run per environment")]
       lines << "    x-axis [#{scenario_names.join(", ")}]"
       lines << %(    y-axis "ips")
       envs.each do |env|
-        values = latest.fetch(env)[:scenarios].map { |s| s[:ips].round(1) }
+        values = latest.fetch(env)[:scenarios]
+          .reject { |s| CHART_EXCLUDED_SCENARIOS.include?(s[:name]) }
+          .map { |s| s[:ips].round(1) }
         lines << %(    bar "#{env}" [#{values.join(", ")}])
       end
       lines << "```"
