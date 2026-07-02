@@ -1,15 +1,56 @@
 #!/bin/sh
-# Web session setup hook skeleton — cpb plugin default (no-op).
+# Installs per-tool dependencies before Claude Code tool calls, using receipt
+# files in tmp/claude-web-receipts/ as a fast-path cache so only the first
+# call per session pays installation cost.
 #
-# Called before Edit/Write tool calls in remote Claude Code sessions
-# (when CLAUDE_CODE_REMOTE=true). Copy this to ./bin/claude-code-web-setup
-# in your project (via /cpb:init) and implement project-specific setup.
-#
-# Common patterns:
-#   - Install dependencies:   bundle install  /  npm install
-#   - Install formatters:     hk install
-#   - Run migrations:         bin/rails db:prepare
-#
-# Use tmp/claude-web-receipts/ for receipt-file caching to avoid re-running
-# on every tool call — see fizzbuzz_app's bin/claude-code-web-setup for an example.
-exit 0
+# Only reached in Claude Code web sessions — the hook command in settings.json
+# short-circuits on CLAUDE_CODE_REMOTE != true before exec'ing this script.
+set -eu
+
+INPUT=$(cat)
+TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null || true)
+
+. "$(dirname "$0")/claude-web-deps.sh"
+
+install_hk() {
+  local hk_version receipt
+  hk_version=$(grep -m1 -o 'hk@[0-9][0-9.]*' hk.pkl | cut -d@ -f2)
+  receipt="$RECEIPTS_DIR/hk-$hk_version"
+
+  if [ -f "$receipt" ] && command -v hk > /dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! command -v hk > /dev/null 2>&1; then
+    if command -v brew > /dev/null 2>&1; then
+      brew install hk || return 1
+    else
+      curl -fsSL \
+        "https://github.com/jdx/hk/releases/download/v${hk_version}/hk-x86_64-unknown-linux-gnu.tar.gz" \
+        | tar -xz -C /usr/local/bin hk || return 1
+    fi
+  fi
+
+  touch "$receipt"
+}
+
+install_hk_hooks() {
+  local receipt="$RECEIPTS_DIR/hk-hooks"
+  [ -f "$receipt" ] && return 0
+
+  command -v hk > /dev/null 2>&1 || return 0
+  hk install
+  touch "$receipt"
+}
+
+case "$TOOL_NAME" in
+  Edit|Write)
+    install_gems
+    compile_extension
+    # hk provisioning is best-effort: e.g. the sandbox's network egress
+    # allowlist may not permit the GitHub release-asset redirect target, and
+    # that shouldn't block the edit or fail every subsequent bin/lint call.
+    install_hk || echo "Warning: hk install failed, bin/lint may not work until hk is available" >&2
+    install_hk_hooks || echo "Warning: hk install (git hooks) failed" >&2
+    ;;
+esac
