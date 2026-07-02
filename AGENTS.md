@@ -11,22 +11,23 @@ NER/entity-extraction engine via [Magnus](https://github.com/matsadler/magnus)
 and `rb-sys`, so Ruby code can extract entities (times, numbers, money,
 emails, etc.) without running a separate HTTP service.
 
-**Current state:** the Ruby API surface (`lib/duckling.rb`), gemspec, and
-Rakefile exist, and the tag-triggered release pipeline (issue #4) has landed
-and is live — see "Gem release conventions" below. Sections below that
-describe not-yet-built pieces are marked **(planned)** — verify against the
-actual files before relying on exact contents, and update this file once the
-real implementation lands (see "Keeping this file current").
+**Current state:** the native Rust extension, Ruby API surface, gemspec, and
+Rakefile all exist and are live, as is the tag-triggered release pipeline
+(issue #4) — see "Gem release conventions" below. As of 0.3.0 (issue #32),
+`Duckling.parse` returns immutable `Data` value objects (`Duckling::Entity`,
+`Duckling::TimeValue::{Single,Interval}`, `Duckling::TimePoint::{Naive,Instant}`),
+not `Hash`es — see "Rust/Magnus wiring" below for how that's built.
 
 ## Directory layout
 
 | Path | Purpose |
 |---|---|
-| `ext/duckling/` | Native Rust extension. Holds `extconf.rb` (build wiring) and, once implemented, `Cargo.toml` + `src/`. See "Rust/Magnus wiring" below. |
-| `lib/duckling.rb` | Ruby module entrypoint (`Duckling` module, `Duckling::Error`). Will `require_relative "duckling/duckling"` to load the compiled native extension once it exists. |
+| `ext/duckling/` | Native Rust extension. Holds `extconf.rb` (build wiring), `Cargo.toml`, and `src/lib.rs` + `src/ruby_value.rs`. See "Rust/Magnus wiring" below. |
+| `lib/duckling.rb` | Defines the public `Duckling.parse` method (pure Ruby) — calls `Duckling::Native.parse` (the compiled extension, required via `require_relative "duckling/duckling"`) and converts its raw output into `Data` objects via `Duckling::Entities.build` (`lib/duckling/entities.rb`). No `Duckling::Error` class — invalid `locale:`/`dims:` raise plain `ArgumentError`. |
+| `lib/duckling/entities.rb` | `Duckling::Entity`/`Duckling::TimeValue::{Single,Interval}`/`Duckling::TimePoint::{Naive,Instant}` `Data` classes, plus `Duckling::Entities.build` — the `case/in` factory that pattern-matches `Duckling::Native.parse`'s raw symbol-keyed, externally-tagged `Hash` into them. See `docs/issue-32-serde-magnus-comparison.md` for why this shape was chosen over returning `Hash`es directly. |
 | `lib/duckling/version.rb` | `Duckling::VERSION` constant — single source of truth for the gem version, read by `duckling.gemspec` and (once built) the release pipeline. |
 | `test/` | Minitest suite. `test_helper.rb` sets up the load path and requires `minitest/autorun`; test files currently follow `test_<name>.rb` / `class Test<Name> < Minitest::Test` naming. |
-| `bin/` | Two kinds of scripts living side by side — see "bin/ scripts" below. Don't confuse the dev-workflow scripts (`worktree`, `check-worktree`, `claude-code-web-setup`, `lint`) with the gem's own build/test entrypoints (`setup`, `console`, `test`). |
+| `bin/` | Two kinds of scripts living side by side — see "bin/ scripts" below. Don't confuse the dev-workflow scripts (`worktree`, `check-worktree`, `claude-code-web-setup`, `lint`) with the gem's own build/test/benchmark entrypoints (`setup`, `console`, `test`, `benchmark_parse`). |
 | `Brewfile` | Homebrew deps for building the native extension locally on macOS (currently just `rust`, which bundles `cargo`/`rustc`/`rustfmt`/`clippy` together). `bin/setup` runs `brew bundle` against it when Homebrew is present. |
 | `duckling.gemspec` | Gem spec. Declares `spec.extensions = ["ext/duckling/extconf.rb"]` (the native-extension build entrypoint), depends on `rb_sys` and dev-depends on `rake-compiler` — see the gemspec's `add_dependency`/`add_development_dependency` lines for the current version constraints. Packaged files come from `git ls-files`, excluding `bin/`, `Gemfile`, `.gitignore`, `.env.local.example`, `test/`, `.github/`, `.standard.yml`, `hk.pkl`. |
 | `Rakefile` | `task default: %i[standard compile test]` — runs StandardRB lint, compiles the Rust extension, then Minitest. Loads `.env.local` via `Dotenv.load` at the top (no-ops if absent, e.g. in CI); also defines an opt-in `:dev` task (not part of `default`) that sets `RB_SYS_CARGO_PROFILE=dev` directly — use `bundle exec rake dev compile test` for a one-off dev-profile build without `.env.local` in place. See "Build and test commands" below for how the two relate. |
@@ -46,26 +47,28 @@ real implementation lands (see "Keeping this file current").
 - **`rake` / `bundle exec rake`** — default task: `standard` (StandardRB lint) + `compile` (builds the Rust extension via `Rake::ExtensionTask`) + `test` (Minitest).
 - **Compiling the native extension**: `rake compile` (via `Rake::ExtensionTask`, wired in the `Rakefile`) builds `ext/duckling/` and places the compiled artifact under `lib/duckling/`. After `bin/setup` has run, this builds Cargo's `dev` profile locally (faster compile, slower runtime) because `.env.local` sets `RB_SYS_CARGO_PROFILE=dev` and the Rakefile loads it via `Dotenv.load(".env.local")`. `.env.local` is gitignored and never present in CI, so `bundle exec rake` in CI (`main.yml`) and `rake release` always build the optimized `release` profile regardless of this.
 - **`rake dev compile test`** — explicit one-off dev-profile build via the `:dev` task, for use without `.env.local` in place (e.g. before running `bin/setup`, or in an environment where you don't want it seeded).
+- **`bin/benchmark_parse`** — not part of `rake test`; run directly to compare `Duckling.parse`'s speed and per-call object-allocation count (`GC.stat[:total_allocated_objects]` diffing + `benchmark-ips`) across representative inputs. Added for issue #32's Option B vs. Option D comparison (see `docs/issue-32-serde-magnus-comparison.md`); re-run it before/after future conversion-layer changes rather than guessing at allocation cost.
 
 ## Rust/Magnus wiring
 
-- **Rust crate location**: `ext/duckling/` (crate name `duckling_ext` in the planned design, to avoid clashing with the wrapped `duckling` crate).
-- **The wrapped crate**: `wafer-inc/duckling`, published on crates.io as `duckling` (pure-Rust deps: regex, chrono, serde, serde_json, once_cell, smallvec — no bindgen/libclang required); see `ext/duckling/Cargo.toml` for the pinned version constraint. Its main entrypoint is `duckling::parse(text, locale, dims, context, options) -> Vec<Entity>`; in release builds it wraps the parse in `catch_unwind` and returns `vec![]` on panic.
-- **`extconf.rb` wiring (planned)**: `rb_sys/mkmf`'s `create_rust_makefile` ties Cargo into the Ruby `mkmf` build:
+- **Rust crate location**: `ext/duckling/`, crate name `duckling` (Cargo package name, not to be confused with the wrapped `duckling` crate — they coexist as separate entries in `Cargo.lock` since one's a path dependency and the other's a crates.io dependency).
+- **The wrapped crate**: `wafer-inc/duckling`, published on crates.io as `duckling` (pure-Rust deps: regex, chrono, serde, serde_json, once_cell, smallvec — no bindgen/libclang required); see `ext/duckling/Cargo.toml` for the pinned version constraint (`"0.4"`, resolves to 0.4.0). Its main entrypoint is `duckling::parse(text, locale, dims, context, options) -> Vec<Entity>`; in release builds it wraps the parse in `catch_unwind` and returns `vec![]` on panic. `Entity`/`DimensionValue`/`TimeValue`/`TimePoint`/`Grain` all derive plain `serde::Serialize` with no container-level `tag`/`rename_all` attributes (only two field-level `skip_serializing_if`s, on `Entity.latent` and `TimeValue`'s `holiday`) — this is what `serde_magnus::serialize` (below) walks.
+- **`extconf.rb` wiring**: `rb_sys/mkmf`'s `create_rust_makefile` ties Cargo into the Ruby `mkmf` build:
   ```ruby
   require "mkmf"
   require "rb_sys/mkmf"
 
   create_rust_makefile("duckling/duckling")
   ```
-  The `"duckling/duckling"` argument controls the output path: the compiled artifact lands at `lib/duckling/duckling.bundle` (macOS) / `lib/duckling/duckling.so` (Linux), which is what `lib/duckling.rb` will `require_relative`.
-- **`Cargo.toml` (planned)**: `cdylib` crate type, depends on `magnus` (with `features = ["chrono"]`), `duckling` (the wrapped crate), and `rb-sys` (`default-features = false, features = ["stable-api-compiled-fallback"]` — avoids needing libclang/bindgen on the build machine); see `ext/duckling/Cargo.toml` for exact version constraints.
-  - **Do not use `magnus = "0.9"`** — despite what some early design docs assumed, 0.9 has never been published to crates.io (only 0.8.2 is released as of this writing); pinning `"0.9"` will fail to resolve. The 0.8.2 API creates symbols via `ruby.to_symbol("key")`, not the 0.9-only `ruby.sym("key")`. Everything else (scan_args, get_kwargs, function!, RHash::aset, Ruby::ary_new, hash_new, chrono FixedOffset IntoValue) is unchanged between 0.8.2 and 0.9. Before trusting a magnus API claim from design docs, spot-check it against the actual published source (`~/.cargo/registry/src/index.crates.io-*/magnus-0.8.2/`).
+  The `"duckling/duckling"` argument controls the output path: the compiled artifact lands at `lib/duckling/duckling.bundle` (macOS) / `lib/duckling/duckling.so` (Linux), which `lib/duckling.rb` loads via `require_relative "duckling/duckling"`.
+- **`Cargo.toml`**: `cdylib` crate type, depends on `magnus = "0.8"` (resolves to 0.8.2), `duckling = "0.4"` (the wrapped crate), `chrono = "0.4"`, `serde = "1"`, `serde_magnus = "0.11"`, and `rb-sys` (`default-features = false, features = ["stable-api-compiled-fallback"]` — avoids needing libclang/bindgen on the build machine).
+  - **Do not use `magnus = "0.9"`** — 0.9 has never been published to crates.io (only 0.8.2 is released as of this writing); pinning `"0.9"` will fail to resolve. The 0.8.2 API creates symbols via `ruby.to_symbol("key")`, not the 0.9-only `ruby.sym("key")`. Before trusting a magnus API claim from design docs, spot-check it against the actual published source (`~/.cargo/registry/src/index.crates.io-*/magnus-0.8.2/`).
+- **`src/lib.rs`**: defines `Duckling::Native.parse(text, locale:, dims:, reference_time:, with_latent:)` (registered under a nested `Native` module, not directly on `Duckling`, since `Duckling.parse` itself is now a pure-Ruby method — see `lib/duckling.rb` above). Converts each `Entity` via `serde_magnus::serialize` + `ruby_value::symbolize_keys_in_place`, returning a symbol-keyed, externally-tagged `Hash` (e.g. `{value: {Time: {Single: {value: {Naive: {value: "...", grain: "Day"}}, values: [...]}}}}`) — *not* the polished `Data`-object shape callers see from `Duckling.parse`; that conversion happens entirely in Ruby (`lib/duckling/entities.rb`). Arg-parsing helpers (`parse_locale`, `parse_dims`, `build_context`) are unchanged from earlier versions.
+- **`src/ruby_value.rs`**: `symbolize_keys_in_place` — recursively rewrites `Hash` keys from `String` to `Symbol` **in place** (via `Hash#delete`/`Hash#aset` on the same `RHash`, not by rebuilding a new `Hash`/`Array` tree) to avoid doubling `serde_magnus`'s already-heavier (externally-tagged) allocation footprint. **GC-safety rule learned the hard way here** (see `docs/issue-32-serde-magnus-comparison.md` for the full incident): never stash a `magnus::Value` pulled off a `Hash`/`Array` into a Rust-native `Vec`/`Box`/struct field across any further Magnus call — once it's off the Ruby-visible object graph, MRI's conservative stack-scanning GC can't see it anymore and a subsequent GC cycle can free it out from under you (this caused a real, reproducible segfault under load, fixed by staging keys in a Ruby `RArray` instead of a Rust `Vec`). `Value`s are safe to hold across Magnus calls only in plain Rust stack-local variables (function params/locals), never in heap containers.
 - **Build model**: ships as a **source gem**, not precompiled binaries — installers need a Rust toolchain. `rake-compiler-dock` is already pulled in transitively (via `rb_sys` in `Gemfile.lock`) for possible future cross-compiled binary-gem support, but that's out of scope for now.
 - **Known gotchas**:
-  - `rb_sys` is already a runtime gemspec dependency (see `duckling.gemspec` for the version constraint) even though the Rust crate doesn't exist yet — this is intentional, not a leftover.
   - CI installs a Rust toolchain via `dtolnay/rust-toolchain` (with `clippy`/`rustfmt` components), pinned via the `toolchain:` input to a specific version tracking the Rust pre-installed in the Claude Code Web sandbox image — see `.github/workflows/main.yml`'s "Set up Rust" step for the exact pinned version. Bump it there (with the SHA comment updated) when the sandbox image's Rust version changes; don't let it float on `stable`, since that can drift out of sync with what an agent can run in the sandbox without an extra install. Then CI runs `cargo fmt --check` + `cargo clippy -- -D warnings` against `ext/duckling/` before `bundle exec rake`.
-  - `.gitignore` does not yet exclude Rust build artifacts (`target/`, compiled `lib/duckling/*.bundle`/`*.so`) — add these when the crate is added.
+  - A raw `cargo build`/`cargo build --release` run directly inside `ext/duckling/` will fail to link (`symbol(s) not found for architecture ...`, missing `_rb_*` symbols) — it skips the `-C link-arg=-Wl,-undefined,dynamic_lookup` and Ruby library search paths that `rb_sys`/`rake-compiler` inject. Always build via `bundle exec rake compile` (or `bundle exec rake dev compile`) from the gem root, never a bare `cargo build`, when checking whether Rust changes actually compile against Ruby.
   - Third-party actions in `.github/workflows/*.yml` are pinned to full commit SHAs (with the version as a trailing comment, e.g. `actions/checkout@<sha> # vX.Y.Z`), not floating tags — see the workflow files themselves for what's currently pinned. `.github/dependabot.yml`'s `github-actions` ecosystem entry opens PRs to bump these pins; don't hand-edit a `uses:` line back to a bare tag when copying it into new workflows.
 
 ## Gem release conventions
@@ -97,7 +100,7 @@ part of that PR** (don't leave it for someone else):
 
 - Directory layout (new top-level dirs, moved files)
 - Build/test commands (`bin/test`, `bin/lint`, `Rakefile` tasks)
-- The Rust/Magnus wiring (`Cargo.toml`, `extconf.rb`, CI Rust toolchain setup) — in particular, once issue #1's native extension lands, replace the **(planned)** Rust sections above with the actual, verified file contents
+- The Rust/Magnus wiring (`Cargo.toml`, `extconf.rb`, `src/*.rs`, CI Rust toolchain setup) — keep "Rust/Magnus wiring" above in sync with the actual, verified file contents
 - The release process (`Rakefile` `release` task, `.github/workflows/release.yml`) — keep "Gem release conventions" above in sync with the actual, verified workflow behavior
 - Version numbers for tools/crates/gems — these belong in their own config files (`duckling.gemspec`, `ext/duckling/Cargo.toml`/`Cargo.lock`, `.standard.yml`, `hk.pkl`, CI workflow matrices), not here. If you need to reference a version, point to the file/field that holds it rather than copying the number, so this doc can't go stale when Dependabot or a manual bump changes it.
 

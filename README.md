@@ -23,25 +23,33 @@ require "duckling"
 
 Duckling.parse("tomorrow", locale: "en")
 # =>
-# [{ body: "tomorrow", start: 0, end: 8, dim: :time,
-#    value: { type: :value, value: "2026-07-02T00:00:00", grain: :day, values: [...] } }]
+# [#<data Duckling::Entity body="tomorrow", start=0, end=8, dim=:time, latent=false,
+#    value=#<data Duckling::TimeValue::Single
+#      value=#<data Duckling::TimePoint::Naive value="2026-07-03T00:00:00", grain=:day>,
+#      values=[...], holiday=nil>>]
 # (the date resolves relative to now; pass reference_time: for a fixed anchor)
 ```
 
 `Duckling.parse` takes required text plus keyword options, and returns an
-`Array` of entity `Hash`es (empty if nothing matched):
+`Array` of `Duckling::Entity` objects (empty if nothing matched):
 
 ```ruby
 Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)
 ```
+
+Entities and their nested values are immutable [`Data`](https://docs.ruby-lang.org/en/master/Data.html)
+objects, not `Hash`es — access fields with method calls (`entity.body`,
+`entity.value.grain`, ...) rather than `entity[:body]`. They support
+`case/in` pattern matching via `deconstruct`/`deconstruct_keys` like any
+other `Data` object.
 
 ### Keyword arguments
 
 - `locale:` (String, default `"en"`) — a `lang[-region]` tag, e.g. `"en"` or
   `"en-GB"`. An unrecognized language or region raises `ArgumentError`.
 - `dims:` (Array of String, default `["time"]`) — which dimensions to
-  extract. See "Supported dimensions" below — only `"time"` currently
-  produces a populated `:value`. An unrecognized dimension name raises
+  extract. See "Supported dimensions" below — only `"time"` gets a dedicated
+  `Data` value type today. An unrecognized dimension name raises
   `ArgumentError`.
 - `reference_time:` (Integer Unix seconds, default `nil`) — anchors relative
   expressions like "tomorrow" or "next week". Defaults to the current UTC
@@ -54,42 +62,62 @@ plain `ArgumentError`.
 
 ### Return value
 
-Each entity in the returned array is a `Hash` with:
+Each entity in the returned array is a `Duckling::Entity`:
 
-- `:body` (String) — the matched substring.
-- `:start` / `:end` (Integer) — character offsets into the input text.
-- `:dim` (Symbol) — the dimension, e.g. `:time`.
-- `:latent` (Boolean) — present only when the match is latent.
-- `:value` (Hash) — present only for the `:time` dimension today. Shape
-  depends on whether it's a single point in time or an interval:
+- `body` (String) — the matched substring.
+- `start` / `end` (Integer) — character offsets into the input text.
+- `dim` (Symbol) — the dimension, e.g. `:time`.
+- `latent` (Boolean) — `true` for ambiguous/latent matches, `false` otherwise.
+- `value` — shape depends on `dim`; see "Supported dimensions" below. For
+  `:time`, it's a `Duckling::TimeValue::Single` or `::Interval`:
 
   ```ruby
   # a single point in time, e.g. "tomorrow"
-  { type: :value, value: "2026-07-02T00:00:00", grain: :day, values: [...] }
+  #<data Duckling::TimeValue::Single
+    value=#<data Duckling::TimePoint::Naive value="2026-07-03T00:00:00", grain=:day>,
+    values=[...], holiday=nil>
 
   # an interval, e.g. "from 3pm to 5pm"
-  { type: :interval,
-    from: { type: :value, value: "2013-02-12T15:00:00", grain: :hour },
-    to:   { type: :value, value: "2013-02-12T18:00:00", grain: :hour } }
+  #<data Duckling::TimeValue::Interval
+    from=#<data Duckling::TimePoint::Naive value="2013-02-12T15:00:00", grain=:hour>,
+    to=#<data Duckling::TimePoint::Naive value="2013-02-12T18:00:00", grain=:hour>,
+    values=[...], holiday=nil>
   ```
 
-  `grain` is one of `second`, `minute`, `hour`, `day`, `week`, `month`,
-  `quarter`, `year`.
+  A `Duckling::TimePoint` is either `::Naive` (a wall-clock time with no
+  timezone, e.g. "tomorrow", "5pm") or `::Instant` (an absolute fixed-offset
+  moment, e.g. "in 2 hours", "now") — both expose `value` (String) and
+  `grain` (Symbol). `grain` is one of `second`, `minute`, `hour`, `day`,
+  `week`, `month`, `quarter`, `year`, or `no_grain`.
 
-  **Gotcha:** an interval's `:to` is the *exclusive* boundary, not the
-  literal named time — `"from 3pm to 5pm"` resolves `:to` to `18:00`, not
+  **Gotcha:** an interval's `to` is the *exclusive* boundary, not the
+  literal named time — `"from 3pm to 5pm"` resolves `to` to `18:00`, not
   `17:00`. This matches upstream [duckling](https://github.com/wafer-inc/duckling)
   behavior.
 
 ### Supported dimensions
 
-In 0.2.0, only `"time"` is fully supported — it's the only dimension whose
-entities come back with a populated `:value`. Other dimension names
-(`number`, `ordinal`, `temperature`, `distance`, `volume`, `quantity`,
-`amount-of-money`, `email`, `phone-number`, `url`, `credit-card-number`,
-`time-grain`, `duration`) are accepted by `dims:` without error, but their
-entities currently have no `:value` key. Broader dimension support is
-planned for future releases.
+Only `"time"` gets a dedicated `Data` value type today (`Duckling::TimeValue`/
+`Duckling::TimePoint`, above). Other dimension names (`number`, `ordinal`,
+`temperature`, `distance`, `volume`, `quantity`, `amount-of-money`, `email`,
+`phone-number`, `url`, `credit-card-number`, `time-grain`, `duration`) are
+accepted by `dims:` without error, and their entities' `value` is populated
+with whatever the wrapped duckling crate resolved — a plain Ruby scalar
+(`String`/`Float`/`Integer`) for simple dimensions like `email` or `number`,
+or a raw symbol-keyed `Hash` for structured ones (e.g. `quantity`), rather
+than a dedicated `Data` type. Dedicated value types for these are planned for
+future releases.
+
+### Advanced: raw output
+
+`Duckling::Native.parse` (same arguments as `Duckling.parse`) returns the raw
+symbol-keyed, externally-tagged `Hash` the native extension produces, before
+`Duckling.parse` converts it into `Data` objects — e.g. `{value: {Time:
+{Single: {value: {Naive: {value: "...", grain: "Day"}}, values: [...]}}}}`.
+It's faster (skips the `Data`-object allocation and `case/in` conversion
+layer) but its shape isn't part of this gem's stable public API in the way
+`Duckling.parse`'s `Data` objects are — prefer `Duckling.parse` unless you've
+measured the difference mattering for your workload.
 
 ### Known limitation: bare comma-separated lists
 
@@ -99,8 +127,8 @@ in that run is silently dropped:
 
 ```ruby
 Duckling.parse("birthdays are march 3, march 9, april 12 and may 5", locale: "en")
-  .select { |r| r[:dim] == :time }
-  .map { |r| r[:value][:value] }
+  .select { |r| r.dim == :time }
+  .map { |r| r.value.value.value }
 # => ["2013-03-03T00:00:00", "2013-05-05T00:00:00"]
 # (march 9 and april 12 are silently dropped)
 ```
@@ -113,8 +141,8 @@ avoids the collapse:
 
 ```ruby
 Duckling.parse("march 3 and march 9 and april 12 and may 5", locale: "en")
-  .select { |r| r[:dim] == :time }
-  .map { |r| r[:value][:value] }
+  .select { |r| r.dim == :time }
+  .map { |r| r.value.value.value }
 # => ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"]
 ```
 

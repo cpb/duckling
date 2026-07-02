@@ -40,8 +40,8 @@ COMMA_LIST_REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00").to_i
 class DucklingCommaListReliableTest < Minitest::Test
   def extracted_dates(text)
     Duckling.parse(text, locale: "en", reference_time: COMMA_LIST_REFERENCE_TIME)
-      .select { |r| r[:dim] == :time }
-      .map { |r| r[:value][:value] }
+      .select { |r| r.dim == :time }
+      .map { |r| r.value.value.value }
   end
 
   def test_dates_each_prefixed_by_a_name_extract_individually
@@ -83,8 +83,8 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
 
   def extracted_dates(text)
     Duckling.parse(text, locale: "en", reference_time: COMMA_LIST_REFERENCE_TIME)
-      .select { |r| r[:dim] == :time }
-      .map { |r| r[:value][:value] }
+      .select { |r| r.dim == :time }
+      .map { |r| r.value.value.value }
   end
 
   def test_current_actual_extraction_for_bare_comma_separated_dates
