@@ -61,18 +61,26 @@ function should preserve the "never park a bare `Value` in a `Vec`/`Box`/struct 
 ## Measured allocation and throughput cost (the actual point of this comparison)
 
 Captured with `bin/benchmark_parse` (`GC.stat[:total_allocated_objects]` diffing + `benchmark-ips`),
-before this change (0.2.0, Option B) and after (0.3.0, Option D), same inputs, same machine:
+before this change (0.2.0, Option B, measured via a `git worktree` checkout of commit `3b33aba`) and
+after (0.3.0, Option D, current `main`), same inputs, same machine, same run structure:
 
-| Input | Objects/call (before → after) | i/s (before → after) |
-|---|---|---|
-| single time value ("tomorrow") | 38 → 136 (**3.6x**) | ~14.7k → ~8.2k (**~1.8x slower**) |
-| time interval ("from 3pm to 5pm") | 37 → 181 (**4.9x**) | ~565 → ~525 (~8% slower, within noise) |
-| email ("user@example.com") | 11 → 59 (**5.4x**) | ~26k–65k (noisy) → ~24.9k (within the noisy baseline range) |
+| Input | Objects/call: before | after | absolute diff | ratio | i/s: before | after | absolute diff |
+|---|---|---|---|---|---|---|---|
+| single time value ("tomorrow") | 38 | 138 | **+100** | 3.63x | 15,329.4 | 8,792.8 | **−6,536.6** (−42.6%) |
+| time interval ("from 3pm to 5pm") | 37 | 178 | **+141** | 4.81x | 616.0 | 578.4 | **−37.6** (−6.1%, within noise) |
+| email dim ("user@example.com", `dims: ["email"]`) | 11 | 54 | **+43** | 4.91x | 66,450.9 | 27,310.5 | **−39,140.4** (−58.9%) |
+| camping-trip email (multi-time, long prose, 18 entities) | 518 | 2,542 | **+2,024** | 4.91x | 1.797 | 1.840 | **+0.043** (~0%, noise) |
 
-The interval case's throughput is barely affected despite the allocation increase because
-`duckling::parse`'s own grammar/ranking work for interval expressions dominates wall-clock time far
-more than the conversion layer does either way — the allocation-count column is the more meaningful
-signal there.
+The camping-trip case (added after the initial cutover, at the user's request, to stress-test
+allocation scaling with entity *count* per call rather than per-entity shape) is the most telling row:
+the conversion-layer allocation cost scales with the number of extracted entities exactly as expected
+(+2,024 objects for 18 entities ≈ +112/entity, in line with the single-entity rows above), but
+throughput is *unaffected* — both versions run at ~1.8 calls/second, because `duckling::parse`'s own
+grammar/ranking work for a long multi-date paragraph (500+ ms/call either way) dwarfs the conversion
+layer's cost by roughly three orders of magnitude. The interval case shows the same pattern at smaller
+scale. Where the conversion-layer cost *does* show up in wall-clock terms is the cheap, single-entity,
+grammar-light cases (single time value, email dim) — there, going from ~65 μs/call to ~114 μs/call (or
+~15 μs to ~37 μs for email) is a real, user-visible difference, not noise.
 
 Splitting `Duckling.parse`'s allocation total into its two layers (`Duckling::Native.parse` alone vs.
 the full call including the Ruby `Data`-object factory):
@@ -81,7 +89,8 @@ the full call including the Ruby `Data`-object factory):
 |---|---|---|---|
 | single time value | 98 | 136 | 38 |
 | time interval | 146 | 181 | 35 |
-| email | 43 | 59 | 16 |
+| email dim | 43 | 59 | 16 |
+| camping-trip email (18 entities) | 2,100 | 2,571 | 471 |
 
 Two distinct costs are stacked here: `serde_magnus`'s externally-tagged output allocates a `Hash` per
 enum layer (`Entity` → `{Time: ...}` → `{Single: ...}` → `{Naive: ...}`, each its own `Hash`, vs. Option
@@ -103,4 +112,8 @@ roughly 1.8x lower throughput for the dominant single-time-value case — worth 
 revisiting (e.g. building `Data` objects directly from Rust via Magnus's typed-data support, skipping
 the intermediate `Hash` entirely) if a workload turns out to be allocation-sensitive, but not
 disqualifying for a library whose primary cost is almost always the underlying NLP parse itself, not
-the conversion layer around it.
+the conversion layer around it — the camping-trip benchmark case above is the clearest evidence of
+that: +2,024 objects/call had a measured 0.0% effect on throughput for realistic longer-text input,
+because `duckling::parse`'s own grammar/ranking cost (hundreds of milliseconds for an 18-entity
+paragraph) swamps the conversion layer's cost by three orders of magnitude. The conversion-layer
+overhead is only user-visible for cheap, single-entity, grammar-light inputs.

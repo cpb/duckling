@@ -14,10 +14,38 @@ require "benchmark/ips"
 
 REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00").to_i
 
+# A long, prose-style body with many distinct time expressions embedded in
+# natural sentences (mix of single points and intervals) -- stress-tests
+# allocation scaling with entity *count* per call, not just per-entity shape,
+# since the conversion layer runs once per extracted Entity.
+CAMPING_TRIP_EMAIL = <<~EMAIL
+  Hey everyone,
+
+  Wanted to loop you all in on our camping trip planning for the summer --
+  we've got a few weekends to lock down. First up, we're thinking Yosemite
+  from June 12th to June 15th, weather permitting; if that valley is too
+  crowded we could push it to June 19th instead. Then in July, maybe the
+  second week, say July 8th through July 12th, we could head down to Big Sur
+  along the coast -- I know a few of you can't make it until July 10th, so
+  we might just meet everyone there by lunchtime that day.
+
+  August is looking busy but I think the weekend of August 22nd to August
+  24th would work for a shorter trip up to the Sierras, and if the weather
+  holds we could extend it to August 25th. Let's also pencil in Labor Day
+  weekend, August 29th through September 1st, for one last trip before
+  school starts back up on September 3rd. If anyone's free the week before,
+  say September 2nd, we could even sneak in a day hike.
+
+  Reply by next Friday if any of these dates don't work for you, and we'll
+  finalize the full schedule by the end of the month. Looking forward to
+  seeing everyone out there!
+EMAIL
+
 INPUTS = {
   "single time value" => ["tomorrow", {locale: "en", reference_time: REFERENCE_TIME}],
   "time interval" => ["from 3pm to 5pm", {locale: "en", reference_time: REFERENCE_TIME}],
-  "email" => ["user@example.com", {locale: "en", dims: ["email"]}]
+  "email dim" => ["user@example.com", {locale: "en", dims: ["email"]}],
+  "camping trip email (multi-time, long text)" => [CAMPING_TRIP_EMAIL, {locale: "en", reference_time: REFERENCE_TIME}]
 }.freeze
 
 def allocations_for(text, opts)
