@@ -1,26 +1,49 @@
 #!/usr/bin/env bash
 # Called by bin/worktree heal-reproduce to run a single test by file:line.
 # With no arguments, runs the full suite via `bundle exec rake` (standard +
-# compile + test) instead. Override this script in your project to change
-# the test runner or add setup steps.
-#
-# Default: bin/rails test (Minitest)
-# Other examples:
-#   bundle exec rspec "$@"
-#   bundle exec pytest "$@"
+# compile + test). With arguments, routes through `bundle exec rake test` --
+# not a raw `ruby -I test` invocation -- so the Rakefile's `task test:
+# :compile` prerequisite guarantees the extension is compiled first.
+# Minitest::TestTask takes no CLI args directly; it reads env vars instead
+# (see minitest/test_task.rb's process_env), so arguments are "massaged"
+# into that interface:
+#   - a single `path/to/file.rb:LINE` ref (the heal-reproduce contract) is
+#     resolved to the nearest preceding `def test_*` method at/above that
+#     line and passed as N=<name> (-i/--include, exact method-name match)
+#   - anything else is passed through verbatim as A="..." (raw extra args,
+#     e.g. `-i test_foo`, `-v`, `--seed 123`)
+# Override this script in your project to change the test runner or add
+# setup steps.
 
 # Bash tool calls don't trigger the Edit/Write-gated bin/claude-code-web-setup
-# PreToolUse hook, so a fresh Claude Code Web session needs its own JIT setup
-# here too — both the no-arg full-suite path and the file:line path need
-# gems and the compiled extension, so this isn't conditional on $#.
+# PreToolUse hook, so a fresh Claude Code Web session needs its own JIT gem
+# install here too. Compiling the extension is no longer needed here --
+# `bundle exec rake test` compiles it via the Rakefile's `task test:
+# :compile` prerequisite.
 if [ "${CLAUDE_CODE_REMOTE:-}" = true ]; then
   . "$(dirname "$0")/claude-web-deps.sh"
   install_gems
-  compile_extension
 fi
 
 if [ $# -eq 0 ]; then
   exec bundle exec rake
 fi
 
-exec bundle exec ruby -I test "$@"
+if [ $# -eq 1 ] && [[ "$1" =~ ^(.+):([0-9]+)$ ]] && [ -f "${BASH_REMATCH[1]}" ]; then
+  file="${BASH_REMATCH[1]}"
+  line="${BASH_REMATCH[2]}"
+  test_name=$(ruby -e '
+    file, line = ARGV
+    line = line.to_i
+    name = nil
+    File.foreach(file).with_index(1) do |src, lineno|
+      break if lineno > line
+      name = $1 if src =~ /^\s*def\s+(test_\w+)/
+    end
+    abort "no test method found at or before #{file}:#{line}" unless name
+    puts name
+  ' "$file" "$line") || exit 1
+  exec env N="$test_name" bundle exec rake test
+fi
+
+exec env A="$*" bundle exec rake test
