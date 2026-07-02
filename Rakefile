@@ -3,7 +3,7 @@
 require "bundler/gem_tasks"
 require "dotenv"
 require "minitest/test_task"
-require "rake/extensiontask"
+require "rb_sys/extensiontask"
 
 # Loads RB_SYS_CARGO_PROFILE=dev from .env.local when present (seeded by
 # bin/setup from .env.local.example), so local compiles default to the dev
@@ -11,12 +11,21 @@ require "rake/extensiontask"
 # never checked out in CI, so `bundle exec rake` there still builds release.
 Dotenv.load(".env.local")
 
-Rake::ExtensionTask.new("duckling") do |ext|
+GEMSPEC = Gem::Specification.load("duckling.gemspec")
+
+RbSys::ExtensionTask.new("duckling", GEMSPEC) do |ext|
   ext.lib_dir = "lib/duckling"
+  ext.cross_compile = true
+  ext.cross_platform = ["x86_64-linux", "x86_64-darwin"]
 end
 
 task :dev do
   ENV["RB_SYS_CARGO_PROFILE"] = "dev"
+end
+
+desc "Cross-compile the native extension for a given platform via rb-sys-dock (e.g. `rake 'native_gem[x86_64-linux]'`)"
+task :native_gem, [:platform] do |_t, platform:|
+  sh "bundle", "exec", "rb-sys-dock", "--platform", platform, "--ruby-versions", "3.2", "--build"
 end
 
 Minitest::TestTask.create
