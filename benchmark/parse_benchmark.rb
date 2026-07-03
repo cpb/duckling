@@ -62,10 +62,17 @@ module DucklingBenchmark
   CONCURRENCY_DURATION = 3 # seconds
   CONCURRENCY_SCENARIO = "medium"
 
+  # Suffix used to key the native (no-thread) dispatch variant's ips.report
+  # label alongside each scenario's normal (thread-per-call) entry, so a
+  # single Benchmark.ips run produces both without a second warmup/measure
+  # pass (issue #64's dispatch-overhead comparison).
+  NATIVE_LABEL_SUFFIX = "_native"
+
   def self.run_ips
     report = ::Benchmark.ips do |x|
       x.config(time: 2, warmup: 1)
       CORPUS.each { |s| x.report(s[:name]) { Duckling.parse(s[:input], locale: "en") } }
+      CORPUS.each { |s| x.report("#{s[:name]}#{NATIVE_LABEL_SUFFIX}") { Duckling::Native.parse(s[:input], locale: "en") } }
       x.compare!
     end
     report.entries.each_with_object({}) do |entry, memo|
@@ -124,9 +131,19 @@ module DucklingBenchmark
   def self.run
     ips = run_ips
     scenarios = CORPUS.map do |s|
+      thread_stats = ips.fetch(s[:name].to_sym)
+      native_stats = ips.fetch(:"#{s[:name]}#{NATIVE_LABEL_SUFFIX}")
+      overhead_pct = ((thread_stats[:microseconds_per_call] - native_stats[:microseconds_per_call]) /
+        native_stats[:microseconds_per_call]) * 100
+
       {name: s[:name], input: s[:input]}
-        .merge(ips.fetch(s[:name].to_sym))
+        .merge(thread_stats)
         .merge(measure_gc(name: s[:name], text: s[:input]))
+        .merge(
+          native_ips: native_stats[:ips],
+          native_microseconds_per_call: native_stats[:microseconds_per_call],
+          thread_overhead_pct: overhead_pct
+        )
     end
     {
       ruby_version: RUBY_VERSION,

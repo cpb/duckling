@@ -77,6 +77,50 @@ module DucklingBenchmark
         lines << format("%d-thread throughput: %.1f ops/sec vs %.1f ops/sec single-threaded (%.2fx, %.1f%% of ideal linear scaling).",
           c[:thread_count], c[:multi_thread_ops_per_sec], c[:single_thread_ops_per_sec], c[:scaling_factor], c[:efficiency_pct])
         lines << ""
+        dispatch_section = build_dispatch_section(entry)
+        lines << dispatch_section unless dispatch_section.empty?
+      end
+      lines.join("\n")
+    end
+
+    # Compares Duckling::Native.parse (no thread spawn) against Duckling.parse
+    # (thread-per-call dispatch, issue #64) for a single environment's latest
+    # run. Older recorded entries (from before #64 landed) have no
+    # `native_ips`/`native_microseconds_per_call`/`thread_overhead_pct` fields
+    # -- returns "" for those rather than raising, so this stays purely
+    # additive and environments upgrade to the new schema independently as
+    # each one's next `benchmark:record_pr` run lands.
+    def self.build_dispatch_section(entry)
+      scenarios = entry[:scenarios].select { |s| s[:native_ips] }
+      return "" if scenarios.empty?
+
+      lines = ["#### Dispatch overhead: native vs thread-per-call (#{entry[:environment]} v#{entry[:version]})", ""]
+      lines << "Thread-per-call is `Duckling.parse` (the public API) spawning a background " \
+        "`Thread` so a calling Fiber can yield to an Async::Reactor while the native call " \
+        "runs; native is `Duckling::Native.parse` (no thread, the pre-#64 baseline). Overhead " \
+        "is a fixed per-call cost, not a throughput loss -- negligible against slower " \
+        "scenarios, a real multiplier against the fastest ones."
+      lines << ""
+      lines << "| Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |"
+      lines << "|---|---|---|---|---|---|"
+      scenarios.each do |s|
+        lines << format("| %s | %.1f | %.1f | %.1f | %.1f | %.1f%% |",
+          s[:name], s[:native_ips], s[:ips], s[:native_microseconds_per_call], s[:microseconds_per_call], s[:thread_overhead_pct])
+      end
+      lines << ""
+
+      chartable = scenarios.reject { |s| CHART_EXCLUDED_SCENARIOS.include?(s[:name]) }
+      unless chartable.empty?
+        scenario_names = chartable.map { |s| s[:name] }
+        lines << "```mermaid"
+        lines << "xychart-beta"
+        lines << %(    title "#{entry[:environment]} v#{entry[:version]}: native vs thread-per-call dispatch (ips)")
+        lines << "    x-axis [#{scenario_names.join(", ")}]"
+        lines << %(    y-axis "ips")
+        lines << %(    bar "native" [#{chartable.map { |s| s[:native_ips].round(1) }.join(", ")}])
+        lines << %(    bar "thread-per-call" [#{chartable.map { |s| s[:ips].round(1) }.join(", ")}])
+        lines << "```"
+        lines << ""
       end
       lines.join("\n")
     end

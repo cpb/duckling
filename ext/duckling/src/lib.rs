@@ -1,23 +1,98 @@
 use chrono::DateTime;
 use duckling::{
-    parse as duckling_parse, Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options,
-    Region, TimePoint, TimeValue,
+    Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options, Region, TimePoint,
+    TimeValue, parse as duckling_parse,
 };
-use magnus::{function, prelude::*, scan_args, Error, RArray, Ruby, Value};
+use magnus::{Error, RArray, Ruby, Value, function, prelude::*, scan_args};
+use std::os::raw::c_void;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
-// `Duckling` is the gem's whole public surface today (one module, one method),
-// so Magnus defines it directly rather than nesting a separate binding module
-// underneath it — there's no second Ruby-level API to keep stable independent
-// of the native layer yet. Revisit if/when the gem grows enough public Ruby
-// behavior (e.g. locale/dimension helpers) to warrant its own file.
+// `Duckling::Native` holds the raw Magnus-defined entrypoint; `Duckling.parse`
+// itself is a thin Ruby-level wrapper (see lib/duckling.rb) that dispatches
+// through a `Thread.new { ... }.value` so a calling Fiber on an Async::Reactor
+// can yield to sibling Fibers while the GVL-released native call runs (issue
+// #64). Keeping the native singleton method under a separate `Native` module
+// — rather than directly on `Duckling` — is what makes that split possible:
+// it gives Ruby code something to call *without* the thread-spawn, which the
+// benchmark suite also relies on to measure the dispatch overhead directly.
 #[magnus::init]
 fn init(ruby: &Ruby) -> Result<(), Error> {
     let module = ruby.define_module("Duckling")?;
-    module.define_singleton_method("parse", function!(parse, -1))?;
+    let native = module.define_module("Native")?;
+    native.define_singleton_method("parse", function!(parse, -1))?;
     Ok(())
 }
 
-/// `Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)`
+/// Everything the off-GVL callback needs, and everything it produces.
+/// Deliberately holds only fully-owned Rust data — no `magnus::Value`, no
+/// `magnus::Error`, no other Ruby-VM-touching type crosses this struct in
+/// either direction (this repo's established rule: never stash a bare
+/// `magnus::Value`, or anything wrapping one, across a Magnus call boundary —
+/// a past incident here caused a real GC-safety segfault).
+struct ParsePayload {
+    text: String,
+    locale: Locale,
+    dims: Vec<DimensionKind>,
+    context: Context,
+    options: Options,
+    result: Option<Result<Vec<Entity>, String>>,
+}
+
+/// The raw callback handed to `rb_thread_call_without_gvl` as `func`. Runs
+/// with the GVL released: no Ruby method calls, no `Value`/`RArray`
+/// construction, no `magnus::Error` construction or raising is permitted
+/// here — only the plain Rust computation and writing plain Rust data back
+/// into `*payload`. Wraps the call in `std::panic::catch_unwind` directly
+/// (not `magnus::rb_sys::catch_unwind`) to keep the payload's "plain Rust
+/// data only" invariant simple and mechanically checkable.
+///
+/// This guard is required unconditionally, not just as release-profile
+/// defense-in-depth: the wrapped `duckling` crate's own internal
+/// `catch_unwind` is compiled out entirely under `#[cfg(not(debug_assertions))]`,
+/// which is absent from this repo's own `dev`-profile local default
+/// (`RB_SYS_CARGO_PROFILE=dev`, set via `.env.local`).
+unsafe extern "C" fn parse_without_gvl(payload: *mut c_void) -> *mut c_void {
+    let payload = &mut *(payload as *mut ParsePayload);
+
+    let outcome = catch_unwind(AssertUnwindSafe(|| {
+        duckling_parse(
+            &payload.text,
+            &payload.locale,
+            &payload.dims,
+            &payload.context,
+            &payload.options,
+        )
+    }));
+
+    payload.result = Some(match outcome {
+        Ok(entities) => Ok(entities),
+        Err(panic_payload) => Err(panic_message(&panic_payload)),
+    });
+
+    // Return value is unused by our caller (the real result is read back out
+    // of `*payload`); the C API just requires we return *something*.
+    std::ptr::null_mut()
+}
+
+/// Mirrors duckling's own panic_payload_message downcast (`&str` / `String` /
+/// fallback), kept local since we don't have access to duckling's private helper.
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
+    if let Some(&s) = payload.downcast_ref::<&'static str>() {
+        s.to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "duckling::parse panicked".to_string()
+    }
+}
+
+/// `Duckling::Native.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)`
+///
+/// The raw native entrypoint — no Thread spawn, no GVL-release considerations
+/// visible at the call site. `Duckling.parse` (see lib/duckling.rb) is the
+/// public API; it wraps this in `Thread.new { ... }.value` for thread-per-call
+/// dispatch. Called directly (no thread), this is also the "without" baseline
+/// the benchmark suite compares thread-per-call dispatch overhead against.
 ///
 /// - `locale`: BCP-47 tag (e.g. `"en"`, `"en-GB"`); unsupported codes raise `ArgumentError`.
 /// - `dims`: dimension names to extract; only `"time"` is implemented in 0.2.0,
@@ -54,7 +129,45 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let context = build_context(ruby, ref_time_i)?;
     let options = Options { with_latent };
 
-    let entities = duckling_parse(&text, &locale, &dims, &context, &options);
+    // Box the owned inputs, release the GVL, call duckling::parse off-GVL,
+    // and block until the GVL is reacquired (rb_thread_call_without_gvl's
+    // documented step 4) before touching any Ruby Value again.
+    let boxed = Box::new(ParsePayload {
+        text,
+        locale,
+        dims,
+        context,
+        options,
+        result: None,
+    });
+    let payload_ptr = Box::into_raw(boxed) as *mut c_void;
+
+    unsafe {
+        rb_sys::rb_thread_call_without_gvl(
+            Some(parse_without_gvl),
+            payload_ptr,
+            None, // ubf: no cancellation hook (Thread#raise/#kill against an
+            // in-flight parse isn't handled — see issue #64's "Out of scope")
+            std::ptr::null_mut(),
+        );
+    }
+
+    // Reclaim ownership now that the GVL is confirmed held again. This is the
+    // only place the payload is freed — the callback above never frees it.
+    let boxed = unsafe { Box::from_raw(payload_ptr as *mut ParsePayload) };
+    let entities = match boxed
+        .result
+        .expect("parse_without_gvl always sets result before returning")
+    {
+        Ok(entities) => entities,
+        Err(message) => {
+            // Safe to construct/raise now: the GVL is confirmed held again.
+            return Err(Error::new(
+                ruby.exception_fatal(),
+                format!("duckling::parse panicked: {message}"),
+            ));
+        }
+    };
 
     let out = ruby.ary_new();
     for e in &entities {
