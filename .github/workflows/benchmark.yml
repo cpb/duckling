@@ -1,0 +1,37 @@
+name: benchmark
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  record:
+    name: Record GitHub Actions benchmark results and open a PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@0dafeac902942906541bc140009cdbf32665b601 # v1.315.0
+        with:
+          ruby-version: '3.3.6'
+          bundler-cache: true
+
+      - name: Set up Rust
+        # Needed to compile the native extension for `rake benchmark:record_pr`
+        # below. Same pinned toolchain as main.yml's "Set up Rust" step.
+        uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable as of 2026-06-30
+        with:
+          toolchain: '1.94.1'
+
+      - name: Record GitHub Actions benchmark results and open a PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bundle exec rake benchmark:record_pr
