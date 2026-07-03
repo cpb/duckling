@@ -49,20 +49,42 @@ Ruby 3.3.6 (x86_64-linux), rustc 1.94.1 (e408947bf 2026-03-25), `release` profil
 
 10-thread throughput: 1692.7 ops/sec vs 1804.3 ops/sec single-threaded (0.94x, 9.4% of ideal linear scaling).
 
-### local (v0.2.0, 2026-07-02)
+### local (v0.2.0, 2026-07-03)
 
 Ruby 3.4.5 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` profile.
 
 | Scenario | ips | µs/call | objects/call | minor GC | major GC |
 |---|---|---|---|---|---|
-| short | 1474.4 | 678.3 | 28.0 | 1 | 0 |
-| medium | 1448.1 | 690.5 | 31.0 | 2 | 0 |
-| long | 265.1 | 3772.4 | 31.0 | 2 | 0 |
-| no_match | 4686.9 | 213.4 | 3.0 | 0 | 0 |
-| empty | 41481.2 | 24.1 | 3.0 | 0 | 0 |
-| camping_trip_email | 1.3 | 791063.3 | 514.4 | 0 | 0 |
+| short | 1154.4 | 866.3 | 35.2 | 62 | 0 |
+| medium | 1095.9 | 912.5 | 38.2 | 59 | 1 |
+| long | 279.2 | 3581.8 | 38.2 | 60 | 0 |
+| no_match | 2477.0 | 403.7 | 10.0 | 61 | 0 |
+| empty | 5396.2 | 185.3 | 10.0 | 60 | 1 |
+| camping_trip_email | 1.8 | 552180.2 | 521.4 | 0 | 0 |
 
-10-thread throughput: 1661.0 ops/sec vs 1643.7 ops/sec single-threaded (1.01x, 10.1% of ideal linear scaling).
+10-thread throughput: 4023.3 ops/sec vs 1048.0 ops/sec single-threaded (3.84x, 38.4% of ideal linear scaling).
+
+#### Dispatch overhead: native vs thread-per-call (local v0.2.0)
+
+Thread-per-call is `Duckling.parse` (the public API) spawning a background `Thread` so a calling Fiber can yield to an Async::Reactor while the native call runs; native is `Duckling::Native.parse` (no thread, the pre-#64 baseline). Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
+
+| Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |
+|---|---|---|---|---|---|
+| short | 1764.7 | 1154.4 | 566.7 | 866.3 | 52.9% |
+| medium | 1752.8 | 1095.9 | 570.5 | 912.5 | 59.9% |
+| long | 317.0 | 279.2 | 3155.1 | 3581.8 | 13.5% |
+| no_match | 5523.6 | 2477.0 | 181.0 | 403.7 | 123.0% |
+| empty | 57487.9 | 5396.2 | 17.4 | 185.3 | 965.3% |
+| camping_trip_email | 1.8 | 1.8 | 540948.2 | 552180.2 | 2.1% |
+
+```mermaid
+xychart-beta
+    title "local v0.2.0: native vs thread-per-call dispatch (ips)"
+    x-axis [short, medium, long, no_match, empty]
+    y-axis "ips"
+    bar "native" [1764.7, 1752.8, 317.0, 5523.6, 57487.9]
+    bar "thread-per-call" [1154.4, 1095.9, 279.2, 2477.0, 5396.2]
+```
 
 ```mermaid
 xychart-beta
@@ -71,7 +93,7 @@ xychart-beta
     y-axis "ips"
     bar "github-actions" [2820.1, 2314.0, 421.7, 7877.8, 73909.9]
     bar "claude-code-web" [2135.1, 1852.3, 366.0, 6362.9, 61108.3]
-    bar "local" [1474.4, 1448.1, 265.1, 4686.9, 41481.2]
+    bar "local" [1154.4, 1095.9, 279.2, 2477.0, 5396.2]
 ```
 
 ```mermaid
@@ -79,5 +101,5 @@ xychart-beta
     title "10-thread concurrency scaling efficiency (%) -- latest run per environment"
     x-axis [github-actions, claude-code-web, local]
     y-axis "efficiency %"
-    bar "efficiency_pct" [9.9, 9.4, 10.1]
+    bar "efficiency_pct" [9.9, 9.4, 38.4]
 ```
