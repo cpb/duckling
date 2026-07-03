@@ -19,6 +19,21 @@ one file per environment per recorded version.
 
 ## Latest results by environment
 
+### claude-code-web (v0.2.0, 2026-07-03)
+
+Ruby 3.3.6 (x86_64-linux), rustc 1.94.1 (e408947bf 2026-03-25), `release` profile.
+
+| Scenario | ips | µs/call | objects/call | minor GC | major GC |
+|---|---|---|---|---|---|
+| short | 2135.1 | 468.4 | 28.0 | 1 | 0 |
+| medium | 1852.3 | 539.9 | 31.0 | 1 | 0 |
+| long | 366.0 | 2731.9 | 31.0 | 1 | 0 |
+| no_match | 6362.9 | 157.2 | 3.0 | 0 | 0 |
+| empty | 61108.3 | 16.4 | 3.0 | 0 | 0 |
+| camping_trip_email | 2.2 | 456857.8 | 514.4 | 0 | 0 |
+
+10-thread throughput: 1692.7 ops/sec vs 1804.3 ops/sec single-threaded (0.94x, 9.4% of ideal linear scaling).
+
 ### local (v0.2.0, 2026-07-02)
 
 Ruby 3.4.5 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` profile.
@@ -39,13 +54,14 @@ xychart-beta
     title "Duckling.parse throughput (ips) -- latest run per environment"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
+    bar "claude-code-web" [2135.1, 1852.3, 366.0, 6362.9, 61108.3]
     bar "local" [1474.4, 1448.1, 265.1, 4686.9, 41481.2]
 ```
 
 ```mermaid
 xychart-beta
     title "10-thread concurrency scaling efficiency (%) -- latest run per environment"
-    x-axis [local]
+    x-axis [claude-code-web, local]
     y-axis "efficiency %"
-    bar "efficiency_pct" [10.1]
+    bar "efficiency_pct" [9.4, 10.1]
 ```
