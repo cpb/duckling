@@ -52,7 +52,9 @@ struct ParsePayload {
 /// which is absent from this repo's own `dev`-profile local default
 /// (`RB_SYS_CARGO_PROFILE=dev`, set via `.env.local`).
 unsafe extern "C" fn parse_without_gvl(payload: *mut c_void) -> *mut c_void {
-    let payload = &mut *(payload as *mut ParsePayload);
+    // Edition 2024 requires unsafe operations to be wrapped in their own
+    // `unsafe` block even inside an `unsafe fn` (unsafe_op_in_unsafe_fn).
+    let payload = unsafe { &mut *(payload as *mut ParsePayload) };
 
     let outcome = catch_unwind(AssertUnwindSafe(|| {
         duckling_parse(
