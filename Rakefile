@@ -51,7 +51,9 @@ namespace :benchmark do
 
   desc "Run :record on a fresh branch off origin/main, then commit/push and open+auto-merge a PR via gh"
   task record_pr: ["release:guard_clean"] do
-    sh(<<~SH)
+    # Explicit bash, not Rake's default `sh -c` (dash on Debian/Ubuntu
+    # runners): dash's `set` doesn't support the `-o pipefail` flag below.
+    sh("bash", "-c", <<~SH)
       set -euo pipefail
       original_ref="$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)"
       git fetch origin main
