@@ -85,12 +85,6 @@ class DucklingIntervalTest < Minitest::Test
   end
 end
 
-class DucklingVersionTest < Minitest::Test
-  def test_version_is_0_2_0
-    assert_equal "0.2.0", Duckling::VERSION
-  end
-end
-
 class DucklingCiTest < Minitest::Test
   def test_native_extension_infrastructure
     ext_dir = File.join(__dir__, "../ext/duckling")

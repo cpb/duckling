@@ -77,6 +77,53 @@ module DucklingBenchmark
         lines << format("%d-thread throughput: %.1f ops/sec vs %.1f ops/sec single-threaded (%.2fx, %.1f%% of ideal linear scaling).",
           c[:thread_count], c[:multi_thread_ops_per_sec], c[:single_thread_ops_per_sec], c[:scaling_factor], c[:efficiency_pct])
         lines << ""
+        dispatch_section = build_dispatch_section(entry)
+        lines << dispatch_section unless dispatch_section.empty?
+      end
+      lines.join("\n")
+    end
+
+    # Compares Duckling::Native.parse (no thread spawn) against Duckling.parse
+    # (thread-per-call dispatch, measured under an active Fiber scheduler --
+    # see run_ips) for a single environment's latest run. Recorded entries
+    # from before this schema existed have no
+    # `native_ips`/`native_microseconds_per_call`/`thread_overhead_pct` fields
+    # -- returns "" for those rather than raising, so this stays purely
+    # additive and environments upgrade to the new schema independently as
+    # each one's next `benchmark:record_pr` run lands.
+    def self.build_dispatch_section(entry)
+      scenarios = entry[:scenarios].select { |s| s[:native_ips] }
+      return "" if scenarios.empty?
+
+      lines = ["#### Dispatch overhead: native vs thread-per-call (#{entry[:environment]} v#{entry[:version]})", ""]
+      lines << "Thread-per-call is `Duckling.parse` measured with a Fiber scheduler installed " \
+        "(the only condition under which it spawns a background `Thread`, so a calling Fiber " \
+        "can yield to its Async::Reactor while the native call runs); native is " \
+        "`Duckling::Native.parse` (no thread). Without a Fiber scheduler -- a plain Puma/Sidekiq " \
+        "thread pool -- `Duckling.parse` already takes the same fast path as native, paying none " \
+        "of this overhead. Overhead is a fixed per-call cost, not a throughput loss -- negligible " \
+        "against slower scenarios, a real multiplier against the fastest ones."
+      lines << ""
+      lines << "| Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |"
+      lines << "|---|---|---|---|---|---|"
+      scenarios.each do |s|
+        lines << format("| %s | %.1f | %.1f | %.1f | %.1f | %.1f%% |",
+          s[:name], s[:native_ips], s[:ips], s[:native_microseconds_per_call], s[:microseconds_per_call], s[:thread_overhead_pct])
+      end
+      lines << ""
+
+      chartable = scenarios.reject { |s| CHART_EXCLUDED_SCENARIOS.include?(s[:name]) }
+      unless chartable.empty?
+        scenario_names = chartable.map { |s| s[:name] }
+        lines << "```mermaid"
+        lines << "xychart-beta"
+        lines << %(    title "#{entry[:environment]} v#{entry[:version]}: native vs thread-per-call dispatch (ips)")
+        lines << "    x-axis [#{scenario_names.join(", ")}]"
+        lines << %(    y-axis "ips")
+        lines << %(    bar "native" [#{chartable.map { |s| s[:native_ips].round(1) }.join(", ")}])
+        lines << %(    bar "thread-per-call" [#{chartable.map { |s| s[:ips].round(1) }.join(", ")}])
+        lines << "```"
+        lines << ""
       end
       lines.join("\n")
     end

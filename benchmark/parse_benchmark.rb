@@ -4,6 +4,7 @@
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "duckling"
 require "benchmark/ips"
+require "async"
 
 # Measures Duckling.parse from Ruby (ips + GC/allocation pressure + threaded
 # concurrency), including Magnus/Ruby conversion overhead that the upstream
@@ -62,11 +63,30 @@ module DucklingBenchmark
   CONCURRENCY_DURATION = 3 # seconds
   CONCURRENCY_SCENARIO = "medium"
 
+  # Suffix used to key the native (no-thread) dispatch variant's ips.report
+  # label alongside each scenario's normal (thread-per-call) entry, so a
+  # single Benchmark.ips run produces both without a second warmup/measure
+  # pass (issue #64's dispatch-overhead comparison).
+  NATIVE_LABEL_SUFFIX = "_native"
+
   def self.run_ips
-    report = ::Benchmark.ips do |x|
-      x.config(time: 2, warmup: 1)
-      CORPUS.each { |s| x.report(s[:name]) { Duckling.parse(s[:input], locale: "en") } }
-      x.compare!
+    # Duckling.parse only spawns its per-call Thread when Fiber.scheduler is
+    # installed on the calling thread (see lib/duckling.rb), so the whole
+    # job -- registration via x.report *and* Benchmark.ips's later timed
+    # execution of those blocks, both of which happen here, since x.report
+    # only registers a block and Benchmark.ips runs it after this passed
+    # block returns -- has to run inside a single Sync block for the
+    # dispatch scenarios to actually take that path. Native.parse calls
+    # measured in the same run are unaffected either way (they never spawn a
+    # Thread), so wrapping the whole comparison is simplest.
+    report = nil
+    Sync do
+      report = ::Benchmark.ips do |x|
+        x.config(time: 2, warmup: 1)
+        CORPUS.each { |s| x.report(s[:name]) { Duckling.parse(s[:input], locale: "en") } }
+        CORPUS.each { |s| x.report("#{s[:name]}#{NATIVE_LABEL_SUFFIX}") { Duckling::Native.parse(s[:input], locale: "en") } }
+        x.compare!
+      end
     end
     report.entries.each_with_object({}) do |entry, memo|
       memo[entry.label.to_sym] = {
@@ -78,11 +98,20 @@ module DucklingBenchmark
     end
   end
 
+  # Measures Native.parse, not Duckling.parse: the allocated_objects/GC
+  # columns describe what a *parse* costs, and Duckling.parse's
+  # thread-per-call dispatch (issue #64) drowns that signal in Thread
+  # allocation churn — each spawned Thread brings its own object plus stack
+  # /bookkeeping allocations and drives minor GC hard (observed: objects/call
+  # 28 -> 35 and minor GC 1 -> 62 across a recording when this loop went
+  # through Duckling.parse). Dispatch overhead is reported separately by the
+  # ips dispatch-mode comparison; keeping this loop on Native.parse also
+  # keeps these columns comparable with entries recorded before #64.
   def self.measure_gc(name:, text:)
     iterations = GC_SAMPLE_ITERATIONS_OVERRIDES.fetch(name, GC_SAMPLE_ITERATIONS)
     GC.start
     before = GC.stat
-    iterations.times { Duckling.parse(text, locale: "en") }
+    iterations.times { Duckling::Native.parse(text, locale: "en") }
     after = GC.stat
     {
       allocated_objects_per_call: (after[:total_allocated_objects] - before[:total_allocated_objects]) / iterations.to_f,
@@ -124,9 +153,19 @@ module DucklingBenchmark
   def self.run
     ips = run_ips
     scenarios = CORPUS.map do |s|
+      thread_stats = ips.fetch(s[:name].to_sym)
+      native_stats = ips.fetch(:"#{s[:name]}#{NATIVE_LABEL_SUFFIX}")
+      overhead_pct = ((thread_stats[:microseconds_per_call] - native_stats[:microseconds_per_call]) /
+        native_stats[:microseconds_per_call]) * 100
+
       {name: s[:name], input: s[:input]}
-        .merge(ips.fetch(s[:name].to_sym))
+        .merge(thread_stats)
         .merge(measure_gc(name: s[:name], text: s[:input]))
+        .merge(
+          native_ips: native_stats[:ips],
+          native_microseconds_per_call: native_stats[:microseconds_per_call],
+          thread_overhead_pct: overhead_pct
+        )
     end
     {
       ruby_version: RUBY_VERSION,

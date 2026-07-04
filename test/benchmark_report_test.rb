@@ -37,6 +37,14 @@ class DucklingBenchmarkReportTest < Minitest::Test
     fixture_results(ips_base: ips_base).merge(environment: environment, version: version, date: "2026-01-01")
   end
 
+  def fixture_entry_with_dispatch(environment:, version:, ips_base: 100.0)
+    entry = fixture_entry(environment: environment, version: version, ips_base: ips_base)
+    entry[:scenarios] = entry[:scenarios].map do |s|
+      s.merge(native_ips: s[:ips] * 2, native_microseconds_per_call: s[:microseconds_per_call] / 2.0, thread_overhead_pct: 100.0)
+    end
+    entry
+  end
+
   def test_detect_environment_prefers_github_actions
     env = DucklingBenchmark::Report.detect_environment({"GITHUB_ACTIONS" => "true", "CLAUDE_CODE_REMOTE" => "true"})
     assert_equal "github-actions", env
@@ -91,6 +99,29 @@ class DucklingBenchmarkReportTest < Minitest::Test
     DucklingBenchmark::CORPUS.each { |s| assert_includes content, s[:name] }
     assert_includes content, "xychart-beta"
     assert_includes content, "```mermaid"
+  end
+
+  def test_render_docs_readme_omits_dispatch_section_without_native_data
+    history = [fixture_entry(environment: "local", version: "0.2.1")]
+    content = DucklingBenchmark::Report.render_docs_readme(history)
+
+    refute_includes content, "Dispatch overhead"
+  end
+
+  def test_render_docs_readme_includes_dispatch_section_with_native_data
+    history = [fixture_entry_with_dispatch(environment: "local", version: "0.3.0")]
+    content = DucklingBenchmark::Report.render_docs_readme(history)
+
+    assert_includes content, "Dispatch overhead: native vs thread-per-call (local v0.3.0)"
+    assert_includes content, "native vs thread-per-call dispatch (ips)"
+    assert_includes content, "100.0%"
+    DucklingBenchmark::CORPUS.reject { |s| DucklingBenchmark::Report::CHART_EXCLUDED_SCENARIOS.include?(s[:name]) }
+      .each { |s| assert_includes content, s[:name] }
+  end
+
+  def test_build_dispatch_section_returns_empty_for_legacy_entry
+    entry = fixture_entry(environment: "local", version: "0.2.1")
+    assert_equal "", DucklingBenchmark::Report.build_dispatch_section(entry)
   end
 
   def test_write_docs_readme_writes_content
