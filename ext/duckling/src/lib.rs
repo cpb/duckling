@@ -401,15 +401,29 @@ fn build_context(ruby: &Ruby, ref_time: Option<RubyTime>) -> Result<Context, Err
     }
 }
 
+/// Resolves a bare `NaiveDateTime` (wall-clock, no offset) against the
+/// reference offset into an absolute `DateTime<FixedOffset>`. Shared by
+/// `time_point_to_ruby` and `time_value_to_ruby` so the two call sites can't
+/// drift apart on error message or ambiguity-handling strategy.
+/// `FixedOffset` has no DST, so `.single()` is total in practice for any
+/// `NaiveDateTime` duckling can produce; the `ok_or_else` is defensive.
+fn resolve_naive(
+    ruby: &Ruby,
+    offset: FixedOffset,
+    value: &chrono::NaiveDateTime,
+) -> Result<chrono::DateTime<FixedOffset>, Error> {
+    offset
+        .from_local_datetime(value)
+        .single()
+        .ok_or_else(|| arg_error(ruby, "invalid or ambiguous naive time for reference offset"))
+}
+
 fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint, offset: FixedOffset) -> Result<Value, Error> {
     let h = ruby.hash_new();
     h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
     match tp {
         TimePoint::Naive { value, grain } => {
-            let dt = offset.from_local_datetime(value).single().ok_or_else(|| {
-                arg_error(ruby, "invalid or ambiguous naive time for reference offset")
-            })?;
-            h.aset(ruby.to_symbol("value"), dt)?;
+            h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, value)?)?;
             h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
         }
         TimePoint::Instant { value, grain } => {
@@ -427,10 +441,7 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Resul
             h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
             match value {
                 TimePoint::Naive { value: dt, grain } => {
-                    let resolved = offset.from_local_datetime(dt).single().ok_or_else(|| {
-                        arg_error(ruby, "invalid or ambiguous naive time for reference offset")
-                    })?;
-                    h.aset(ruby.to_symbol("value"), resolved)?;
+                    h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, dt)?)?;
                     h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
                 }
                 TimePoint::Instant { value: dt, grain } => {

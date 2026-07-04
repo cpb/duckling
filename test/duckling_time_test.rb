@@ -31,6 +31,11 @@ class TestDucklingParseTimeBasic < Minitest::Test
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
     assert_equal REFERENCE_TIME, entity[:value][:value]
+    # "now" resolves to a TimePoint::Instant like the rest of
+    # TestDucklingParseTimeRelative below, so it needs the same explicit
+    # utc_offset check — Time#== alone would not catch a regression that
+    # flattens this specific code path's offset to UTC.
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_today
