@@ -131,33 +131,32 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let context = build_context(ruby, ref_time_i)?;
     let options = Options { with_latent };
 
-    // Box the owned inputs, release the GVL, call duckling::parse off-GVL,
-    // and block until the GVL is reacquired (rb_thread_call_without_gvl's
-    // documented step 4) before touching any Ruby Value again.
-    let boxed = Box::new(ParsePayload {
+    // Release the GVL, call duckling::parse off-GVL, and block until the
+    // GVL is reacquired (rb_thread_call_without_gvl's documented step 4)
+    // before touching any Ruby Value again. The payload lives on this stack
+    // frame: rb_thread_call_without_gvl runs the callback to completion
+    // before returning, so no heap allocation or ownership transfer is
+    // needed — the borrow ends when the call returns.
+    let mut payload = ParsePayload {
         text,
         locale,
         dims,
         context,
         options,
         result: None,
-    });
-    let payload_ptr = Box::into_raw(boxed) as *mut c_void;
+    };
 
     unsafe {
         rb_sys::rb_thread_call_without_gvl(
             Some(parse_without_gvl),
-            payload_ptr,
+            &mut payload as *mut ParsePayload as *mut c_void,
             None, // ubf: no cancellation hook (Thread#raise/#kill against an
             // in-flight parse isn't handled — see issue #64's "Out of scope")
             std::ptr::null_mut(),
         );
     }
 
-    // Reclaim ownership now that the GVL is confirmed held again. This is the
-    // only place the payload is freed — the callback above never frees it.
-    let boxed = unsafe { Box::from_raw(payload_ptr as *mut ParsePayload) };
-    let entities = match boxed
+    let entities = match payload
         .result
         .expect("parse_without_gvl always sets result before returning")
     {
