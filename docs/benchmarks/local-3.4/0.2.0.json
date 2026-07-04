@@ -80,7 +80,7 @@
     "scaling_factor": 1.0105455282904077,
     "efficiency_pct": 10.105455282904078
   },
-  "environment": "local",
+  "environment": "local-3.4",
   "version": "0.2.0",
   "date": "2026-07-02"
 }
