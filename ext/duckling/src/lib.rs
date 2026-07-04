@@ -70,7 +70,7 @@ unsafe extern "C" fn parse_without_gvl(payload: *mut c_void) -> *mut c_void {
 
     payload.result = Some(match outcome {
         Ok(entities) => Ok(entities),
-        Err(panic_payload) => Err(panic_message(&panic_payload)),
+        Err(panic_payload) => Err(panic_message(&*panic_payload)),
     });
 
     // Return value is unused by our caller (the real result is read back out
@@ -94,9 +94,15 @@ fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
 /// extension raises. Single choke point for the panic → exception mapping,
 /// shared by the real entrypoint and `Duckling::PanickingNativeFake`, so
 /// tests exercising the fake exercise the exact mapping callers see.
+///
+/// Deliberately `RuntimeError` (a `StandardError`), not magnus's own
+/// `Error::from_panic` convention of `fatal`: a native panic already cost
+/// the caller nothing but this one call, so it must be an ordinary
+/// `rescue => e`-able error, not one that also tears down the calling
+/// Thread's `Thread#value`/`Thread#join` propagation as unrescuable.
 fn panic_error(ruby: &Ruby, message: &str) -> Error {
     Error::new(
-        ruby.exception_fatal(),
+        ruby.exception_runtime_error(),
         format!("duckling::parse panicked: {message}"),
     )
 }
@@ -120,7 +126,7 @@ unsafe extern "C" fn panic_fake_without_gvl(payload: *mut c_void) -> *mut c_void
 
     payload.result = Some(match outcome {
         Ok(entities) => Ok(entities),
-        Err(panic_payload) => Err(panic_message(&panic_payload)),
+        Err(panic_payload) => Err(panic_message(&*panic_payload)),
     });
 
     std::ptr::null_mut()
