@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
     ls.readlines("\x0", chomp: true).reject do |f|
       (f == gemspec) ||
-        f.start_with?(*%w[bin/ Gemfile .gitignore .env.local.example test/ .github/ .standard.yml hk.pkl])
+        f.start_with?(*%w[bin/ Gemfile .gitignore .env.local.example test/ .github/ .standard.yml hk.pkl benchmark/ docs/benchmarks/])
     end
   end
   spec.bindir = "exe"
@@ -32,8 +32,25 @@ Gem::Specification.new do |spec|
   spec.extensions = ["ext/duckling/extconf.rb"]
 
   # needed until rubygems supports Rust support is out of beta
-  spec.add_dependency "rb_sys", "~> 0.9.39"
+  #
+  # Floor matters beyond semver: oxidize-rb/actions/cross-gem detects which
+  # rb_sys version to install by grepping Gemfile.lock for the first "rb_sys"
+  # match, which is this constraint as mirrored into the PATH section, not
+  # the actually-resolved GEM section version. Too low a floor here (e.g. the
+  # 0.9.39 this used to pin, from 2022, before `rb-sys-dock` existed) makes
+  # that heuristic install a stale rb_sys lacking rb-sys-dock entirely,
+  # breaking cross-gem.yml with "rb-sys-dock: command not found". Keep this
+  # close to whatever's actually locked in Gemfile.lock.
+  spec.add_dependency "rb_sys", "~> 0.9.128"
 
   # only needed when developing or packaging your gem
   spec.add_development_dependency "rake-compiler", "~> 1.3.1"
+  spec.add_development_dependency "benchmark-ips"
+
+  # used by test/falcon_fiber_blocking_test.rb (empirically testing that
+  # Duckling.parse doesn't block sibling Fibers sharing a Falcon/async-gem
+  # reactor thread) and benchmark/parse_benchmark.rb (measuring thread-per-call
+  # dispatch overhead, which only manifests with a Fiber scheduler installed)
+  # — not a runtime dependency of the gem itself.
+  spec.add_development_dependency "async", "~> 2.41"
 end

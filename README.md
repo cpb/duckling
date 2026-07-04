@@ -43,9 +43,15 @@ Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_lat
   extract. See "Supported dimensions" below — only `"time"` currently
   produces a populated `:value`. An unrecognized dimension name raises
   `ArgumentError`.
-- `reference_time:` (Integer Unix seconds, default `nil`) — anchors relative
-  expressions like "tomorrow" or "next week". Defaults to the current UTC
-  time; pass an explicit value for deterministic output.
+- `reference_time:` (`Time`, default `nil`) — anchors relative expressions
+  like "tomorrow" or "next week". Its `utc_offset` is preserved into
+  offset-aware results (e.g. `"in one hour"`), not flattened to UTC. Defaults
+  to the current UTC time; pass an explicit `Time` for deterministic output.
+  Anything else responding to `to_time` — `ActiveSupport::TimeWithZone`
+  (`Time.current`/`Time.zone.now`), stdlib `DateTime`, etc. — is coerced to a
+  `Time` automatically. A value that's neither a `Time` nor `to_time`-able
+  (e.g. a raw Integer Unix timestamp) raises `TypeError`; wrap it in
+  `Time.at(seconds)` first.
 - `with_latent:` (Boolean, default `false`) — include ambiguous/latent
   matches (e.g. a bare "morning") in the results.
 
@@ -122,6 +128,16 @@ See `test/duckling_comma_list_test.rb` for the full characterization,
 including cases where the surviving value isn't even reliably the leftmost
 date in the collapsed run.
 
+## Performance
+
+Benchmarked with [benchmark-ips](https://github.com/evanphx/benchmark-ips)
+against `Duckling.parse`, including Magnus/Ruby conversion overhead (not
+just the underlying Rust engine), plus GC pressure and threaded-worker-pool
+throughput. See [`docs/benchmarks/`](docs/benchmarks/) for the latest
+numbers, broken out by environment (GitHub Actions CI, Claude Code Web,
+local dev) — results vary enough by machine that comparing across
+environments is more meaningful than a single blended trend.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Building
@@ -142,7 +158,20 @@ edit `.env.local` to opt back into a release-profile local build, or run
 `bundle exec rake dev compile test` for a one-off dev-profile build without
 `.env.local` in place.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version: bump `Duckling::VERSION` in `version.rb`, merge that change to `main`, then run `bundle exec rake release` (or push a matching `vX.Y.Z` tag directly) to create and push the git tag. Pushing the tag triggers a GitHub Actions pipeline that re-runs CI as a gate, verifies the tag matches `Duckling::VERSION`, builds and publishes the gem to [rubygems.org](https://rubygems.org), cuts a GitHub release, and opens a PR appending an entry to `CHANGELOG.md`.
+To install this gem onto your local machine, run `bundle exec rake install`. To release a new version: bump `Duckling::VERSION` in `version.rb`, merge that change to `main`, then run `bundle exec rake release` (or push a matching `vX.Y.Z` tag directly) to create and push the git tag. Pushing the tag triggers a GitHub Actions pipeline that re-runs CI as a gate, cross-compiles `x86_64-linux`/`x86_64-darwin` binary gems, verifies the tag matches `Duckling::VERSION`, builds and publishes the gems (source + both binary platforms) to [rubygems.org](https://rubygems.org), cuts a GitHub release, and opens a PR appending an entry to `CHANGELOG.md`.
+
+`bin/benchmark` (or `bundle exec rake benchmark`) runs the `benchmark-ips`
+suite locally and prints results to the console — no files written.
+`bin/benchmark record` (or `rake benchmark:record`) additionally writes
+`docs/benchmarks/<environment>/<version>.json` and regenerates
+`docs/benchmarks/README.md`. `bin/benchmark record-pr` (or `rake
+benchmark:record_pr`) does the same against a fresh branch off `origin/main`
+and opens (and auto-merges) a PR via `gh` — this is what the release
+pipeline runs automatically, and what you'd also run from a Claude Code Web
+session or a local dev machine to contribute that environment's numbers
+ahead of a release. `gh` needs to be installed (`bin/setup` does this via
+the `Brewfile` on macOS) and authenticated (`gh auth login`) for the
+`record-pr` variant.
 
 ## Contributing
 

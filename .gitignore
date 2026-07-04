@@ -10,6 +10,6 @@
 .worktree-session.json
 pr_context.md
 RESEARCH_CONTEXT.md
-ext/duckling/target/
+/target/
 lib/duckling/duckling.bundle
 lib/duckling/duckling.so
