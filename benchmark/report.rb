@@ -84,8 +84,9 @@ module DucklingBenchmark
     end
 
     # Compares Duckling::Native.parse (no thread spawn) against Duckling.parse
-    # (thread-per-call dispatch, issue #64) for a single environment's latest
-    # run. Older recorded entries (from before #64 landed) have no
+    # (thread-per-call dispatch, measured under an active Fiber scheduler --
+    # see run_ips) for a single environment's latest run. Recorded entries
+    # from before this schema existed have no
     # `native_ips`/`native_microseconds_per_call`/`thread_overhead_pct` fields
     # -- returns "" for those rather than raising, so this stays purely
     # additive and environments upgrade to the new schema independently as
@@ -95,11 +96,13 @@ module DucklingBenchmark
       return "" if scenarios.empty?
 
       lines = ["#### Dispatch overhead: native vs thread-per-call (#{entry[:environment]} v#{entry[:version]})", ""]
-      lines << "Thread-per-call is `Duckling.parse` (the public API) spawning a background " \
-        "`Thread` so a calling Fiber can yield to an Async::Reactor while the native call " \
-        "runs; native is `Duckling::Native.parse` (no thread, the pre-#64 baseline). Overhead " \
-        "is a fixed per-call cost, not a throughput loss -- negligible against slower " \
-        "scenarios, a real multiplier against the fastest ones."
+      lines << "Thread-per-call is `Duckling.parse` measured with a Fiber scheduler installed " \
+        "(the only condition under which it spawns a background `Thread`, so a calling Fiber " \
+        "can yield to its Async::Reactor while the native call runs); native is " \
+        "`Duckling::Native.parse` (no thread). Without a Fiber scheduler -- a plain Puma/Sidekiq " \
+        "thread pool -- `Duckling.parse` already takes the same fast path as native, paying none " \
+        "of this overhead. Overhead is a fixed per-call cost, not a throughput loss -- negligible " \
+        "against slower scenarios, a real multiplier against the fastest ones."
       lines << ""
       lines << "| Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |"
       lines << "|---|---|---|---|---|---|"

@@ -4,6 +4,7 @@
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "duckling"
 require "benchmark/ips"
+require "async"
 
 # Measures Duckling.parse from Ruby (ips + GC/allocation pressure + threaded
 # concurrency), including Magnus/Ruby conversion overhead that the upstream
@@ -69,11 +70,23 @@ module DucklingBenchmark
   NATIVE_LABEL_SUFFIX = "_native"
 
   def self.run_ips
-    report = ::Benchmark.ips do |x|
-      x.config(time: 2, warmup: 1)
-      CORPUS.each { |s| x.report(s[:name]) { Duckling.parse(s[:input], locale: "en") } }
-      CORPUS.each { |s| x.report("#{s[:name]}#{NATIVE_LABEL_SUFFIX}") { Duckling::Native.parse(s[:input], locale: "en") } }
-      x.compare!
+    # Duckling.parse only spawns its per-call Thread when Fiber.scheduler is
+    # installed on the calling thread (see lib/duckling.rb), so the whole
+    # job -- registration via x.report *and* Benchmark.ips's later timed
+    # execution of those blocks, both of which happen here, since x.report
+    # only registers a block and Benchmark.ips runs it after this passed
+    # block returns -- has to run inside a single Sync block for the
+    # dispatch scenarios to actually take that path. Native.parse calls
+    # measured in the same run are unaffected either way (they never spawn a
+    # Thread), so wrapping the whole comparison is simplest.
+    report = nil
+    Sync do
+      report = ::Benchmark.ips do |x|
+        x.config(time: 2, warmup: 1)
+        CORPUS.each { |s| x.report(s[:name]) { Duckling.parse(s[:input], locale: "en") } }
+        CORPUS.each { |s| x.report("#{s[:name]}#{NATIVE_LABEL_SUFFIX}") { Duckling::Native.parse(s[:input], locale: "en") } }
+        x.compare!
+      end
     end
     report.entries.each_with_object({}) do |entry, memo|
       memo[entry.label.to_sym] = {
