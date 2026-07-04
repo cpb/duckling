@@ -44,9 +44,45 @@ class NativePanicTest < Minitest::Test
     puts "SURVIVED"
   RUBY
 
+  # Without an installed Fiber scheduler, Duckling.parse (lib/duckling.rb)
+  # calls Native.parse directly — no Thread, no Thread#value re-raise — so
+  # PANIC_PROBE above never actually exercises the background-Thread leg of
+  # panic_error's path (issue #64). Wrapping the same call in `Sync` (from
+  # the async gem, already a dev dependency — see falcon_fiber_blocking_test.rb)
+  # installs a Fiber scheduler on the probe's main thread, forcing
+  # Duckling.parse through Thread.new { ... }.value so the panic must
+  # propagate through Thread#value before reaching the caller's rescue.
+  PANIC_PROBE_UNDER_FIBER_SCHEDULER = <<~'RUBY'
+    require "duckling"
+    require "async"
+
+    Duckling.send(:remove_const, :Native)
+    Duckling.const_set(:Native, Duckling::PanickingNativeFake)
+
+    begin
+      Sync do
+        Duckling.parse("tomorrow", locale: "en")
+      end
+      puts "NO_ERROR"
+    rescue => e
+      puts "RESCUED #{e.class}: #{e.message}"
+    end
+    puts "SURVIVED"
+  RUBY
+
   def test_native_panic_surfaces_as_a_rescuable_error
+    assert_panic_probe_survives_and_is_rescued(PANIC_PROBE)
+  end
+
+  def test_native_panic_surfaces_as_a_rescuable_error_under_fiber_scheduler
+    assert_panic_probe_survives_and_is_rescued(PANIC_PROBE_UNDER_FIBER_SCHEDULER)
+  end
+
+  private
+
+  def assert_panic_probe_survives_and_is_rescued(probe)
     stdout, stderr, status = Open3.capture3(
-      RbConfig.ruby, "-I", LIB_DIR, "-e", PANIC_PROBE
+      RbConfig.ruby, "-I", LIB_DIR, "-e", probe
     )
 
     diagnostics = "probe stdout:\n#{stdout}\nprobe stderr:\n#{stderr}"
