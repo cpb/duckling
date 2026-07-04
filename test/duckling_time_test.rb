@@ -8,8 +8,12 @@ require "test_helper"
 # See test/duckling_test.rb for the same convention. Guarded with `unless
 # defined?` since this file may load in the same process as duckling_test.rb
 # (which defines the same top-level constant) via `bundle exec rake test`, or
-# standalone via `bin/test test/duckling_time_test.rb`.
-REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00").to_i unless defined?(REFERENCE_TIME)
+# standalone via `bin/test test/duckling_time_test.rb`. A real `Time` (not an
+# Integer): `Native.parse`'s `reference_time:` requires a `Time`-like value
+# (or something responding to `#to_time`) so its `utc_offset` can be threaded
+# through to `Naive` results via `Context::timezone()` — an Integer can't
+# carry an offset at all.
+REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00") unless defined?(REFERENCE_TIME)
 
 # Extended coverage for basic relative-time resolution, mirroring the
 # wafer-inc-duckling / pyduckling en time corpus: now, today, yesterday,
@@ -26,28 +30,28 @@ class TestDucklingParseTimeBasic < Minitest::Test
     entity = time_entity_for("now")
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
-    assert_equal "2013-02-12T04:30:00", entity[:value][:value]
+    assert_equal REFERENCE_TIME, entity[:value][:value]
   end
 
   def test_today
     entity = time_entity_for("today")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2013-02-12T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 12, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_yesterday
     entity = time_entity_for("yesterday")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2013-02-11T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 11, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_tomorrow
     entity = time_entity_for("tomorrow")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2013-02-13T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_this_week
@@ -55,63 +59,63 @@ class TestDucklingParseTimeBasic < Minitest::Test
     assert_equal :value, entity[:value][:type]
     assert_equal :week, entity[:value][:grain]
     # Week containing 2013-02-12 (Tuesday) starts Monday 2013-02-11.
-    assert_equal "2013-02-11T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 11, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_next_week
     entity = time_entity_for("next week")
     assert_equal :value, entity[:value][:type]
     assert_equal :week, entity[:value][:grain]
-    assert_equal "2013-02-18T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 18, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_last_week
     entity = time_entity_for("last week")
     assert_equal :value, entity[:value][:type]
     assert_equal :week, entity[:value][:grain]
-    assert_equal "2013-02-04T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 4, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_this_month
     entity = time_entity_for("this month")
     assert_equal :value, entity[:value][:type]
     assert_equal :month, entity[:value][:grain]
-    assert_equal "2013-02-01T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_next_month
     entity = time_entity_for("next month")
     assert_equal :value, entity[:value][:type]
     assert_equal :month, entity[:value][:grain]
-    assert_equal "2013-03-01T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 3, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_last_month
     entity = time_entity_for("last month")
     assert_equal :value, entity[:value][:type]
     assert_equal :month, entity[:value][:grain]
-    assert_equal "2013-01-01T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_this_year
     entity = time_entity_for("this year")
     assert_equal :value, entity[:value][:type]
     assert_equal :year, entity[:value][:grain]
-    assert_equal "2013-01-01T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_next_year
     entity = time_entity_for("next year")
     assert_equal :value, entity[:value][:type]
     assert_equal :year, entity[:value][:grain]
-    assert_equal "2014-01-01T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2014, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_last_year
     entity = time_entity_for("last year")
     assert_equal :value, entity[:value][:type]
     assert_equal :year, entity[:value][:grain]
-    assert_equal "2012-01-01T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2012, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 end
 
@@ -141,12 +145,12 @@ class TestDucklingParseTimeWeekdays < Minitest::Test
     results.find { |r| r[:dim] == :time }
   end
 
-  def assert_time_value(expected_iso, text, grain: :day)
+  def assert_time_value(expected_time, text, grain: :day)
     entity = time_entity(text)
     refute_nil entity, "Expected a :time entity for #{text.inspect}"
     assert_equal :value, entity[:value][:type], "Expected a :value type for #{text.inspect}"
     assert_equal grain, entity[:value][:grain], "Expected grain #{grain.inspect} for #{text.inspect}"
-    assert_equal expected_iso, entity[:value][:value], "Wrong resolved date for #{text.inspect}"
+    assert_equal expected_time, entity[:value][:value], "Wrong resolved date for #{text.inspect}"
   end
 
   # -- bare weekday names ---------------------------------------------------
@@ -154,27 +158,27 @@ class TestDucklingParseTimeWeekdays < Minitest::Test
   def test_bare_monday_resolves_to_next_monday
     # This week's Monday (02-11) is already before the reference date, so the
     # nearest strictly-future Monday is next week's.
-    assert_time_value "2013-02-18T00:00:00", "monday"
+    assert_time_value Time.new(2013, 2, 18, 0, 0, 0, "-02:00"), "monday"
   end
 
   def test_bare_wednesday_resolves_to_this_week
-    assert_time_value "2013-02-13T00:00:00", "wednesday"
+    assert_time_value Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), "wednesday"
   end
 
   def test_bare_thursday_resolves_to_this_week
-    assert_time_value "2013-02-14T00:00:00", "thursday"
+    assert_time_value Time.new(2013, 2, 14, 0, 0, 0, "-02:00"), "thursday"
   end
 
   def test_bare_friday_resolves_to_this_week
-    assert_time_value "2013-02-15T00:00:00", "friday"
+    assert_time_value Time.new(2013, 2, 15, 0, 0, 0, "-02:00"), "friday"
   end
 
   def test_bare_saturday_resolves_to_this_week
-    assert_time_value "2013-02-16T00:00:00", "saturday"
+    assert_time_value Time.new(2013, 2, 16, 0, 0, 0, "-02:00"), "saturday"
   end
 
   def test_bare_sunday_resolves_to_this_week
-    assert_time_value "2013-02-17T00:00:00", "sunday"
+    assert_time_value Time.new(2013, 2, 17, 0, 0, 0, "-02:00"), "sunday"
   end
 
   # Tuesday collides with the reference date's own weekday. Per
@@ -183,37 +187,37 @@ class TestDucklingParseTimeWeekdays < Minitest::Test
   # today's own weekday does NOT resolve to today — it skips forward a full
   # week, same as if today's occurrence didn't exist at all.
   def test_bare_tuesday_on_the_reference_weekday
-    assert_time_value "2013-02-19T00:00:00", "tuesday"
+    assert_time_value Time.new(2013, 2, 19, 0, 0, 0, "-02:00"), "tuesday"
   end
 
   # -- abbreviations ---------------------------------------------------------
 
   def test_abbreviation_mon_resolves_like_monday
-    assert_time_value "2013-02-18T00:00:00", "mon"
+    assert_time_value Time.new(2013, 2, 18, 0, 0, 0, "-02:00"), "mon"
   end
 
   def test_abbreviation_tue_resolves_like_tuesday
-    assert_time_value "2013-02-19T00:00:00", "tue"
+    assert_time_value Time.new(2013, 2, 19, 0, 0, 0, "-02:00"), "tue"
   end
 
   def test_abbreviation_wed_resolves_like_wednesday
-    assert_time_value "2013-02-13T00:00:00", "wed"
+    assert_time_value Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), "wed"
   end
 
   def test_abbreviation_thu_resolves_like_thursday
-    assert_time_value "2013-02-14T00:00:00", "thu"
+    assert_time_value Time.new(2013, 2, 14, 0, 0, 0, "-02:00"), "thu"
   end
 
   def test_abbreviation_fri_resolves_like_friday
-    assert_time_value "2013-02-15T00:00:00", "fri"
+    assert_time_value Time.new(2013, 2, 15, 0, 0, 0, "-02:00"), "fri"
   end
 
   def test_abbreviation_sat_resolves_like_saturday
-    assert_time_value "2013-02-16T00:00:00", "sat"
+    assert_time_value Time.new(2013, 2, 16, 0, 0, 0, "-02:00"), "sat"
   end
 
   def test_abbreviation_sun_resolves_like_sunday
-    assert_time_value "2013-02-17T00:00:00", "sun"
+    assert_time_value Time.new(2013, 2, 17, 0, 0, 0, "-02:00"), "sun"
   end
 
   # -- "next <weekday>" -------------------------------------------------------
@@ -233,27 +237,27 @@ class TestDucklingParseTimeWeekdays < Minitest::Test
   # (Monday) where the gem does NOT reproduce this skip-forward behavior.
 
   def test_next_thursday_skips_past_this_weeks_thursday
-    assert_time_value "2013-02-21T00:00:00", "next thursday"
+    assert_time_value Time.new(2013, 2, 21, 0, 0, 0, "-02:00"), "next thursday"
   end
 
   def test_next_sunday_skips_past_this_weeks_sunday
-    assert_time_value "2013-02-24T00:00:00", "next sunday"
+    assert_time_value Time.new(2013, 2, 24, 0, 0, 0, "-02:00"), "next sunday"
   end
 
   # -- "last <weekday>" --------------------------------------------------------
 
   def test_last_monday_resolves_to_the_prior_week
-    assert_time_value "2013-02-11T00:00:00", "last monday"
+    assert_time_value Time.new(2013, 2, 11, 0, 0, 0, "-02:00"), "last monday"
   end
 
   def test_last_thursday_resolves_to_the_prior_week
-    assert_time_value "2013-02-07T00:00:00", "last thursday"
+    assert_time_value Time.new(2013, 2, 7, 0, 0, 0, "-02:00"), "last thursday"
   end
 
   def test_last_sunday_resolves_to_the_prior_week
     # Confirmed against time_en.rs: datetime(2013, 2, 10, ...) =>
     # vec!["last sunday", "sunday from last week", "last week's sunday"].
-    assert_time_value "2013-02-10T00:00:00", "last sunday"
+    assert_time_value Time.new(2013, 2, 10, 0, 0, 0, "-02:00"), "last sunday"
   end
 
   # -- "<weekday> after next" --------------------------------------------------
@@ -267,7 +271,7 @@ class TestDucklingParseTimeWeekdays < Minitest::Test
   # the bare weekday value.
 
   def test_thursday_after_next_skips_past_this_weeks_thursday
-    assert_time_value "2013-02-21T00:00:00", "thursday after next"
+    assert_time_value Time.new(2013, 2, 21, 0, 0, 0, "-02:00"), "thursday after next"
   end
 
   # -- known gap: "next monday" / "monday after next" -------------------------
@@ -300,26 +304,26 @@ class TestDucklingParseTimeWeekdays < Minitest::Test
 
   def test_current_actual_next_monday_does_not_skip_past_bare_monday
     entity = time_entity("next monday")
-    assert_equal "2013-02-18T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 18, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_next_monday_should_skip_to_the_following_monday
     skip "known gap: 'next monday' does not skip past bare 'monday' the way 'next <other weekday>' does (see file comment above)"
 
     entity = time_entity("next monday")
-    assert_equal "2013-02-25T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 25, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_current_actual_monday_after_next_does_not_skip_past_bare_monday
     entity = time_entity("monday after next")
-    assert_equal "2013-02-18T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 18, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_monday_after_next_should_skip_to_the_following_monday
     skip "known gap: 'monday after next' does not skip past bare 'monday' the way '<other weekday> after next' does (see file comment above)"
 
     entity = time_entity("monday after next")
-    assert_equal "2013-02-25T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 25, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 end
 
@@ -342,35 +346,35 @@ class TestDucklingParseTimeDates < Minitest::Test
     entity = first_time_entity("2015-03-03")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2015-03-03T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_short_iso_date
     entity = first_time_entity("2015-3-3")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2015-03-03T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_us_slash_date_full_year
     entity = first_time_entity("3/3/2015")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2015-03-03T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_us_slash_date_two_digit_year
     entity = first_time_entity("3/3/15")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2015-03-03T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_month_name_date_with_explicit_year
     entity = first_time_entity("march 3 2015")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2015-03-03T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_month_name_date_implied_current_year
@@ -378,42 +382,42 @@ class TestDucklingParseTimeDates < Minitest::Test
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
     # No year specified — should resolve against REFERENCE_TIME's year (2013).
-    assert_equal "2013-03-03T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_day_of_month_month_then_day
     entity = first_time_entity("february 15")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2013-02-15T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 15, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_day_of_month_ordinal_of_month
     entity = first_time_entity("the 15th of february")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2013-02-15T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 15, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_numeric_month_slash_year
     entity = first_time_entity("2/2013")
     assert_equal :value, entity[:value][:type]
     assert_equal :month, entity[:value][:grain]
-    assert_equal "2013-02-01T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_month_name_and_year
     entity = first_time_entity("October 2014")
     assert_equal :value, entity[:value][:type]
     assert_equal :month, entity[:value][:grain]
-    assert_equal "2014-10-01T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2014, 10, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_year_only
     entity = first_time_entity("in 2014")
     assert_equal :value, entity[:value][:type]
     assert_equal :year, entity[:value][:grain]
-    assert_equal "2014-01-01T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2014, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 end
 
@@ -426,38 +430,11 @@ end
 # `test_time_in_a_minute`, `test_time_in_one_hour`, `test_time_7_days_ago`,
 # `test_time_a_week_ago`, `test_time_in_1_week`), not guessed.
 #
-# KNOWN BUG, confirmed by reading this gem's own binding source (not
-# guessed): every test below whose expression resolves to a
-# `TimePoint::Instant` (i.e. everything in this file — relative
-# second/minute/hour/day offsets from "now") fails today, in two ways:
-#
-# 1. `ext/duckling/src/lib.rs`'s `build_context` turns the `reference_time:`
-#    Integer into a `Context` via
-#    `DateTime::from_timestamp(secs, 0).fixed_offset()` — `from_timestamp`
-#    always yields a UTC `DateTime`, so `.fixed_offset()` always produces
-#    offset `+00:00`, never the `-02:00` offset the epoch integer was
-#    computed from (`Time.new(...).to_i` is itself offset-agnostic — the
-#    offset can't be recovered from the integer). So the engine's internal
-#    reference wall-clock becomes 2013-02-12T06:30:00+00:00 instead of the
-#    intended 2013-02-12T04:30:00-02:00.
-# 2. `time_point_to_ruby`/`time_value_to_ruby` format `TimePoint::Naive` with
-#    the offset-free `"%Y-%m-%dT%H:%M:%S"` (matching this gem's documented
-#    "no offset suffix" contract — see the shipped `duckling_test.rb`'s
-#    `"tomorrow"`/`"at 3pm"` assertions), but format `TimePoint::Instant`
-#    with `.to_rfc3339()`, which prints the (wrong) `+00:00` offset inline.
-#
-# Together this means every sub-day-grain relative expression below comes
-# back wall-clock-shifted +2 hours from the correct value, and every
-# Instant-typed result (including day-grain ones, where the +2h shift
-# doesn't move the calendar date) carries a spurious "+00:00" suffix that
-# violates the "no offset suffix" invariant documented for `Duckling.parse`.
-# Absolute/day-level parses elsewhere in the suite ("tomorrow", "at 3pm")
-# don't reveal this because they resolve to `TimePoint::Naive` and don't
-# cross a day boundary sensitive to the 2-hour reference-hour error.
-#
-# These assertions intentionally encode the *correct* value per the wrapped
-# crate's own corpus, not today's buggy output — do not loosen them to match
-# the bug.
+# Every expression below resolves to a `TimePoint::Instant`, so this is the
+# class that actually exercises `reference_time:`'s offset propagation into
+# `Context::timezone()` (see ext/duckling/src/lib.rs's `entity_to_ruby` and
+# friends) — each test below asserts `.utc_offset` explicitly in addition to
+# the resolved `Time`, since `Time#==` only compares the instant.
 class TestDucklingParseTimeRelative < Minitest::Test
   def time_entity(text)
     results = Duckling.parse(text, locale: "en", reference_time: REFERENCE_TIME)
@@ -470,28 +447,32 @@ class TestDucklingParseTimeRelative < Minitest::Test
     entity = time_entity("in a minute")
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
-    assert_equal "2013-02-12T04:31:00", entity[:value][:value]
+    assert_equal REFERENCE_TIME + 60, entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_in_2_minutes
     entity = time_entity("in 2 minutes")
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
-    assert_equal "2013-02-12T04:32:00", entity[:value][:value]
+    assert_equal REFERENCE_TIME + 120, entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_2_minutes_from_now
     entity = time_entity("2 minutes from now")
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
-    assert_equal "2013-02-12T04:32:00", entity[:value][:value]
+    assert_equal REFERENCE_TIME + 120, entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_in_half_an_hour
     entity = time_entity("in half an hour")
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
-    assert_equal "2013-02-12T05:00:00", entity[:value][:value]
+    assert_equal REFERENCE_TIME + 1800, entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_in_one_hour
@@ -501,14 +482,16 @@ class TestDucklingParseTimeRelative < Minitest::Test
     # "in one hour" resolves at :minute grain, not :second like the shorter
     # (sub-hour) relative durations above.
     assert_equal :minute, entity[:value][:grain]
-    assert_equal "2013-02-12T05:30:00", entity[:value][:value]
+    assert_equal REFERENCE_TIME + 3600, entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_in_1h
     entity = time_entity("in 1h")
     assert_equal :value, entity[:value][:type]
     assert_equal :minute, entity[:value][:grain]
-    assert_equal "2013-02-12T05:30:00", entity[:value][:value]
+    assert_equal REFERENCE_TIME + 3600, entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_7_days_ago
@@ -519,21 +502,24 @@ class TestDucklingParseTimeRelative < Minitest::Test
     # to the reference hour (04:30 -> 04:00) rather than day grain at
     # midnight — contrast with "a week ago" below, which does floor to day.
     assert_equal :hour, entity[:value][:grain]
-    assert_equal "2013-02-05T04:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 5, 4, 0, 0, "-02:00"), entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_a_week_ago
     entity = time_entity("a week ago")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2013-02-05T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 5, 0, 0, 0, "-02:00"), entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_in_1_week
     entity = time_entity("in 1 week")
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2013-02-19T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 19, 0, 0, 0, "-02:00"), entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 end
 
@@ -551,13 +537,13 @@ class TestDucklingParseTimeInterval < Minitest::Test
     value = entity[:value]
     assert_equal :value, value[:from][:type]
     assert_equal :hour, value[:from][:grain]
-    assert_equal "2013-02-12T15:00:00", value[:from][:value]
+    assert_equal Time.new(2013, 2, 12, 15, 0, 0, "-02:00"), value[:from][:value]
 
     assert_equal :value, value[:to][:type]
     assert_equal :hour, value[:to][:grain]
     # Exclusive hour boundary: "4pm" (16:00) surfaces as 17:00, matching the
     # same convention documented in DucklingIntervalTest for "3pm to 5pm".
-    assert_equal "2013-02-12T17:00:00", value[:to][:value]
+    assert_equal Time.new(2013, 2, 12, 17, 0, 0, "-02:00"), value[:to][:value]
   end
 
   def test_minute_grain_interval_3_30_to_6pm
@@ -568,7 +554,7 @@ class TestDucklingParseTimeInterval < Minitest::Test
     value = entity[:value]
     assert_equal :value, value[:from][:type]
     assert_equal :minute, value[:from][:grain]
-    assert_equal "2013-02-12T15:30:00", value[:from][:value]
+    assert_equal Time.new(2013, 2, 12, 15, 30, 0, "-02:00"), value[:from][:value]
 
     assert_equal :value, value[:to][:type]
     # Verified against wafer-inc-duckling's own corpus (tests/time_corpus.rs,
@@ -577,7 +563,7 @@ class TestDucklingParseTimeInterval < Minitest::Test
     # exclusive "to" boundary is the named hour plus one *minute* (18:01),
     # not one hour (19:00) as with a pure hour-grain interval like "3-4pm".
     assert_equal :minute, value[:to][:grain]
-    assert_equal "2013-02-12T18:01:00", value[:to][:value]
+    assert_equal Time.new(2013, 2, 12, 18, 1, 0, "-02:00"), value[:to][:value]
   end
 
   def test_date_range_july_13_15
@@ -588,13 +574,13 @@ class TestDucklingParseTimeInterval < Minitest::Test
     value = entity[:value]
     assert_equal :value, value[:from][:type]
     assert_equal :day, value[:from][:grain]
-    assert_equal "2013-07-13T00:00:00", value[:from][:value]
+    assert_equal Time.new(2013, 7, 13, 0, 0, 0, "-02:00"), value[:from][:value]
 
     assert_equal :value, value[:to][:type]
     assert_equal :day, value[:to][:grain]
     # Exclusive end-of-range convention (mirrors the hour case): "15" surfaces
     # as the start of the 16th, not midnight of the 15th itself.
-    assert_equal "2013-07-16T00:00:00", value[:to][:value]
+    assert_equal Time.new(2013, 7, 16, 0, 0, 0, "-02:00"), value[:to][:value]
   end
 
   def test_last_2_days
@@ -607,8 +593,8 @@ class TestDucklingParseTimeInterval < Minitest::Test
     assert_equal :day, value[:to][:grain]
     # Reference date is 2013-02-12; "last 2 days" should span the two days
     # immediately preceding today, i.e. [2013-02-10, 2013-02-12).
-    assert_equal "2013-02-10T00:00:00", value[:from][:value]
-    assert_equal "2013-02-12T00:00:00", value[:to][:value]
+    assert_equal Time.new(2013, 2, 10, 0, 0, 0, "-02:00"), value[:from][:value]
+    assert_equal Time.new(2013, 2, 12, 0, 0, 0, "-02:00"), value[:to][:value]
   end
 
   def test_next_3_days
@@ -621,8 +607,8 @@ class TestDucklingParseTimeInterval < Minitest::Test
     assert_equal :day, value[:to][:grain]
     # "next 3 days" spans the 3 days immediately following today, starting
     # tomorrow: [2013-02-13, 2013-02-16).
-    assert_equal "2013-02-13T00:00:00", value[:from][:value]
-    assert_equal "2013-02-16T00:00:00", value[:to][:value]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), value[:from][:value]
+    assert_equal Time.new(2013, 2, 16, 0, 0, 0, "-02:00"), value[:to][:value]
   end
 
   def test_tonight_interval
@@ -632,9 +618,9 @@ class TestDucklingParseTimeInterval < Minitest::Test
 
     value = entity[:value]
     assert_equal :hour, value[:from][:grain]
-    assert_equal "2013-02-12T18:00:00", value[:from][:value]
+    assert_equal Time.new(2013, 2, 12, 18, 0, 0, "-02:00"), value[:from][:value]
     assert_equal :hour, value[:to][:grain]
-    assert_equal "2013-02-13T00:00:00", value[:to][:value]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), value[:to][:value]
   end
 
   def test_last_night_interval
@@ -647,8 +633,8 @@ class TestDucklingParseTimeInterval < Minitest::Test
     assert_equal :hour, value[:to][:grain]
     # Reference is 2013-02-12T04:30; "last night" refers to the evening of
     # the 11th, spanning [2013-02-11T18:00, 2013-02-12T00:00).
-    assert_equal "2013-02-11T18:00:00", value[:from][:value]
-    assert_equal "2013-02-12T00:00:00", value[:to][:value]
+    assert_equal Time.new(2013, 2, 11, 18, 0, 0, "-02:00"), value[:from][:value]
+    assert_equal Time.new(2013, 2, 12, 0, 0, 0, "-02:00"), value[:to][:value]
   end
 end
 
@@ -756,7 +742,7 @@ class TestDucklingParseLocale < Minitest::Test
     time_entity = results.find { |r| r[:dim] == :time }
     refute_nil time_entity, "Expected a :time dimension result for 'tomorrow'"
     assert_equal :day, time_entity[:value][:grain]
-    assert_equal "2013-02-13T00:00:00", time_entity[:value][:value]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), time_entity[:value][:value]
   end
 
   def test_invalid_locale_raises_argument_error
@@ -782,7 +768,7 @@ class TestDucklingParseLocale < Minitest::Test
     time_entity = results.find { |r| r[:dim] == :time }
     refute_nil time_entity, "Expected a :time dimension result when locale: is omitted"
     assert_equal :day, time_entity[:value][:grain]
-    assert_equal "2013-02-13T00:00:00", time_entity[:value][:value]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), time_entity[:value][:value]
   end
 
   def test_valid_region_qualified_locale_parses_normally
@@ -792,6 +778,6 @@ class TestDucklingParseLocale < Minitest::Test
     time_entity = results.find { |r| r[:dim] == :time }
     refute_nil time_entity, "Expected a :time dimension result for 'tomorrow' with locale: \"en-GB\""
     assert_equal :day, time_entity[:value][:grain]
-    assert_equal "2013-02-13T00:00:00", time_entity[:value][:value]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), time_entity[:value][:value]
   end
 end

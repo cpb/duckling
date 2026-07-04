@@ -24,7 +24,7 @@ require "duckling"
 Duckling.parse("tomorrow", locale: "en")
 # =>
 # [{ body: "tomorrow", start: 0, end: 8, dim: :time,
-#    value: { type: :value, value: "2026-07-02T00:00:00", grain: :day, values: [...] } }]
+#    value: { type: :value, value: 2026-07-02 00:00:00 +0000, grain: :day, values: [...] } }]
 # (the date resolves relative to now; pass reference_time: for a fixed anchor)
 ```
 
@@ -44,14 +44,15 @@ Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_lat
   produces a populated `:value`. An unrecognized dimension name raises
   `ArgumentError`.
 - `reference_time:` (`Time`, default `nil`) — anchors relative expressions
-  like "tomorrow" or "next week". Its `utc_offset` is preserved into
-  offset-aware results (e.g. `"in one hour"`), not flattened to UTC. Defaults
-  to the current UTC time; pass an explicit `Time` for deterministic output.
-  Anything else responding to `to_time` — `ActiveSupport::TimeWithZone`
-  (`Time.current`/`Time.zone.now`), stdlib `DateTime`, etc. — is coerced to a
-  `Time` automatically. A value that's neither a `Time` nor `to_time`-able
-  (e.g. a raw Integer Unix timestamp) raises `TypeError`; wrap it in
-  `Time.at(seconds)` first.
+  like "tomorrow" or "next week". Its `utc_offset` is preserved into every
+  time result's `:value` — both wall-clock expressions ("tomorrow", "next
+  week") and offset-aware ones ("in one hour"), not flattened to UTC.
+  Defaults to the current UTC time; pass an explicit `Time` for deterministic
+  output. Anything else responding to `to_time` —
+  `ActiveSupport::TimeWithZone` (`Time.current`/`Time.zone.now`), stdlib
+  `DateTime`, etc. — is coerced to a `Time` automatically. A value that's
+  neither a `Time` nor `to_time`-able (e.g. a raw Integer Unix timestamp)
+  raises `TypeError`; wrap it in `Time.at(seconds)` first.
 - `with_latent:` (Boolean, default `false`) — include ambiguous/latent
   matches (e.g. a bare "morning") in the results.
 
@@ -71,16 +72,18 @@ Each entity in the returned array is a `Hash` with:
 
   ```ruby
   # a single point in time, e.g. "tomorrow"
-  { type: :value, value: "2026-07-02T00:00:00", grain: :day, values: [...] }
+  { type: :value, value: 2026-07-02 00:00:00 +0000, grain: :day, values: [...] }
 
   # an interval, e.g. "from 3pm to 5pm"
   { type: :interval,
-    from: { type: :value, value: "2013-02-12T15:00:00", grain: :hour },
-    to:   { type: :value, value: "2013-02-12T18:00:00", grain: :hour } }
+    from: { type: :value, value: 2013-02-12 15:00:00 -0200, grain: :hour },
+    to:   { type: :value, value: 2013-02-12 18:00:00 -0200, grain: :hour } }
   ```
 
   `grain` is one of `second`, `minute`, `hour`, `day`, `week`, `month`,
-  `quarter`, `year`.
+  `quarter`, `year`. The nested `value:` (and interval `from:`/`to:`) is
+  always a real Ruby `Time`, not a formatted string — its `utc_offset`
+  matches `reference_time:`'s (or UTC, if `reference_time:` was omitted).
 
   **Gotcha:** an interval's `:to` is the *exclusive* boundary, not the
   literal named time — `"from 3pm to 5pm"` resolves `:to` to `18:00`, not
@@ -107,7 +110,7 @@ in that run is silently dropped:
 Duckling.parse("birthdays are march 3, march 9, april 12 and may 5", locale: "en")
   .select { |r| r[:dim] == :time }
   .map { |r| r[:value][:value] }
-# => ["2013-03-03T00:00:00", "2013-05-05T00:00:00"]
+# => [2013-03-03 00:00:00 +0000, 2013-05-05 00:00:00 +0000]
 # (march 9 and april 12 are silently dropped)
 ```
 
@@ -121,7 +124,7 @@ avoids the collapse:
 Duckling.parse("march 3 and march 9 and april 12 and may 5", locale: "en")
   .select { |r| r[:dim] == :time }
   .map { |r| r[:value][:value] }
-# => ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"]
+# => [2013-03-03 00:00:00 +0000, 2013-03-09 00:00:00 +0000, 2013-04-12 00:00:00 +0000, 2013-05-05 00:00:00 +0000]
 ```
 
 See `test/duckling_comma_list_test.rb` for the full characterization,

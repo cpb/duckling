@@ -37,6 +37,11 @@ require "test_helper"
 # reliably the leftmost date in the collapsed run.
 COMMA_LIST_REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00")
 
+COMMA_LIST_MARCH_3 = Time.new(2013, 3, 3, 0, 0, 0, "-02:00")
+COMMA_LIST_MARCH_9 = Time.new(2013, 3, 9, 0, 0, 0, "-02:00")
+COMMA_LIST_APRIL_12 = Time.new(2013, 4, 12, 0, 0, 0, "-02:00")
+COMMA_LIST_MAY_5 = Time.new(2013, 5, 5, 0, 0, 0, "-02:00")
+
 class DucklingCommaListReliableTest < Minitest::Test
   def extracted_dates(text)
     Duckling.parse(text, locale: "en", reference_time: COMMA_LIST_REFERENCE_TIME)
@@ -47,7 +52,7 @@ class DucklingCommaListReliableTest < Minitest::Test
   def test_dates_each_prefixed_by_a_name_extract_individually
     text = "Emma: March 3, Liam: March 9, Noah: April 12, Ava: May 5"
     assert_equal(
-      ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"],
+      [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
       extracted_dates(text)
     )
   end
@@ -55,7 +60,7 @@ class DucklingCommaListReliableTest < Minitest::Test
   def test_dates_joined_with_and_extract_individually
     text = "March 3 and March 9 and April 12 and May 5"
     assert_equal(
-      ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"],
+      [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
       extracted_dates(text)
     )
   end
@@ -63,7 +68,7 @@ class DucklingCommaListReliableTest < Minitest::Test
   def test_dates_separated_by_periods_extract_individually
     text = "March 3. March 9. April 12. May 5."
     assert_equal(
-      ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"],
+      [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
       extracted_dates(text)
     )
   end
@@ -92,7 +97,7 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
     # as its own entity; the three comma-joined dates before it collapse into
     # one, keeping only the first (March 3).
     text = "birthdays are march 3, march 9, april 12 and may 5"
-    assert_equal(["2013-03-03T00:00:00", "2013-05-05T00:00:00"], extracted_dates(text))
+    assert_equal([COMMA_LIST_MARCH_3, COMMA_LIST_MAY_5], extracted_dates(text))
   end
 
   def test_bare_comma_separated_dates_collapse_into_one_entity
@@ -100,7 +105,7 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
 
     text = "birthdays are march 3, march 9, april 12 and may 5"
     assert_equal(
-      ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"],
+      [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
       extracted_dates(text)
     )
   end
@@ -110,7 +115,7 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
     # still a bare comma-to-comma chain and collapses just the same, leaving
     # only the first date (March 3) in the result.
     text = "Birthdays: Emma March 3, March 9, April 12, May 5"
-    assert_equal(["2013-03-03T00:00:00"], extracted_dates(text))
+    assert_equal([COMMA_LIST_MARCH_3], extracted_dates(text))
   end
 
   def test_naming_only_the_first_date_still_collapses_the_rest
@@ -118,7 +123,7 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
 
     text = "Birthdays: Emma March 3, March 9, April 12, May 5"
     assert_equal(
-      ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"],
+      [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
       extracted_dates(text)
     )
   end
@@ -129,7 +134,7 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
     # date (March 9) to win instead of the first, with nothing in the output
     # signaling that happened.
     text = "Birthdays: Emma 3/3, March 9, April 12, May 5"
-    assert_equal(["2013-03-09T00:00:00"], extracted_dates(text))
+    assert_equal([COMMA_LIST_MARCH_9], extracted_dates(text))
   end
 
   def test_ambiguous_leading_date_format_is_not_reliably_the_resolved_value
@@ -137,7 +142,7 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
 
     text = "Birthdays: Emma 3/3, March 9, April 12, May 5"
     assert_equal(
-      ["2013-03-03T00:00:00", "2013-03-09T00:00:00", "2013-04-12T00:00:00", "2013-05-05T00:00:00"],
+      [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
       extracted_dates(text)
     )
   end
