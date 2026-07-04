@@ -3,16 +3,20 @@
 require "test_helper"
 require "async"
 
-# Empirically tests the claim (from the FFI risk analysis) that a blocking
-# `Duckling.parse` call — because it's a synchronous Rust FFI call that does
-# not release the GVL — stalls every other Fiber sharing the same
-# Falcon/async-gem reactor thread for the duration of the call. This is a
-# different failure mode than Puma's OS-thread model, where the GVL is
-# contended but the scheduler can still preempt between bytecode
-# instructions; an `async` reactor cooperatively schedules Fibers on a
-# *single* OS thread, so it depends entirely on Ruby code yielding (e.g. via
-# `Task#sleep`, IO wait) to let other Fibers run. A GVL-held native call
-# never yields to the reactor at all.
+# Regression test for issue #38/#64. Before #64, `Duckling.parse` was a
+# synchronous Rust FFI call that held the GVL for its entire native
+# execution, so it stalled every other Fiber sharing the same
+# Falcon/async-gem reactor thread for the duration of the call (empirically
+# confirmed by this test's original hill run: max ticker gap ~= the full
+# parse duration). This is a different failure mode than Puma's OS-thread
+# model, where the GVL is contended but the scheduler can still preempt
+# between bytecode instructions; an `async` reactor cooperatively schedules
+# Fibers on a *single* OS thread, so it depends entirely on Ruby code
+# yielding (e.g. via `Task#sleep`, IO wait) to let other Fibers run.
+#
+# Since #64, `Duckling.parse` dispatches the GVL-releasing `Native.parse`
+# through a background Thread, whose Thread#value block/unblock hooks let
+# the calling Fiber yield to the reactor. This test now guards that fix.
 #
 # The test spins up an Async::Reactor with:
 #   - a "ticker" Fiber that sleeps a short async interval in a loop and
@@ -21,17 +25,12 @@ require "async"
 #     representative long LLM-generated paragraph, partway through the
 #     ticker's run
 #
-# If the reactor is never blocked, every ticker gap should stay close to the
-# requested sleep interval. If Duckling.parse blocks the whole reactor
-# thread, one ticker gap should balloon to roughly the parse call's
-# duration.
-#
-# Hill-first framing: this test asserts the falsifying / non-blocking null
-# hypothesis (the largest observed ticker gap stays within a small tolerance
-# of the requested sleep interval). If the blocking claim is true, this
-# assertion fails, and the failure message reports the measured gap and the
-# measured Duckling.parse duration side by side — that failure message *is*
-# the empirical result this hill exists to produce.
+# The blocking signature is a max ticker gap comparable to the parse
+# duration itself (pre-#64 measurement: gap ~= 100% of the parse). The
+# assertion is therefore proportional — the largest gap must stay well
+# below the measured parse duration — rather than an absolute few-ms bound,
+# so ordinary scheduling jitter or a GC pause on a loaded CI runner can't
+# produce a spurious failure that would be misread as a reactor stall.
 class FalconFiberBlockingTest < Minitest::Test
   # A few hundred words of representative LLM-generated prose, chosen to
   # contain a mix of dates, times, durations, numbers, and money amounts so
@@ -73,11 +72,17 @@ class FalconFiberBlockingTest < Minitest::Test
   TICKS_BEFORE_PARSE = 20
   TICKS_AFTER_PARSE = 20
 
-  # Ticker gaps are allowed to exceed TICK_INTERVAL by this much before we
-  # consider them "blocked" — real async scheduling always has some jitter
-  # (OS scheduling, GC, etc.), so a tiny tolerance avoids false positives on
-  # a merely-slow tick.
-  NON_BLOCKING_TOLERANCE = 0.010 # 10ms
+  # A reactor stall shows up as a ticker gap comparable to the parse
+  # duration (the pre-#64 hill measured gap ~= 100% of the parse). Gaps up
+  # to this fraction of the measured parse duration are attributed to
+  # scheduling jitter/GC instead of blocking — proportional, so a slow CI
+  # runner stretches the allowance along with the parse it's timing.
+  BLOCKING_FRACTION = 0.5
+
+  # Floor for the allowance on machines where the parse itself is very
+  # fast, so ordinary jitter (OS scheduling, GC pauses) on a loaded runner
+  # can't fail the test on its own.
+  MIN_GAP_ALLOWANCE = 0.025 # 25ms
 
   def test_duckling_parse_does_not_stall_other_fibers_in_async_reactor
     # Warm up outside the timed reactor run: Duckling.parse's first call per
@@ -130,18 +135,20 @@ class FalconFiberBlockingTest < Minitest::Test
     refute_empty tick_gaps, "ticker task never recorded any gaps"
 
     max_gap = tick_gaps.max
+    allowance = [TICK_INTERVAL + (parse_duration * BLOCKING_FRACTION), MIN_GAP_ALLOWANCE].max
 
-    assert_operator max_gap, :<, (TICK_INTERVAL + NON_BLOCKING_TOLERANCE),
+    assert_operator max_gap, :<, allowance,
       "Expected every ticker Fiber tick inside the Async::Reactor to stay " \
-      "within #{(TICK_INTERVAL + NON_BLOCKING_TOLERANCE).round(4)}s of the " \
-      "requested #{TICK_INTERVAL}s interval (i.e. Duckling.parse does NOT " \
-      "stall sibling Fibers), but the largest observed gap was " \
-      "#{max_gap.round(4)}s, while the measured Duckling.parse call itself " \
-      "took #{parse_duration.round(4)}s. A max gap approximately equal to " \
-      "the parse duration is exactly the signature predicted by the " \
-      "blocking-FFI-call risk claim: Duckling.parse holds the GVL for its " \
-      "entire native execution and never yields to the async reactor, so " \
-      "the ticker Fiber (and every other Fiber on this reactor thread) is " \
-      "frozen for the duration of the parse call."
+      "well below the measured Duckling.parse duration " \
+      "(#{parse_duration.round(4)}s; allowance #{allowance.round(4)}s), " \
+      "but the largest observed gap was #{max_gap.round(4)}s. A max gap " \
+      "comparable to the parse duration is the reactor-stall signature the " \
+      "pre-#64 hill measured, when Duckling.parse held the GVL for its " \
+      "entire native execution and never yielded to the reactor. Since " \
+      "#64, Duckling.parse dispatches the GVL-releasing Native.parse " \
+      "through a background Thread precisely so sibling Fibers keep " \
+      "running — a failure here means that fix has regressed (or the " \
+      "runner is pathologically overloaded; the allowance scales with the " \
+      "measured parse duration to make that unlikely)."
   end
 end
