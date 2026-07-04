@@ -56,16 +56,19 @@ no cross-version diff) doesn't show.
 >   Compute the callout's numbers from the data at render time (min/max
 >   across scenarios); don't hardcode a sentence carried over from a prior run.
 >
-> **Environment colors**: keep `github-actions` / `claude-code-web` / `local`
-> in that fixed order, using validated categorical hues (blue / aqua / violet
-> from the dataviz skill's default palette). Copy hex values exactly from
-> `references/palette.md` or the validator's own output — never hand-type a
-> "close enough" hex. Run
-> `node scripts/validate_palette.js "<hex,hex,hex>" --mode light` and again
-> `--mode dark` before shipping; fix anything that FAILs (a WARN on contrast
-> is fine only if the table/legend "relief" is present). If a 4th environment
-> ever appears, extend with the next fixed-order slot and re-validate the new
-> set — don't eyeball it.
+> **Environment colors**: keep `github-actions` / `claude-code-web` /
+> `local-3.3` / `local-3.4` / `local-4.0` in that fixed order (issue #76
+> split `local` into per-Ruby-minor buckets, since a dev machine's Ruby
+> version drifts over time in a way CI runners' doesn't), using validated
+> categorical hues from the dataviz skill's default palette — 5 environments
+> now needs a 5-hue set, not the earlier blue/aqua/violet 3-hue set. Copy hex
+> values exactly from `references/palette.md` or the validator's own output —
+> never hand-type a "close enough" hex. Run
+> `node scripts/validate_palette.js "<hex,hex,hex,hex,hex>" --mode light` and
+> again `--mode dark` before shipping; fix anything that FAILs (a WARN on
+> contrast is fine only if the table/legend "relief" is present). If another
+> environment slot ever appears, extend with the next fixed-order slot and
+> re-validate the new set — don't eyeball it.
 >
 > **Verify before calling it done**: if a connected browser tool is
 > available, load the artifact and actually look at it — check tooltips,
