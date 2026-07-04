@@ -7,98 +7,80 @@
     {
       "name": "short",
       "input": "tomorrow at 3pm",
-      "ips": 1773.0513590361454,
-      "ips_stddev_pct": 2.8199972744828257,
-      "iterations": 3625,
-      "microseconds_per_call": 563.9994548965651,
-      "allocated_objects_per_call": 28.0045,
+      "ips": 2135.1330228914903,
+      "ips_stddev_pct": 1.1240517449118066,
+      "iterations": 4422,
+      "microseconds_per_call": 468.35489371325275,
+      "allocated_objects_per_call": 28.006,
       "minor_gc_count_delta": 1,
-      "major_gc_count_delta": 0,
-      "native_ips": 2898.048502343479,
-      "native_microseconds_per_call": 345.0597873677268,
-      "thread_overhead_pct": 63.4497775585529
+      "major_gc_count_delta": 0
     },
     {
       "name": "medium",
       "input": "from 13 to 15 of July",
-      "ips": 1577.2951969455805,
-      "ips_stddev_pct": 2.0287895418668453,
-      "iterations": 3289,
-      "microseconds_per_call": 633.9967318333892,
+      "ips": 1852.2702579258425,
+      "ips_stddev_pct": 1.0797560406976376,
+      "iterations": 3784,
+      "microseconds_per_call": 539.8780203488188,
       "allocated_objects_per_call": 31.004,
       "minor_gc_count_delta": 1,
-      "major_gc_count_delta": 0,
-      "native_ips": 2454.754950920465,
-      "native_microseconds_per_call": 407.3726379999876,
-      "thread_overhead_pct": 55.630661633540655
+      "major_gc_count_delta": 0
     },
     {
       "name": "long",
       "input": "meet me next Wednesday at 2:30pm for about 2 hours",
-      "ips": 373.3850693891444,
-      "ips_stddev_pct": 2.9460203157014098,
-      "iterations": 777,
-      "microseconds_per_call": 2678.2002870012816,
-      "allocated_objects_per_call": 31.0055,
+      "ips": 366.04846934065716,
+      "ips_stddev_pct": 0.5463757309523761,
+      "iterations": 756,
+      "microseconds_per_call": 2731.8786547618806,
+      "allocated_objects_per_call": 31.0015,
       "minor_gc_count_delta": 1,
-      "major_gc_count_delta": 0,
-      "native_ips": 417.2679875066669,
-      "native_microseconds_per_call": 2396.5413833334687,
-      "thread_overhead_pct": 11.752724389680242
+      "major_gc_count_delta": 0
     },
     {
       "name": "no_match",
       "input": "the quick brown fox jumps over the lazy dog",
-      "ips": 3561.066635830615,
-      "ips_stddev_pct": 6.14984279700002,
-      "iterations": 7300,
-      "microseconds_per_call": 280.81473958904206,
+      "ips": 6362.912725053672,
+      "ips_stddev_pct": 1.477310849005981,
+      "iterations": 12978,
+      "microseconds_per_call": 157.16072861765755,
       "allocated_objects_per_call": 3.0005,
       "minor_gc_count_delta": 0,
-      "major_gc_count_delta": 0,
-      "native_ips": 8452.857128586676,
-      "native_microseconds_per_call": 118.3031943859674,
-      "thread_overhead_pct": 137.36868733474458
+      "major_gc_count_delta": 0
     },
     {
       "name": "empty",
       "input": "",
-      "ips": 10446.781718217171,
-      "ips_stddev_pct": 4.700012053892069,
-      "iterations": 21736,
-      "microseconds_per_call": 95.72325975340262,
+      "ips": 61108.26124825426,
+      "ips_stddev_pct": 3.7556296859380263,
+      "iterations": 126760,
+      "microseconds_per_call": 16.364399502997934,
       "allocated_objects_per_call": 3.0005,
       "minor_gc_count_delta": 0,
-      "major_gc_count_delta": 0,
-      "native_ips": 74858.8929299544,
-      "native_microseconds_per_call": 13.358466320570647,
-      "thread_overhead_pct": 616.5737252786181
+      "major_gc_count_delta": 0
     },
     {
       "name": "camping_trip_email",
       "input": "Hey everyone,\n\nWanted to loop you all in on our camping trip planning for the summer --\nwe've got a few weekends to lock down. First up, we're thinking Yosemite\nfrom June 12th to June 15th, weather permitting; if that valley is too\ncrowded we could push it to June 19th instead. Then in July, maybe the\nsecond week, say July 8th through July 12th, we could head down to Big Sur\nalong the coast -- I know a few of you can't make it until July 10th, so\nwe might just meet everyone there by lunchtime that day.\n\nAugust is looking busy but I think the weekend of August 22nd to August\n24th would work for a shorter trip up to the Sierras, and if the weather\nholds we could extend it to August 25th. Let's also pencil in Labor Day\nweekend, August 29th through September 1st, for one last trip before\nschool starts back up on September 3rd. If anyone's free the week before,\nsay September 2nd, we could even sneak in a day hike.\n\nReply by next Friday if any of these dates don't work for you, and we'll\nfinalize the full schedule by the end of the month. Looking forward to\nseeing everyone out there!\n",
-      "ips": 2.4293336149183298,
+      "ips": 2.18886487010991,
       "ips_stddev_pct": 0.0,
       "iterations": 5,
-      "microseconds_per_call": 411635.51760000584,
+      "microseconds_per_call": 456857.8049999893,
       "allocated_objects_per_call": 514.45,
       "minor_gc_count_delta": 0,
-      "major_gc_count_delta": 0,
-      "native_ips": 2.523290863074869,
-      "native_microseconds_per_call": 396307.8591666619,
-      "thread_overhead_pct": 3.8676140477189187
+      "major_gc_count_delta": 0
     }
   ],
   "concurrency": {
     "thread_count": 10,
     "duration_seconds": 3,
     "scenario_input": "medium",
-    "single_thread_ops_per_sec": 1588.0,
-    "multi_thread_ops_per_sec": 3757.3333333333335,
-    "scaling_factor": 2.36607892527288,
-    "efficiency_pct": 23.6607892527288
+    "single_thread_ops_per_sec": 1804.3333333333333,
+    "multi_thread_ops_per_sec": 1692.6666666666667,
+    "scaling_factor": 0.9381119527064475,
+    "efficiency_pct": 9.381119527064476
   },
   "environment": "claude-code-web",
   "version": "0.2.0",
-  "date": "2026-07-04"
+  "date": "2026-07-03"
 }

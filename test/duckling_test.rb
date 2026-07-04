@@ -86,8 +86,8 @@ class DucklingIntervalTest < Minitest::Test
 end
 
 class DucklingVersionTest < Minitest::Test
-  def test_version_is_0_2_0
-    assert_equal "0.2.0", Duckling::VERSION
+  def test_version_is_0_2_1_rc1
+    assert_equal "0.2.1-rc1", Duckling::VERSION
   end
 end
 

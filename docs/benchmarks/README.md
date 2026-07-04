@@ -19,7 +19,7 @@ one file per environment per recorded version.
 
 ## Latest results by environment
 
-### github-actions (v0.2.0, 2026-07-04)
+### github-actions (v0.2.1-rc1, 2026-07-04)
 
 Ruby 3.3.6 (x86_64-linux), rustc 1.94.1 (e408947bf 2026-03-25), `release` profile.
 
@@ -34,7 +34,7 @@ Ruby 3.3.6 (x86_64-linux), rustc 1.94.1 (e408947bf 2026-03-25), `release` profil
 
 10-thread throughput: 3547.7 ops/sec vs 1761.3 ops/sec single-threaded (2.01x, 20.1% of ideal linear scaling).
 
-#### Dispatch overhead: native vs thread-per-call (github-actions v0.2.0)
+#### Dispatch overhead: native vs thread-per-call (github-actions v0.2.1-rc1)
 
 Thread-per-call is `Duckling.parse` (the public API) spawning a background `Thread` so a calling Fiber can yield to an Async::Reactor while the native call runs; native is `Duckling::Native.parse` (no thread, the pre-#64 baseline). Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
 
@@ -49,14 +49,14 @@ Thread-per-call is `Duckling.parse` (the public API) spawning a background `Thre
 
 ```mermaid
 xychart-beta
-    title "github-actions v0.2.0: native vs thread-per-call dispatch (ips)"
+    title "github-actions v0.2.1-rc1: native vs thread-per-call dispatch (ips)"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
     bar "native" [2662.2, 2216.9, 419.1, 7614.2, 72838.8]
     bar "thread-per-call" [2130.8, 1804.9, 392.7, 4480.0, 12615.7]
 ```
 
-### claude-code-web (v0.2.0, 2026-07-04)
+### claude-code-web (v0.2.1-rc1, 2026-07-04)
 
 Ruby 3.3.6 (x86_64-linux), rustc 1.94.1 (e408947bf 2026-03-25), `release` profile.
 
@@ -71,7 +71,7 @@ Ruby 3.3.6 (x86_64-linux), rustc 1.94.1 (e408947bf 2026-03-25), `release` profil
 
 10-thread throughput: 3757.3 ops/sec vs 1588.0 ops/sec single-threaded (2.37x, 23.7% of ideal linear scaling).
 
-#### Dispatch overhead: native vs thread-per-call (claude-code-web v0.2.0)
+#### Dispatch overhead: native vs thread-per-call (claude-code-web v0.2.1-rc1)
 
 Thread-per-call is `Duckling.parse` (the public API) spawning a background `Thread` so a calling Fiber can yield to an Async::Reactor while the native call runs; native is `Duckling::Native.parse` (no thread, the pre-#64 baseline). Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
 
@@ -86,14 +86,14 @@ Thread-per-call is `Duckling.parse` (the public API) spawning a background `Thre
 
 ```mermaid
 xychart-beta
-    title "claude-code-web v0.2.0: native vs thread-per-call dispatch (ips)"
+    title "claude-code-web v0.2.1-rc1: native vs thread-per-call dispatch (ips)"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
     bar "native" [2898.0, 2454.8, 417.3, 8452.9, 74858.9]
     bar "thread-per-call" [1773.1, 1577.3, 373.4, 3561.1, 10446.8]
 ```
 
-### local (v0.2.0, 2026-07-03)
+### local (v0.2.1-rc1, 2026-07-03)
 
 Ruby 3.4.5 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` profile.
 
@@ -108,7 +108,7 @@ Ruby 3.4.5 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` pro
 
 10-thread throughput: 4023.3 ops/sec vs 1048.0 ops/sec single-threaded (3.84x, 38.4% of ideal linear scaling).
 
-#### Dispatch overhead: native vs thread-per-call (local v0.2.0)
+#### Dispatch overhead: native vs thread-per-call (local v0.2.1-rc1)
 
 Thread-per-call is `Duckling.parse` (the public API) spawning a background `Thread` so a calling Fiber can yield to an Async::Reactor while the native call runs; native is `Duckling::Native.parse` (no thread, the pre-#64 baseline). Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
 
@@ -123,7 +123,7 @@ Thread-per-call is `Duckling.parse` (the public API) spawning a background `Thre
 
 ```mermaid
 xychart-beta
-    title "local v0.2.0: native vs thread-per-call dispatch (ips)"
+    title "local v0.2.1-rc1: native vs thread-per-call dispatch (ips)"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
     bar "native" [1764.7, 1752.8, 317.0, 5523.6, 57487.9]
