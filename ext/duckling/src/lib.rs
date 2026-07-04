@@ -178,9 +178,12 @@ fn panicking_parse(ruby: &Ruby, _args: &[Value]) -> Result<RArray, Error> {
 /// - `dims`: dimension names to extract; only `"time"` is implemented in 0.2.0,
 ///   other values raise `ArgumentError`.
 /// - `reference_time`: a Ruby `Time` anchoring relative expressions like "tomorrow";
-///   its `utc_offset` is preserved into the `Instant` results (e.g. "in one hour"),
-///   not flattened to UTC+0. Defaults to `Context::default()` (now, UTC) when
-///   `nil`/omitted. A non-`Time` value raises `TypeError`.
+///   its `utc_offset` is preserved into every time result's `:value` — both
+///   `Instant` results (e.g. "in one hour") and `Naive` (wall-clock) results
+///   (e.g. "tomorrow", "5pm"), which are resolved against this offset before
+///   being returned. `:value` is always a real Ruby `Time`, never a string.
+///   Defaults to `Context::default()` (now, UTC) when `nil`/omitted. A
+///   non-`Time` value raises `TypeError`.
 /// - `with_latent`: include ambiguous/latent matches (e.g. bare "morning").
 fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let args = scan_args::scan_args::<(String,), (), (), (), _, ()>(args)?;
@@ -236,6 +239,7 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
         );
     }
 
+    let offset = payload.context.timezone();
     let entities = match payload
         .result
         .expect("parse_without_gvl always sets result before returning")
@@ -247,7 +251,7 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
 
     let out = ruby.ary_new();
     for e in &entities {
-        out.push(entity_to_ruby(ruby, e)?)?;
+        out.push(entity_to_ruby(ruby, e, offset)?)?;
     }
     Ok(out)
 }
@@ -397,63 +401,77 @@ fn build_context(ruby: &Ruby, ref_time: Option<RubyTime>) -> Result<Context, Err
     }
 }
 
-fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint) -> Result<Value, Error> {
+/// Resolves a bare `NaiveDateTime` (wall-clock, no offset) against the
+/// reference offset into an absolute `DateTime<FixedOffset>`. Shared by
+/// `time_point_to_ruby` and `time_value_to_ruby` so the two call sites can't
+/// drift apart on error message or ambiguity-handling strategy.
+/// `FixedOffset` has no DST, so `.single()` is total in practice for any
+/// `NaiveDateTime` duckling can produce; the `ok_or_else` is defensive.
+fn resolve_naive(
+    ruby: &Ruby,
+    offset: FixedOffset,
+    value: &chrono::NaiveDateTime,
+) -> Result<chrono::DateTime<FixedOffset>, Error> {
+    offset
+        .from_local_datetime(value)
+        .single()
+        .ok_or_else(|| arg_error(ruby, "invalid or ambiguous naive time for reference offset"))
+}
+
+fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint, offset: FixedOffset) -> Result<Value, Error> {
     let h = ruby.hash_new();
     h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
     match tp {
         TimePoint::Naive { value, grain } => {
-            h.aset(
-                ruby.to_symbol("value"),
-                value.format("%Y-%m-%dT%H:%M:%S").to_string(),
-            )?;
+            h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, value)?)?;
             h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
         }
         TimePoint::Instant { value, grain } => {
-            h.aset(ruby.to_symbol("value"), value.to_rfc3339())?;
+            h.aset(ruby.to_symbol("value"), *value)?;
             h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
         }
     }
     Ok(h.as_value())
 }
 
-fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue) -> Result<Value, Error> {
+fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Result<Value, Error> {
     let h = ruby.hash_new();
     match tv {
         TimeValue::Single { value, values, .. } => {
             h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
             match value {
                 TimePoint::Naive { value: dt, grain } => {
-                    h.aset(
-                        ruby.to_symbol("value"),
-                        dt.format("%Y-%m-%dT%H:%M:%S").to_string(),
-                    )?;
+                    h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, dt)?)?;
                     h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
                 }
                 TimePoint::Instant { value: dt, grain } => {
-                    h.aset(ruby.to_symbol("value"), dt.to_rfc3339())?;
+                    h.aset(ruby.to_symbol("value"), *dt)?;
                     h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
                 }
             }
             let vals = ruby.ary_new();
             for tp in values {
-                vals.push(time_point_to_ruby(ruby, tp)?)?;
+                vals.push(time_point_to_ruby(ruby, tp, offset)?)?;
             }
             h.aset(ruby.to_symbol("values"), vals)?;
         }
         TimeValue::Interval { from, to, .. } => {
             h.aset(ruby.to_symbol("type"), ruby.to_symbol("interval"))?;
             if let Some(tp) = from {
-                h.aset(ruby.to_symbol("from"), time_point_to_ruby(ruby, tp)?)?;
+                h.aset(
+                    ruby.to_symbol("from"),
+                    time_point_to_ruby(ruby, tp, offset)?,
+                )?;
             }
             if let Some(tp) = to {
-                h.aset(ruby.to_symbol("to"), time_point_to_ruby(ruby, tp)?)?;
+                h.aset(ruby.to_symbol("to"), time_point_to_ruby(ruby, tp, offset)?)?;
             }
         }
     }
     Ok(h.as_value())
 }
 
-fn entity_to_ruby(ruby: &Ruby, entity: &Entity) -> Result<Value, Error> {
+fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<Value, Error> {
     let h = ruby.hash_new();
     h.aset(ruby.to_symbol("body"), entity.body.clone())?;
     h.aset(ruby.to_symbol("start"), entity.start)?;
@@ -464,7 +482,10 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity) -> Result<Value, Error> {
         h.aset(ruby.to_symbol("latent"), latent)?;
     }
     if let DimensionValue::Time(ref tv) = entity.value {
-        h.aset(ruby.to_symbol("value"), time_value_to_ruby(ruby, tv)?)?;
+        h.aset(
+            ruby.to_symbol("value"),
+            time_value_to_ruby(ruby, tv, offset)?,
+        )?;
     }
     Ok(h.as_value())
 }

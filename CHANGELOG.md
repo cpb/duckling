@@ -15,6 +15,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   anchor. Accepted values: a `Time`, or anything responding to `to_time`
   (`ActiveSupport::TimeWithZone`, stdlib `DateTime`, etc.), which is coerced
   automatically. Migrate a raw Integer by wrapping it in `Time.at(seconds)`.
+- **Breaking:** a time result's `:value` (and an interval's `:from`/`:to`) is
+  now a real Ruby `Time`, not a formatted String. This applies to both
+  `Naive` (wall-clock, e.g. `"tomorrow"`, `"5pm"`) and `Instant` (e.g. `"in
+  one hour"`) results — `reference_time:`'s offset is now applied to
+  `Naive` results too, not just `Instant` ones. Callers parsing the old
+  ISO-ish string (with or without an offset suffix) should read `.value`
+  directly as a `Time` instead.
 
 ## [0.2.0] - 2026-07-01
 

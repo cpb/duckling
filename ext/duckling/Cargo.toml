@@ -7,7 +7,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-magnus = { version = "0.8" }
+magnus = { version = "0.8", features = ["chrono"] }
 duckling = "0.4"
 chrono = "0.4"
 rb-sys = { version = "*", default-features = false, features = ["stable-api-compiled-fallback"] }

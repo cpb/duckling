@@ -34,7 +34,8 @@ class DucklingEntityShapeTest < Minitest::Test
     assert_equal "at 3pm", first[:body]
     assert_equal :value, value[:type]
     assert_equal :hour, value[:grain]
-    assert_equal "2013-02-12T15:00:00", value[:value]
+    assert_kind_of Time, value[:value]
+    assert_equal Time.new(2013, 2, 12, 15, 0, 0, "-02:00"), value[:value]
   end
 end
 
@@ -46,7 +47,7 @@ class DucklingTimeExtractionTest < Minitest::Test
     assert_includes VALID_GRAINS, time_entity[:value][:grain],
       "Expected grain to be one of #{VALID_GRAINS.inspect}"
     assert_equal :day, time_entity[:value][:grain]
-    assert_equal "2013-02-13T00:00:00", time_entity[:value][:value]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), time_entity[:value][:value]
   end
 end
 
@@ -59,7 +60,7 @@ class DucklingParityTest < Minitest::Test
     assert_equal :time, entity[:dim]
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
-    assert_equal "2013-02-13T00:00:00", entity[:value][:value]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), entity[:value][:value]
     assert_kind_of Array, entity[:value][:values]
     assert entity[:value][:values].size > 0, "expected :values to be a non-empty Array"
   end
@@ -76,13 +77,13 @@ class DucklingIntervalTest < Minitest::Test
     assert entity[:value].key?(:to), "interval value should have :to"
     assert_equal :value, entity[:value][:from][:type]
     assert_equal :hour, entity[:value][:from][:grain]
-    assert_equal "2013-02-12T15:00:00", entity[:value][:from][:value]
+    assert_equal Time.new(2013, 2, 12, 15, 0, 0, "-02:00"), entity[:value][:from][:value]
     assert_equal :value, entity[:value][:to][:type]
     assert_equal :hour, entity[:value][:to][:grain]
     # duckling represents interval :to as the exclusive hour boundary, not the
     # literal named time — "5pm" (17:00) surfaces as 18:00. Verified against
     # wafer-inc-duckling's own tests/time_corpus.rs (e.g. "3-4pm" -> to 17:00).
-    assert_equal "2013-02-12T18:00:00", entity[:value][:to][:value]
+    assert_equal Time.new(2013, 2, 12, 18, 0, 0, "-02:00"), entity[:value][:to][:value]
   end
 end
 
@@ -91,7 +92,11 @@ class DucklingReferenceTimeTest < Minitest::Test
     results = Duckling.parse("in one hour", locale: "en", reference_time: REFERENCE_TIME)
     entity = results.find { |r| r[:dim] == :time }
     refute_nil entity, "Expected a :time dimension result for 'in one hour'"
-    assert_equal "2013-02-12T05:30:00-02:00", entity[:value][:value]
+    assert_kind_of Time, entity[:value][:value]
+    assert_equal REFERENCE_TIME + 3600, entity[:value][:value]
+    # Time#== only compares the instant, not utc_offset — assert this
+    # explicitly since preserving the offset is the whole point of this test.
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
   def test_non_time_reference_time_raises_type_error
@@ -105,7 +110,9 @@ class DucklingReferenceTimeTest < Minitest::Test
     results = Duckling.parse("in one hour", locale: "en", reference_time: reference_time)
     entity = results.find { |r| r[:dim] == :time }
     refute_nil entity, "Expected a :time dimension result for 'in one hour'"
-    assert_equal "2013-02-12T05:30:00-02:00", entity[:value][:value]
+    assert_kind_of Time, entity[:value][:value]
+    assert_equal REFERENCE_TIME + 3600, entity[:value][:value]
+    assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 end
 
