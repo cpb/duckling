@@ -1,9 +1,9 @@
-use chrono::DateTime;
+use chrono::{DateTime, FixedOffset};
 use duckling::{
     Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options, Region, TimePoint,
     TimeValue, parse as duckling_parse,
 };
-use magnus::{Error, RArray, Ruby, Value, function, prelude::*, scan_args};
+use magnus::{Error, RArray, Ruby, Time as RubyTime, Value, function, prelude::*, scan_args};
 use std::os::raw::c_void;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -171,8 +171,10 @@ fn panicking_parse(ruby: &Ruby, _args: &[Value]) -> Result<RArray, Error> {
 /// - `locale`: BCP-47 tag (e.g. `"en"`, `"en-GB"`); unsupported codes raise `ArgumentError`.
 /// - `dims`: dimension names to extract; only `"time"` is implemented in 0.2.0,
 ///   other values raise `ArgumentError`.
-/// - `reference_time`: Unix seconds anchoring relative expressions like "tomorrow";
-///   defaults to `Context::default()` (now, UTC).
+/// - `reference_time`: a Ruby `Time` anchoring relative expressions like "tomorrow";
+///   its `utc_offset` is preserved into the `Instant` results (e.g. "in one hour"),
+///   not flattened to UTC+0. Defaults to `Context::default()` (now, UTC) when
+///   `nil`/omitted. A non-`Time` value raises `TypeError`.
 /// - `with_latent`: include ambiguous/latent matches (e.g. bare "morning").
 fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let args = scan_args::scan_args::<(String,), (), (), (), _, ()>(args)?;
@@ -182,7 +184,7 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
         (
             Option<String>,
             Option<Vec<String>>,
-            Option<i64>,
+            Option<RubyTime>,
             Option<bool>,
         ),
         (),
@@ -193,14 +195,14 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     )?;
 
     let text = args.required.0;
-    let (locale_str, dims_strs, ref_time_i, with_latent) = kw.optional;
+    let (locale_str, dims_strs, ref_time, with_latent) = kw.optional;
     let locale_str = locale_str.unwrap_or_else(|| "en".to_string());
     let dims_strs = dims_strs.unwrap_or_else(|| vec!["time".to_string()]);
     let with_latent = with_latent.unwrap_or(false);
 
     let locale = parse_locale(ruby, &locale_str)?;
     let dims = parse_dims(ruby, &dims_strs)?;
-    let context = build_context(ruby, ref_time_i)?;
+    let context = build_context(ruby, ref_time)?;
     let options = Options { with_latent };
 
     // Release the GVL, call duckling::parse off-GVL, and block until the
@@ -381,12 +383,15 @@ fn parse_dims(ruby: &Ruby, dims_strs: &[String]) -> Result<Vec<DimensionKind>, E
         .collect()
 }
 
-fn build_context(ruby: &Ruby, ref_time_i: Option<i64>) -> Result<Context, Error> {
-    match ref_time_i {
-        Some(secs) => {
-            let utc = DateTime::from_timestamp(secs, 0)
+fn build_context(ruby: &Ruby, ref_time: Option<RubyTime>) -> Result<Context, Error> {
+    match ref_time {
+        Some(time) => {
+            let ts = time.timespec()?;
+            let offset = FixedOffset::east_opt(time.utc_offset() as i32)
                 .ok_or_else(|| Error::new(ruby.exception_arg_error(), "invalid reference_time"))?;
-            Ok(Context::new(utc.fixed_offset(), Locale::default()))
+            let utc = DateTime::from_timestamp(ts.tv_sec, ts.tv_nsec as u32)
+                .ok_or_else(|| Error::new(ruby.exception_arg_error(), "invalid reference_time"))?;
+            Ok(Context::new(utc.with_timezone(&offset), Locale::default()))
         }
         None => Ok(Context::default()),
     }

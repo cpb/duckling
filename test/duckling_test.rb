@@ -7,7 +7,7 @@ VALID_GRAINS = %i[second minute hour day week month quarter year].freeze
 # Matches the reference time used throughout the pyduckling / wafer-inc-duckling
 # corpora (2013-02-12T04:30:00-02:00), so relative expressions resolve to fixed,
 # assertable values instead of drifting with the real clock.
-REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00").to_i
+REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00")
 
 class DucklingApiTest < Minitest::Test
   def test_parse_returns_array
@@ -82,6 +82,21 @@ class DucklingIntervalTest < Minitest::Test
     # literal named time — "5pm" (17:00) surfaces as 18:00. Verified against
     # wafer-inc-duckling's own tests/time_corpus.rs (e.g. "3-4pm" -> to 17:00).
     assert_equal "2013-02-12T18:00:00", entity[:value][:to][:value]
+  end
+end
+
+class DucklingReferenceTimeTest < Minitest::Test
+  def test_time_reference_time_preserves_utc_offset_for_instant_results
+    results = Duckling.parse("in one hour", locale: "en", reference_time: REFERENCE_TIME)
+    entity = results.find { |r| r[:dim] == :time }
+    refute_nil entity, "Expected a :time dimension result for 'in one hour'"
+    assert_equal "2013-02-12T05:30:00-02:00", entity[:value][:value]
+  end
+
+  def test_non_time_reference_time_raises_type_error
+    assert_raises(TypeError) do
+      Duckling.parse("tomorrow", locale: "en", reference_time: REFERENCE_TIME.to_i)
+    end
   end
 end
 

@@ -35,7 +35,7 @@ require "test_helper"
 # one entity. See DucklingCommaListKnownLimitationTest below for the specific
 # shapes that fail, including one case where the surviving :value isn't even
 # reliably the leftmost date in the collapsed run.
-COMMA_LIST_REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00").to_i
+COMMA_LIST_REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00")
 
 class DucklingCommaListReliableTest < Minitest::Test
   def extracted_dates(text)

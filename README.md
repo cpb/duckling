@@ -43,9 +43,11 @@ Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_lat
   extract. See "Supported dimensions" below — only `"time"` currently
   produces a populated `:value`. An unrecognized dimension name raises
   `ArgumentError`.
-- `reference_time:` (Integer Unix seconds, default `nil`) — anchors relative
-  expressions like "tomorrow" or "next week". Defaults to the current UTC
-  time; pass an explicit value for deterministic output.
+- `reference_time:` (`Time`, default `nil`) — anchors relative expressions
+  like "tomorrow" or "next week". Its `utc_offset` is preserved into
+  offset-aware results (e.g. `"in one hour"`), not flattened to UTC. Defaults
+  to the current UTC time; pass an explicit `Time` for deterministic output.
+  A non-`Time` value (e.g. a raw Integer) raises `TypeError`.
 - `with_latent:` (Boolean, default `false`) — include ambiguous/latent
   matches (e.g. a bare "morning") in the results.
 

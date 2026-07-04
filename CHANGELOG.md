@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** `reference_time:` now requires a Ruby `Time` object (or
+  `nil`), not a Unix-seconds Integer. This lets the caller's `utc_offset` be
+  preserved into offset-aware `Instant` results (e.g. `"in one hour"`),
+  which previously always came back as UTC+0 regardless of the intended
+  anchor. Migrate a raw Integer by wrapping it in `Time.at(seconds)`.
+
 ## [0.2.0] - 2026-07-01
 
 ## What's Changed
