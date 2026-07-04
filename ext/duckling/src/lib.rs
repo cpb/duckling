@@ -20,6 +20,8 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     let module = ruby.define_module("Duckling")?;
     let native = module.define_module("Native")?;
     native.define_singleton_method("parse", function!(parse, -1))?;
+    let panicking_fake = module.define_module("PanickingNativeFake")?;
+    panicking_fake.define_singleton_method("parse", function!(panicking_parse, -1))?;
     Ok(())
 }
 
@@ -84,7 +86,71 @@ fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
     } else if let Some(s) = payload.downcast_ref::<String>() {
         s.clone()
     } else {
-        "duckling::parse panicked".to_string()
+        "no panic message".to_string()
+    }
+}
+
+/// Converts a caught `duckling::parse` panic into the Ruby error the
+/// extension raises. Single choke point for the panic → exception mapping,
+/// shared by the real entrypoint and `Duckling::PanickingNativeFake`, so
+/// tests exercising the fake exercise the exact mapping callers see.
+fn panic_error(ruby: &Ruby, message: &str) -> Error {
+    Error::new(
+        ruby.exception_fatal(),
+        format!("duckling::parse panicked: {message}"),
+    )
+}
+
+/// Payload for the test-only panicking fake below — same "plain owned Rust
+/// data only" rule as `ParsePayload`.
+struct PanicFakePayload {
+    result: Option<Result<Vec<Entity>, String>>,
+}
+
+/// Off-GVL callback for `Duckling::PanickingNativeFake.parse`: identical
+/// shape to `parse_without_gvl`, but the guarded computation always panics —
+/// standing in for a `duckling::parse` panic without needing a real
+/// panic-triggering input.
+unsafe extern "C" fn panic_fake_without_gvl(payload: *mut c_void) -> *mut c_void {
+    let payload = unsafe { &mut *(payload as *mut PanicFakePayload) };
+
+    let outcome = catch_unwind(AssertUnwindSafe(|| -> Vec<Entity> {
+        panic!("intentional panic from Duckling::PanickingNativeFake")
+    }));
+
+    payload.result = Some(match outcome {
+        Ok(entities) => Ok(entities),
+        Err(panic_payload) => Err(panic_message(&panic_payload)),
+    });
+
+    std::ptr::null_mut()
+}
+
+/// `Duckling::PanickingNativeFake.parse(*)` — test-only stand-in for
+/// `Duckling::Native` whose native call always panics. Accepts (and
+/// ignores) `Native.parse`'s arguments so tests can swap the `Native`
+/// constant and drive the public `Duckling.parse` through the real
+/// GVL-release + `catch_unwind` + `panic_error` path, observing exactly
+/// what a `duckling::parse` panic does to a Ruby caller. Not part of the
+/// public API.
+fn panicking_parse(ruby: &Ruby, _args: &[Value]) -> Result<RArray, Error> {
+    let mut payload = PanicFakePayload { result: None };
+
+    unsafe {
+        rb_sys::rb_thread_call_without_gvl(
+            Some(panic_fake_without_gvl),
+            &mut payload as *mut PanicFakePayload as *mut c_void,
+            None,
+            std::ptr::null_mut(),
+        );
+    }
+
+    match payload
+        .result
+        .expect("panic_fake_without_gvl always sets result before returning")
+    {
+        Ok(_) => Ok(ruby.ary_new()),
+        Err(message) => Err(panic_error(ruby, &message)),
     }
 }
 
@@ -161,13 +227,8 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
         .expect("parse_without_gvl always sets result before returning")
     {
         Ok(entities) => entities,
-        Err(message) => {
-            // Safe to construct/raise now: the GVL is confirmed held again.
-            return Err(Error::new(
-                ruby.exception_fatal(),
-                format!("duckling::parse panicked: {message}"),
-            ));
-        }
+        // Safe to construct/raise now: the GVL is confirmed held again.
+        Err(message) => return Err(panic_error(ruby, &message)),
     };
 
     let out = ruby.ary_new();
