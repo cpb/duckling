@@ -26,12 +26,24 @@ module Duckling
   # a fast-failing call) so a rescued error doesn't also print a
   # thread-termination backtrace to stderr — Thread#value still re-raises it
   # to the caller as ordinary control flow.
-  def self.parse(...)
-    return Native.parse(...) unless Fiber.scheduler
+  #
+  # reference_time: is coerced here, not in the native extension:
+  # Native.parse's Magnus binding only accepts a strict kind_of?(Time) (issue
+  # #45), which rejects ActiveSupport::TimeWithZone and stdlib DateTime even
+  # though both carry the same to_i/utc_offset a real Time does — #to_time
+  # normalizes any of those (and anything else that offers the same
+  # conversion) to a real Time before it crosses into Rust.
+  def self.parse(*args, **kwargs, &block)
+    reference_time = kwargs[:reference_time]
+    if reference_time && !reference_time.is_a?(Time) && reference_time.respond_to?(:to_time)
+      kwargs = kwargs.merge(reference_time: reference_time.to_time)
+    end
+
+    return Native.parse(*args, **kwargs, &block) unless Fiber.scheduler
 
     Thread.new do
       Thread.current.report_on_exception = false
-      Native.parse(...)
+      Native.parse(*args, **kwargs, &block)
     end.value
   end
 end
