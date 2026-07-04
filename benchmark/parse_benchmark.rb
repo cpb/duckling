@@ -85,11 +85,20 @@ module DucklingBenchmark
     end
   end
 
+  # Measures Native.parse, not Duckling.parse: the allocated_objects/GC
+  # columns describe what a *parse* costs, and Duckling.parse's
+  # thread-per-call dispatch (issue #64) drowns that signal in Thread
+  # allocation churn — each spawned Thread brings its own object plus stack
+  # /bookkeeping allocations and drives minor GC hard (observed: objects/call
+  # 28 -> 35 and minor GC 1 -> 62 across a recording when this loop went
+  # through Duckling.parse). Dispatch overhead is reported separately by the
+  # ips dispatch-mode comparison; keeping this loop on Native.parse also
+  # keeps these columns comparable with entries recorded before #64.
   def self.measure_gc(name:, text:)
     iterations = GC_SAMPLE_ITERATIONS_OVERRIDES.fetch(name, GC_SAMPLE_ITERATIONS)
     GC.start
     before = GC.stat
-    iterations.times { Duckling.parse(text, locale: "en") }
+    iterations.times { Duckling::Native.parse(text, locale: "en") }
     after = GC.stat
     {
       allocated_objects_per_call: (after[:total_allocated_objects] - before[:total_allocated_objects]) / iterations.to_f,
