@@ -54,7 +54,7 @@ emails, etc.) without running a separate HTTP service.
 
 ## Public and internal APIs
 
-- **`Duckling.parse(text, locale:, dims: nil, context: nil, options: nil)`** — the public Ruby API. This is a thin wrapper around `Duckling::Native.parse` that conditionally dispatches through `Thread.new { ... }.value` when a `Fiber.scheduler` is installed on the calling thread (important for async frameworks like Falcon). Plain thread-pool callers skip the thread spawn.
+- **`Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)`** — the public Ruby API. This is a thin wrapper around `Duckling::Native.parse` that conditionally dispatches through `Thread.new { ... }.value` when a `Fiber.scheduler` is installed on the calling thread (important for async frameworks like Falcon). Plain thread-pool callers skip the thread spawn.
 - **`Duckling::Native.parse(...)`** — the raw Magnus/native entrypoint. Called directly by `Duckling.parse` and by benchmarks. Releases the GVL around the underlying Rust parse call.
 - **`Duckling::PanickingNativeFake`** — test-only mock for testing panic propagation. Not part of the public API; never use in production code.
 
@@ -63,7 +63,7 @@ emails, etc.) without running a separate HTTP service.
 The test suite covers several distinct concerns:
 
 - **API shape and time entity behavior**: `test/duckling_test.rb` (basic parse structure, entity fields), `test/duckling_time_test.rb` (Time/DateTime parsing and locale handling).
-- **Fiber scheduler dispatch**: `test/falcon_fiber_blocking_test.rb` (Fiber::Scheduler integration, thread-per-call behavior).
+- **Fiber scheduler dispatch**: `test/falcon_fiber_blocking_test.rb` (Fiber::Scheduler integration, thread-per-call behavior), `test/thread_pool_dispatch_test.rb` (plain thread-pool callers skip per-call thread spawn).
 - **Panic/error propagation and stderr behavior**: `test/native_panic_test.rb` (panic handling), `test/parse_error_stderr_test.rb` (stderr output verification).
 - **Benchmark report generation**: `test/benchmark_report_test.rb` (report.rb logic, environment detection, docs generation).
 
@@ -92,7 +92,7 @@ The test suite covers several distinct concerns:
 ## Gem release conventions
 
 - **Versioning**: SemVer (`MAJOR.MINOR.PATCH`). Single source of truth: `Duckling::VERSION` in `lib/duckling/version.rb`.
-- **Release process**: tag-triggered CI pipeline. After merging to `main`, bump `Duckling::VERSION`, commit, and push a matching `vX.Y.Z` git tag to trigger the pipeline.
+- **Release process**: tag-triggered CI pipeline. Bump `Duckling::VERSION` in a PR, merge it to `main`, then push a matching `vX.Y.Z` git tag for that merged commit to trigger the pipeline.
 - **Pipeline steps** (on tag push):
   1. CI gates (must be green before proceeding).
   2. Cross-compile `x86_64-linux` and `x86_64-darwin` binary gems via Docker containers.
@@ -100,7 +100,7 @@ The test suite covers several distinct concerns:
   4. Push all three gems to RubyGems via `gem push`.
   5. Create a GitHub release with all three gems attached.
   6. Open and auto-merge a PR to update `CHANGELOG.md` (post-release documentation).
-  7. In parallel with steps 2–3, record benchmark data for this release under `docs/benchmarks/github-actions/` and open/auto-merge that PR.
+  7. In parallel with the release publish path after CI, record benchmark data for this release under `docs/benchmarks/github-actions/` and open/auto-merge that PR.
 - **Tag protection**: `v*.*.*` tags can only be created/updated by repo admins. Configured via `.github/scripts/apply-tag-ruleset.sh`.
 - **Before a release**: test cross-compilation locally or via `gh workflow run cross-gem.yml --ref <branch>`. Capture additional benchmark data points from other environments via `gh workflow run benchmark.yml --ref <branch>` (adds `docs/benchmarks/<environment>/` data) or locally via `bin/benchmark` (see "Build and test commands" above).
 
