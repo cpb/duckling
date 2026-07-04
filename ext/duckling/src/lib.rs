@@ -1,4 +1,4 @@
-use chrono::{DateTime, FixedOffset};
+use chrono::{FixedOffset, TimeZone};
 use duckling::{
     Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options, Region, TimePoint,
     TimeValue, parse as duckling_parse,
@@ -105,6 +105,12 @@ fn panic_error(ruby: &Ruby, message: &str) -> Error {
         ruby.exception_runtime_error(),
         format!("duckling::parse panicked: {message}"),
     )
+}
+
+/// Shorthand for the `Error::new(ruby.exception_arg_error(), ...)` pattern
+/// repeated across `parse_locale`, `parse_dims`, and `build_context`.
+fn arg_error(ruby: &Ruby, message: impl Into<String>) -> Error {
+    Error::new(ruby.exception_arg_error(), message.into())
 }
 
 /// Payload for the test-only panicking fake below — same "plain owned Rust
@@ -251,20 +257,14 @@ fn parse_locale(ruby: &Ruby, locale_str: &str) -> Result<Locale, Error> {
     let lang_code = parts.next().unwrap_or("");
     let region_code = parts.next();
 
-    let lang = lang_from_code(lang_code).ok_or_else(|| {
-        Error::new(
-            ruby.exception_arg_error(),
-            format!("unsupported locale: {locale_str:?}"),
-        )
-    })?;
+    let lang = lang_from_code(lang_code)
+        .ok_or_else(|| arg_error(ruby, format!("unsupported locale: {locale_str:?}")))?;
 
     let region = match region_code {
-        Some(code) => Some(region_from_code(code).ok_or_else(|| {
-            Error::new(
-                ruby.exception_arg_error(),
-                format!("unsupported locale: {locale_str:?}"),
-            )
-        })?),
+        Some(code) => Some(
+            region_from_code(code)
+                .ok_or_else(|| arg_error(ruby, format!("unsupported locale: {locale_str:?}")))?,
+        ),
         None => None,
     };
 
@@ -375,10 +375,7 @@ fn parse_dims(ruby: &Ruby, dims_strs: &[String]) -> Result<Vec<DimensionKind>, E
             "credit-card-number" => Ok(DimensionKind::CreditCardNumber),
             "time-grain" => Ok(DimensionKind::TimeGrain),
             "duration" => Ok(DimensionKind::Duration),
-            other => Err(Error::new(
-                ruby.exception_arg_error(),
-                format!("unsupported dimension: {other:?}"),
-            )),
+            other => Err(arg_error(ruby, format!("unsupported dimension: {other:?}"))),
         })
         .collect()
 }
@@ -387,11 +384,14 @@ fn build_context(ruby: &Ruby, ref_time: Option<RubyTime>) -> Result<Context, Err
     match ref_time {
         Some(time) => {
             let ts = time.timespec()?;
-            let offset = FixedOffset::east_opt(time.utc_offset() as i32)
-                .ok_or_else(|| Error::new(ruby.exception_arg_error(), "invalid reference_time"))?;
-            let utc = DateTime::from_timestamp(ts.tv_sec, ts.tv_nsec as u32)
-                .ok_or_else(|| Error::new(ruby.exception_arg_error(), "invalid reference_time"))?;
-            Ok(Context::new(utc.with_timezone(&offset), Locale::default()))
+            let offset = FixedOffset::east_opt(time.utc_offset() as i32).ok_or_else(|| {
+                arg_error(ruby, "invalid reference_time: utc_offset out of range")
+            })?;
+            let anchor = offset
+                .timestamp_opt(ts.tv_sec, ts.tv_nsec as u32)
+                .single()
+                .ok_or_else(|| arg_error(ruby, "invalid reference_time: timestamp out of range"))?;
+            Ok(Context::new(anchor, Locale::default()))
         }
         None => Ok(Context::default()),
     }

@@ -47,7 +47,11 @@ Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_lat
   like "tomorrow" or "next week". Its `utc_offset` is preserved into
   offset-aware results (e.g. `"in one hour"`), not flattened to UTC. Defaults
   to the current UTC time; pass an explicit `Time` for deterministic output.
-  A non-`Time` value (e.g. a raw Integer) raises `TypeError`.
+  Anything else responding to `to_time` — `ActiveSupport::TimeWithZone`
+  (`Time.current`/`Time.zone.now`), stdlib `DateTime`, etc. — is coerced to a
+  `Time` automatically. A value that's neither a `Time` nor `to_time`-able
+  (e.g. a raw Integer Unix timestamp) raises `TypeError`; wrap it in
+  `Time.at(seconds)` first.
 - `with_latent:` (Boolean, default `false`) — include ambiguous/latent
   matches (e.g. a bare "morning") in the results.
 
