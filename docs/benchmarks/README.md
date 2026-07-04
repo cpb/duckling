@@ -56,42 +56,20 @@ xychart-beta
     bar "thread-per-call" [2109.2, 1822.2, 395.1, 4491.6, 12840.3]
 ```
 
-### claude-code-web (v0.2.0, 2026-07-04)
+### claude-code-web (v0.2.0, 2026-07-03)
 
-Ruby 3.3.6 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` profile.
+Ruby 3.3.6 (x86_64-linux), rustc 1.94.1 (e408947bf 2026-03-25), `release` profile.
 
 | Scenario | ips | µs/call | objects/call | minor GC | major GC |
 |---|---|---|---|---|---|
-| short | 1237.3 | 808.2 | 28.0 | 1 | 0 |
-| medium | 1138.4 | 878.5 | 31.0 | 2 | 0 |
-| long | 271.7 | 3681.2 | 31.0 | 2 | 0 |
-| no_match | 2309.0 | 433.1 | 3.0 | 0 | 0 |
-| empty | 6901.2 | 144.9 | 3.0 | 0 | 0 |
-| camping_trip_email | 1.7 | 574081.2 | 514.4 | 0 | 0 |
+| short | 2135.1 | 468.4 | 28.0 | 1 | 0 |
+| medium | 1852.3 | 539.9 | 31.0 | 1 | 0 |
+| long | 366.0 | 2731.9 | 31.0 | 1 | 0 |
+| no_match | 6362.9 | 157.2 | 3.0 | 0 | 0 |
+| empty | 61108.3 | 16.4 | 3.0 | 0 | 0 |
+| camping_trip_email | 2.2 | 456857.8 | 514.4 | 0 | 0 |
 
-10-thread throughput: 4517.7 ops/sec vs 1174.3 ops/sec single-threaded (3.85x, 38.5% of ideal linear scaling).
-
-#### Dispatch overhead: native vs thread-per-call (claude-code-web v0.2.0)
-
-Thread-per-call is `Duckling.parse` (the public API) spawning a background `Thread` so a calling Fiber can yield to an Async::Reactor while the native call runs; native is `Duckling::Native.parse` (no thread, the pre-#64 baseline). Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
-
-| Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |
-|---|---|---|---|---|---|
-| short | 1768.7 | 1237.3 | 565.4 | 808.2 | 42.9% |
-| medium | 1695.3 | 1138.4 | 589.9 | 878.5 | 48.9% |
-| long | 313.2 | 271.7 | 3193.1 | 3681.2 | 15.3% |
-| no_match | 5478.7 | 2309.0 | 182.5 | 433.1 | 137.3% |
-| empty | 57376.2 | 6901.2 | 17.4 | 144.9 | 731.4% |
-| camping_trip_email | 1.7 | 1.7 | 582888.2 | 574081.2 | -1.5% |
-
-```mermaid
-xychart-beta
-    title "claude-code-web v0.2.0: native vs thread-per-call dispatch (ips)"
-    x-axis [short, medium, long, no_match, empty]
-    y-axis "ips"
-    bar "native" [1768.7, 1695.3, 313.2, 5478.7, 57376.2]
-    bar "thread-per-call" [1237.3, 1138.4, 271.7, 2309.0, 6901.2]
-```
+10-thread throughput: 1692.7 ops/sec vs 1804.3 ops/sec single-threaded (0.94x, 9.4% of ideal linear scaling).
 
 ### local (v0.2.0, 2026-07-03)
 
@@ -136,7 +114,7 @@ xychart-beta
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
     bar "github-actions" [2109.2, 1822.2, 395.1, 4491.6, 12840.3]
-    bar "claude-code-web" [1237.3, 1138.4, 271.7, 2309.0, 6901.2]
+    bar "claude-code-web" [2135.1, 1852.3, 366.0, 6362.9, 61108.3]
     bar "local" [1154.4, 1095.9, 279.2, 2477.0, 5396.2]
 ```
 
@@ -145,5 +123,5 @@ xychart-beta
     title "10-thread concurrency scaling efficiency (%) -- latest run per environment"
     x-axis [github-actions, claude-code-web, local]
     y-axis "efficiency %"
-    bar "efficiency_pct" [19.9, 38.5, 38.4]
+    bar "efficiency_pct" [19.9, 9.4, 38.4]
 ```
