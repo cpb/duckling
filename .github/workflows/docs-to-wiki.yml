@@ -1,0 +1,69 @@
+# Mechanizes the flatten + relink transform this repo has applied by hand to
+# every docs/<issue>-slug/ research-and-planning tree before merge (PR #3,
+# PR #61): copies the tree into the wiki with directory-prefixed, dash-joined
+# page names, rewrites internal links to bare wiki slugs with each target's
+# H1 as link text, pushes it, then removes the source tree from this branch
+# and repoints docs/2026-07-01-roadmap.md's link at the new wiki page. See
+# wiki/migrator.rb and the Rakefile's `wiki:migrate`/`wiki:publish` tasks.
+#
+# Manually dispatched only, against the PR branch itself — run via:
+#   gh workflow run docs-to-wiki.yml --ref <branch> -f docs_path=docs/<issue>-slug [-f pr_number=<n>]
+# Note: like any workflow_dispatch workflow, this must already exist on the
+# default branch before GitHub will let you dispatch it against another ref.
+#
+# Requires a WIKI_DEPLOY_TOKEN repo secret (a classic PAT with `repo` scope)
+# -- the default GITHUB_TOKEN cannot push to a repo's wiki.
+name: docs-to-wiki
+
+on:
+  workflow_dispatch:
+    inputs:
+      docs_path:
+        description: "Path to the docs/<issue>-slug tree to migrate, e.g. docs/77-spike-does-rb-nogvl-offload-safe-obviate-thread-wrapper"
+        required: true
+        type: string
+      pr_number:
+        description: "PR number this branch belongs to (used for the summary PR comment; optional)"
+        required: false
+        type: string
+      entry_page_name:
+        description: "Override for the auto-derived wiki entry page name (optional)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  migrate:
+    name: Migrate docs tree to the wiki
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@0dafeac902942906541bc140009cdbf32665b601 # v1.315.0
+        with:
+          ruby-version: '3.3.6'
+          bundler-cache: true
+
+      - name: Migrate docs/ tree to the wiki and clean up this branch
+        env:
+          WIKI_DEPLOY_TOKEN: ${{ secrets.WIKI_DEPLOY_TOKEN }}
+          ENTRY_PAGE_NAME: ${{ inputs.entry_page_name }}
+          DOCS_PATH: ${{ inputs.docs_path }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bundle exec rake "wiki:publish[${DOCS_PATH}]"
+
+      - name: Comment on the PR
+        if: inputs.pr_number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          DOCS_PATH: ${{ inputs.docs_path }}
+        run: |
+          entry_page="$(ruby -Iwiki -e 'require "migrator"; puts WikiMigration::Migrator.new(ENV.fetch("DOCS_PATH"), entry_page_name: ENV["ENTRY_PAGE_NAME"].then { |v| v.nil? || v.empty? ? nil : v }).entry_page_name')"
+          gh pr comment "$PR_NUMBER" --body "Migrated \`${DOCS_PATH}\` to the wiki: https://github.com/cpb/duckling/wiki/${entry_page}"

@@ -80,6 +80,94 @@ namespace :benchmark do
   end
 end
 
+WIKI_ROADMAP_PATH = "docs/2026-07-01-roadmap.md"
+
+namespace :wiki do
+  desc "Flatten+relink a docs/<issue>-slug/ tree into tmp/wiki-migration/ for inspection (no network, no credentials)"
+  task :migrate, [:docs_path] do |_t, args|
+    require_relative "wiki/migrator"
+
+    migrator = WikiMigration::Migrator.new(args.fetch(:docs_path))
+    out_dir = "tmp/wiki-migration"
+    rm_rf out_dir
+    mkdir_p out_dir
+    pages = migrator.pages
+    pages.each { |name, content| File.write(File.join(out_dir, name), content) }
+
+    puts "Wrote #{pages.size} page(s) to #{out_dir}/ (entry page: #{migrator.entry_page_name}):"
+    pages.each_key { |name| puts "  #{name}" }
+  end
+
+  desc "Push wiki:migrate's output to the real wiki, then remove the source docs/ tree from this branch and repoint the roadmap link at it"
+  task :publish, [:docs_path] => ["release:guard_clean"] do |_t, args|
+    docs_path = args.fetch(:docs_path)
+    sh "bundle", "exec", "rake", "wiki:migrate[#{docs_path}]"
+
+    require_relative "wiki/migrator"
+    entry_url = "https://github.com/cpb/duckling/wiki/#{WikiMigration::Migrator.new(docs_path).entry_page_name}"
+    token = ENV.fetch("WIKI_DEPLOY_TOKEN") { abort "WIKI_DEPLOY_TOKEN is required to push to the wiki (the default GITHUB_TOKEN can't write to a repo's wiki)" }
+    wiki_checkout = "tmp/wiki-checkout"
+
+    # Explicit bash, not Rake's default `sh -c` (dash on Debian/Ubuntu
+    # runners): dash's `set` doesn't support the `-o pipefail` flag below.
+    sh("bash", "-c", <<~SH)
+      set -euo pipefail
+
+      if [ -d "#{wiki_checkout}/.git" ]; then
+        git -C "#{wiki_checkout}" fetch origin
+        git -C "#{wiki_checkout}" reset --hard origin/master
+      else
+        git clone "https://x-access-token:#{token}@github.com/cpb/duckling.wiki.git" "#{wiki_checkout}"
+      fi
+
+      for f in tmp/wiki-migration/*.md; do
+        name="$(basename "$f")"
+        target="#{wiki_checkout}/$name"
+        if [ -f "$target" ] && ! diff -q "$f" "$target" >/dev/null; then
+          echo "Refusing to overwrite existing wiki page with different content: $name" >&2
+          echo "Pass WIKI_FORCE=1 to overwrite anyway." >&2
+          [ "${WIKI_FORCE:-}" = "1" ] || exit 1
+        fi
+        cp "$f" "$target"
+      done
+
+      cd "#{wiki_checkout}"
+      git add .
+      if git diff --cached --quiet; then
+        echo "No wiki changes to push."
+      else
+        git commit -m "Migrate #{docs_path} research to the wiki"
+        git push origin HEAD:master
+      fi
+    SH
+
+    puts "Pushed to https://github.com/cpb/duckling/wiki:"
+    Dir.glob("tmp/wiki-migration/*.md").sort.each { |f| puts "  https://github.com/cpb/duckling/wiki/#{File.basename(f, ".md")}" }
+
+    if Dir.exist?(docs_path)
+      if File.exist?(WIKI_ROADMAP_PATH)
+        original = File.read(WIKI_ROADMAP_PATH)
+        updated = WikiMigration.repoint_references(original, docs_path: docs_path, entry_url: entry_url)
+        File.write(WIKI_ROADMAP_PATH, updated) if updated != original
+      end
+
+      sh "git", "rm", "-r", "--quiet", docs_path
+      sh "git", "add", WIKI_ROADMAP_PATH if File.exist?(WIKI_ROADMAP_PATH)
+      sh "git", "commit", "-m", "Migrate #{docs_path} research to the wiki; drop local tree"
+
+      # actions/checkout leaves a detached HEAD, where a bare `git push
+      # origin HEAD` has no implied destination ref -- GITHUB_REF_NAME (set
+      # by the Actions runtime) covers that case; a plain local checkout
+      # falls back to the actually-attached branch.
+      branch = ENV["GITHUB_REF_NAME"] || `git symbolic-ref -q --short HEAD`.strip
+      abort "Could not determine a branch to push to (detached HEAD, no GITHUB_REF_NAME)" if branch.empty?
+      sh "git", "push", "origin", "HEAD:refs/heads/#{branch}"
+    else
+      puts "#{docs_path} already removed from this branch; skipping the cleanup commit."
+    end
+  end
+end
+
 Minitest::TestTask.create
 
 # Minitest::TestTask has no built-in way to declare a task dependency, and
