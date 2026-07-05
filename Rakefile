@@ -104,7 +104,8 @@ namespace :wiki do
     sh "bundle", "exec", "rake", "wiki:migrate[#{docs_path}]"
 
     require_relative "wiki/migrator"
-    entry_url = "https://github.com/cpb/duckling/wiki/#{WikiMigration::Migrator.new(docs_path).entry_page_name}"
+    migrator = WikiMigration::Migrator.new(docs_path)
+    entry_url = "https://github.com/cpb/duckling/wiki/#{migrator.entry_page_name}"
     token = ENV.fetch("WIKI_DEPLOY_TOKEN") { abort "WIKI_DEPLOY_TOKEN is required to push to the wiki (the default GITHUB_TOKEN can't write to a repo's wiki)" }
     wiki_checkout = "tmp/wiki-checkout"
 
@@ -140,6 +141,33 @@ namespace :wiki do
         git push origin HEAD:master
       fi
     SH
+
+    # Update Home.md to add a new index entry for this migration just before
+    # the Settled Decisions heading, using the entry page's H1 as the section
+    # title -- mirrors what has been done manually for every migration so far.
+    home_path = File.join(wiki_checkout, "Home.md")
+    if File.exist?(home_path)
+      issue_number = File.basename(docs_path)[/\A(\d+)-/, 1]
+      entry_h1 = migrator.h1(File.read(File.join("tmp", "wiki-migration", "#{migrator.entry_page_name}.md")))
+      new_section = <<~SECTION
+        ## Issue ##{issue_number} — #{entry_h1}
+
+        **Migrated to the wiki.** See [#{entry_h1}](#{migrator.entry_page_name}) for the full research.
+
+      SECTION
+      home = File.read(home_path)
+      anchor = "## Settled Decisions"
+      if !home.include?(new_section.lines.first.strip) && home.include?(anchor)
+        File.write(home_path, home.sub(anchor, new_section + anchor))
+        sh("bash", "-c", <<~SH)
+          set -euo pipefail
+          cd #{wiki_checkout}
+          git add Home.md
+          git commit -m "Add Issue ##{issue_number} to Home index"
+          git push origin HEAD:master
+        SH
+      end
+    end
 
     puts "Pushed to https://github.com/cpb/duckling/wiki:"
     Dir.glob("tmp/wiki-migration/*.md").sort.each { |f| puts "  https://github.com/cpb/duckling/wiki/#{File.basename(f, ".md")}" }
