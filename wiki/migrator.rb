@@ -37,6 +37,7 @@ module WikiMigration
   class Migrator
     ENTRY_SLUG_RE = %r{\A(?:.*/)?(\d+)-(.+)\z}
     MD_LINK_RE = /\[([^\]]*)\]\(([^)\s]+)\)/
+    MAX_TITLE_LENGTH = 120
 
     SUBDIR_STYLES = [:alpha, :roman, :numeric]
     FILE_STYLES = [:numeric, :roman, :numeric]
@@ -74,10 +75,17 @@ module WikiMigration
 
     def clean_title(h1_title)
       return nil if h1_title.nil?
-      h1_title
+      title = h1_title
         .gsub(/[`"'\/\\:*?<>|]/, "")
         .gsub(/\s+/, " ")
         .strip
+
+      if title.length > MAX_TITLE_LENGTH
+        truncated = title[0, MAX_TITLE_LENGTH - 1].rstrip
+        return "#{truncated}…"
+      end
+
+      title
     end
 
     # {wiki_filename_with_extension => rewritten_markdown_content}
@@ -158,7 +166,7 @@ module WikiMigration
       if readme
         file_prefix = node.prefix
         raw_h1 = h1(File.read(readme))
-        cleaned_title = clean_title(raw_h1) || File.basename(readme, ".md").tr("-_", " ")
+        cleaned_title = clean_title(raw_h1) || clean_title(File.basename(readme, ".md").tr("-_", " "))
         if depth == 0
           cleaned_title = cleaned_title.sub(/\AIssue\s+#?\d+\s*[\u2014:-]\s*/i, "")
         end
@@ -178,7 +186,7 @@ module WikiMigration
       other_files.each_with_index do |file_path, idx|
         file_prefix = "#{node.prefix}.#{format_index(idx, file_style)}"
         raw_h1 = h1(File.read(file_path))
-        cleaned_title = clean_title(raw_h1) || File.basename(file_path, ".md").tr("-_", " ")
+        cleaned_title = clean_title(raw_h1) || clean_title(File.basename(file_path, ".md").tr("-_", " "))
 
         rel_path = relative_path(file_path)
         @metadata[rel_path] = {
