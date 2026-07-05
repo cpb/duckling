@@ -6,10 +6,8 @@ require "fileutils"
 require_relative "../wiki/migrator"
 
 # These tests exercise WikiMigration::Migrator's pure flatten/relink logic
-# against fixture trees -- they never touch git/gh or the real wiki repo
-# (that's wiki:publish's job, smoke-tested by hand via `bin/worktree` or the
-# docs-to-wiki workflow). One fixture is a frozen copy of PR #81's actual
-# docs/77-spike-does-rb-nogvl-offload-safe-obviate-thread-wrapper/ tree, so
+# against fixture trees -- they never touch git/gh or the real wiki repo.
+# One fixture is a frozen copy of PR #81's actual docs tree, so
 # the flatten/relink rules are verified against real content, not just
 # synthetic paths.
 class WikiMigratorTest < Minitest::Test
@@ -38,12 +36,13 @@ class WikiMigratorTest < Minitest::Test
     assert_raises(ArgumentError) { WikiMigration::Migrator.new("docs/not-numbered") }
   end
 
-  def test_flatten_name_rules
-    migrator = WikiMigration::Migrator.new("docs/1-slug", entry_page_name: "entry")
-    assert_equal "entry", migrator.flatten_name("README.md")
-    assert_equal "research", migrator.flatten_name("research/README.md")
-    assert_equal "research-build-wiring", migrator.flatten_name("research/build-wiring/README.md")
-    assert_equal "research-build-wiring-ci-configuration", migrator.flatten_name("research/build-wiring/ci-configuration.md")
+  def test_wiki_names_hierarchical_rules
+    migrator = WikiMigration::Migrator.new(PR81_TREE)
+    names = migrator.wiki_names
+
+    assert_equal "77. Spike does rb_nogvl + RB_NOGVL_OFFLOAD_SAFE obviate the Thread wrapper", names["README.md"]
+    assert_equal "77.a. Research rb_nogvl + RB_NOGVL_OFFLOAD_SAFE mechanism spike", names["research/README.md"]
+    assert_equal "77.a.i. Raw experiment data", names["research/results.md"]
   end
 
   def test_h1_extracts_first_heading_only
@@ -63,10 +62,15 @@ class WikiMigratorTest < Minitest::Test
 
       pages = WikiMigration::Migrator.new(tree, entry_page_name: "entry").pages
 
-      assert_equal %w[entry.md research-results.md research.md], pages.keys.sort
-      assert_includes pages.fetch("entry.md"), "[Research Title](research)"
-      assert_includes pages.fetch("entry.md"), "[Results Title](research-results#raw-data)"
-      assert_includes pages.fetch("research.md"), "[Results Title](research-results)"
+      assert_equal [
+        "77. Entry Title.md",
+        "77.a. Research Title.md",
+        "77.a.i. Results Title.md"
+      ].sort, pages.keys.sort
+
+      assert_includes pages.fetch("77. Entry Title.md"), "[Research Title](77.a. Research Title)"
+      assert_includes pages.fetch("77. Entry Title.md"), "[Results Title](77.a.i. Results Title#raw-data)"
+      assert_includes pages.fetch("77.a. Research Title.md"), "[Results Title](77.a.i. Results Title)"
     end
   end
 
@@ -85,7 +89,7 @@ class WikiMigratorTest < Minitest::Test
         MD
       })
 
-      content = WikiMigration::Migrator.new(tree, entry_page_name: "entry").pages.fetch("entry.md")
+      content = WikiMigration::Migrator.new(tree, entry_page_name: "entry").pages.fetch("1. Entry Title.md")
       assert_includes content, "[duckling](https://github.com/wafer-inc/duckling)"
       assert_includes content, "[fake link](other.md)"
     end
@@ -96,14 +100,19 @@ class WikiMigratorTest < Minitest::Test
       tree = File.join(dir, "1-slug")
       write_tree(tree, {
         "README.md" => "# Entry\n",
-        "research.md" => "# Research Standalone\n",
-        "research/README.md" => "# Research Nested\n"
+        "file1.md" => "# Duplicate H1\n",
+        "file2.md" => "# Duplicate H1\n"
       })
 
-      error = assert_raises(WikiMigration::Migrator::CollisionError) do
-        WikiMigration::Migrator.new(tree, entry_page_name: "entry").pages
+      migrator = WikiMigration::Migrator.new(tree, entry_page_name: "entry")
+      migrator.define_singleton_method(:wiki_names) do
+        {"file1.md" => "duplicate", "file2.md" => "duplicate"}
       end
-      assert_match(/research/, error.message)
+
+      error = assert_raises(WikiMigration::Migrator::CollisionError) do
+        migrator.pages
+      end
+      assert_match(/duplicate/, error.message)
     end
   end
 
@@ -125,29 +134,26 @@ class WikiMigratorTest < Minitest::Test
     assert_equal content, updated
   end
 
-  # Integration-style check against PR #81's real docs tree (frozen fixture)
-  # -- verifies the flatten/relink rules against real content, not just
-  # synthetic paths.
   def test_pages_against_real_pr81_docs_tree
     migrator = WikiMigration::Migrator.new(PR81_TREE)
     pages = migrator.pages
 
     assert_equal "spike-does-rb-nogvl-offload-safe-obviate-thread-wrapper", migrator.entry_page_name
-    assert_equal %w[
-      research-results.md
-      research.md
-      spike-does-rb-nogvl-offload-safe-obviate-thread-wrapper.md
-    ], pages.keys.sort
+    assert_equal [
+      "77. Spike does rb_nogvl + RB_NOGVL_OFFLOAD_SAFE obviate the Thread wrapper.md",
+      "77.a. Research rb_nogvl + RB_NOGVL_OFFLOAD_SAFE mechanism spike.md",
+      "77.a.i. Raw experiment data.md"
+    ].sort, pages.keys.sort
 
-    entry = pages.fetch("spike-does-rb-nogvl-offload-safe-obviate-thread-wrapper.md")
-    assert_includes entry, "[Research: `rb_nogvl` + `RB_NOGVL_OFFLOAD_SAFE` mechanism spike](research)"
-    assert_includes entry, "[Raw experiment data](research-results)"
-    assert_includes entry, "[Research: `rb_nogvl` + `RB_NOGVL_OFFLOAD_SAFE` mechanism spike](research#two-track-methodology)"
+    entry = pages.fetch("77. Spike does rb_nogvl + RB_NOGVL_OFFLOAD_SAFE obviate the Thread wrapper.md")
+    assert_includes entry, "[Research: `rb_nogvl` + `RB_NOGVL_OFFLOAD_SAFE` mechanism spike](77.a. Research rb_nogvl + RB_NOGVL_OFFLOAD_SAFE mechanism spike)"
+    assert_includes entry, "[Raw experiment data](77.a.i. Raw experiment data)"
+    assert_includes entry, "[Research: `rb_nogvl` + `RB_NOGVL_OFFLOAD_SAFE` mechanism spike](77.a. Research rb_nogvl + RB_NOGVL_OFFLOAD_SAFE mechanism spike#two-track-methodology)"
     # External permalinks must survive untouched
     assert_includes entry, "https://github.com/cpb/duckling/blob/main/ext/duckling/src/lib.rs"
     assert_includes entry, "https://github.com/cpb/duckling/wiki/research-async-reactor-blocking"
 
-    research = pages.fetch("research.md")
-    assert_includes research, "[Raw experiment data](research-results)"
+    research = pages.fetch("77.a. Research rb_nogvl + RB_NOGVL_OFFLOAD_SAFE mechanism spike.md")
+    assert_includes research, "[Raw experiment data](77.a.i. Raw experiment data)"
   end
 end

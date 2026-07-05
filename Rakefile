@@ -105,7 +105,8 @@ namespace :wiki do
 
     require_relative "wiki/migrator"
     migrator = WikiMigration::Migrator.new(docs_path)
-    entry_url = "https://github.com/cpb/duckling/wiki/#{migrator.entry_page_name}"
+    entry_wiki_name = migrator.wiki_names.fetch("README.md")
+    entry_url = "https://github.com/cpb/duckling/wiki/#{entry_wiki_name.tr(" ", "-")}"
     token = ENV.fetch("WIKI_DEPLOY_TOKEN") { abort "WIKI_DEPLOY_TOKEN is required to push to the wiki (the default GITHUB_TOKEN can't write to a repo's wiki)" }
     wiki_checkout = "tmp/wiki-checkout"
 
@@ -147,12 +148,13 @@ namespace :wiki do
     # title -- mirrors what has been done manually for every migration so far.
     home_path = File.join(wiki_checkout, "Home.md")
     if File.exist?(home_path)
-      issue_number = File.basename(docs_path)[/\A(\d+)-/, 1]
-      entry_h1 = migrator.h1(File.read(File.join("tmp", "wiki-migration", "#{migrator.entry_page_name}.md")))
+      issue_number = migrator.issue_number
+      entry_wiki_name = migrator.wiki_names.fetch("README.md")
+      entry_h1 = migrator.h1(File.read(File.join("tmp", "wiki-migration", "#{entry_wiki_name}.md")))
       new_section = <<~SECTION
         ## Issue ##{issue_number} — #{entry_h1}
 
-        **Migrated to the wiki.** See [#{entry_h1}](#{migrator.entry_page_name}) for the full research.
+        **Migrated to the wiki.** See [#{entry_h1}](#{entry_wiki_name}) for the full research.
 
       SECTION
       home = File.read(home_path)

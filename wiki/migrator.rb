@@ -4,22 +4,46 @@
 require "pathname"
 
 module WikiMigration
-  # Mechanizes the flatten + relink transform this repo has applied by hand
-  # three times now when moving a docs/<issue>-slug/ research-and-planning
-  # tree to the project wiki: GitHub wikis route pages by basename only
-  # (ignoring directory structure), so every file gets a directory-prefixed,
-  # dash-joined slug, and every internal link gets rewritten to that bare
-  # slug with the target page's own H1 as its visible text -- never the
-  # filename. Deliberately has no knowledge of git/gh -- that lives in the
-  # Rakefile's wiki:publish task, keeping this module a pure "compute
-  # flattened pages" unit that's easy to test.
+  class TreeNode
+    attr_reader :name, :parent, :subdirs, :files
+    attr_accessor :prefix
+
+    def initialize(name, parent = nil)
+      @name = name
+      @parent = parent
+      @subdirs = {}
+      @files = []
+    end
+
+    def add_file(path_parts, full_path)
+      if path_parts.empty?
+        raise "Empty path parts"
+      elsif path_parts.size == 1
+        @files << full_path
+      else
+        subdir_name = path_parts.first
+        @subdirs[subdir_name] ||= TreeNode.new(subdir_name, self)
+        @subdirs[subdir_name].add_file(path_parts[1..], full_path)
+      end
+    end
+  end
+
+  # Mechanizes the flatten + relink transform this repo has applied by hand:
+  # GitHub wikis route pages by basename only (ignoring directory structure),
+  # so every file gets a directory-prefixed, cased, and numbered page title
+  # (e.g. "77.a.i. Raw Experiment Data"). This groups and orders them logically
+  # in the sidebar. Internal relative links are rewritten to reference the
+  # new cased, numbered page titles.
   class Migrator
     ENTRY_SLUG_RE = %r{\A(?:.*/)?(\d+)-(.+)\z}
     MD_LINK_RE = /\[([^\]]*)\]\(([^)\s]+)\)/
 
+    SUBDIR_STYLES = [:alpha, :roman, :numeric]
+    FILE_STYLES = [:numeric, :roman, :numeric]
+
     CollisionError = Class.new(StandardError)
 
-    attr_reader :docs_path, :entry_page_name
+    attr_reader :docs_path, :entry_page_name, :issue_number
 
     def initialize(docs_path, entry_page_name: nil)
       @docs_path = docs_path.chomp("/")
@@ -28,6 +52,7 @@ module WikiMigration
 
       @issue_number = match[1]
       @entry_page_name = entry_page_name || ENV["ENTRY_PAGE_NAME"] || match[2]
+      @metadata = nil
     end
 
     def source_files
@@ -36,28 +61,10 @@ module WikiMigration
 
     # {relative_path_within_tree => flattened_wiki_filename_without_extension}
     def wiki_names
+      build_metadata! unless @metadata
       @wiki_names ||= source_files.each_with_object({}) do |path, memo|
         rel = relative_path(path)
-        memo[rel] = flatten_name(rel)
-      end
-    end
-
-    # docs/<issue>-slug/README.md                 -> entry_page_name
-    # docs/<issue>-slug/research/README.md         -> "research"
-    # docs/<issue>-slug/research/results.md        -> "research-results"
-    def flatten_name(relative_path)
-      return entry_page_name if relative_path == "README.md"
-
-      dir = File.dirname(relative_path)
-      base = File.basename(relative_path, ".md")
-      dir_slug = (dir == ".") ? nil : dir.tr("/", "-")
-
-      if base == "README"
-        dir_slug || entry_page_name
-      elsif dir_slug
-        "#{dir_slug}-#{base}"
-      else
-        base
+        memo[rel] = @metadata.fetch(rel).fetch(:wiki_name)
       end
     end
 
@@ -65,12 +72,22 @@ module WikiMigration
       content[/^#\s+(.+)$/, 1]&.strip
     end
 
+    def clean_title(h1_title)
+      return nil if h1_title.nil?
+      h1_title
+        .gsub(/[`"'\/\\:*?<>|]/, "")
+        .gsub(/\s+/, " ")
+        .strip
+    end
+
     # {wiki_filename_with_extension => rewritten_markdown_content}
     def pages
       check_collisions!
 
       titles = source_files.each_with_object({}) do |path, memo|
-        memo[relative_path(path)] = h1(File.read(path))
+        rel = relative_path(path)
+        build_metadata! unless @metadata
+        memo[rel] = @metadata.fetch(rel).fetch(:raw_h1) || @metadata.fetch(rel).fetch(:title)
       end
 
       source_files.each_with_object({}) do |path, memo|
@@ -84,6 +101,101 @@ module WikiMigration
 
     def relative_path(path)
       Pathname.new(path).relative_path_from(Pathname.new(docs_path)).to_s
+    end
+
+    def to_alpha(index)
+      result = ""
+      while index >= 0
+        result = ((index % 26) + 97).chr + result
+        index = (index / 26) - 1
+      end
+      result
+    end
+
+    def to_roman(index)
+      roman_mapping = {
+        10 => "x", 9 => "ix", 5 => "v", 4 => "iv", 1 => "i"
+      }
+      result = ""
+      n = index
+      roman_mapping.each do |value, letters|
+        while n >= value
+          result += letters
+          n -= value
+        end
+      end
+      result
+    end
+
+    def format_index(val, style)
+      case style
+      when :alpha
+        to_alpha(val)
+      when :roman
+        to_roman(val + 1)
+      else
+        (val + 1).to_s
+      end
+    end
+
+    def build_metadata!
+      @metadata = {}
+      root_node = TreeNode.new(docs_path)
+      source_files.each do |path|
+        rel = relative_path(path)
+        root_node.add_file(rel.split("/"), path)
+      end
+      assign_metadata(root_node, 0, nil)
+    end
+
+    def assign_metadata(node, depth, parent_prefix)
+      if depth == 0
+        node.prefix = @issue_number.to_s
+      end
+
+      # 1. Assign README.md
+      readme = node.files.find { |f| File.basename(f) == "README.md" }
+      if readme
+        file_prefix = node.prefix
+        raw_h1 = h1(File.read(readme))
+        cleaned_title = clean_title(raw_h1) || File.basename(readme, ".md").tr("-_", " ")
+        if depth == 0
+          cleaned_title = cleaned_title.sub(/\AIssue\s+#?\d+\s*[\u2014:-]\s*/i, "")
+        end
+
+        rel_path = relative_path(readme)
+        @metadata[rel_path] = {
+          prefix: file_prefix,
+          raw_h1: raw_h1,
+          title: cleaned_title,
+          wiki_name: "#{file_prefix}. #{cleaned_title}"
+        }
+      end
+
+      # 2. Assign other files in this directory (sorted alphabetically, case-insensitive)
+      other_files = node.files.reject { |f| File.basename(f) == "README.md" }.sort_by { |f| File.basename(f).downcase }
+      file_style = FILE_STYLES[depth % FILE_STYLES.size]
+      other_files.each_with_index do |file_path, idx|
+        file_prefix = "#{node.prefix}.#{format_index(idx, file_style)}"
+        raw_h1 = h1(File.read(file_path))
+        cleaned_title = clean_title(raw_h1) || File.basename(file_path, ".md").tr("-_", " ")
+
+        rel_path = relative_path(file_path)
+        @metadata[rel_path] = {
+          prefix: file_prefix,
+          raw_h1: raw_h1,
+          title: cleaned_title,
+          wiki_name: "#{file_prefix}. #{cleaned_title}"
+        }
+      end
+
+      # 3. Assign subdirectories and recurse
+      subdirs = node.subdirs.sort_by { |name, _| name.downcase }
+      subdir_style = SUBDIR_STYLES[depth % SUBDIR_STYLES.size]
+      subdirs.each_with_index do |(name, subdir_node), idx|
+        subdir_node.prefix = "#{node.prefix}.#{format_index(idx, subdir_style)}"
+        assign_metadata(subdir_node, depth + 1, node.prefix)
+      end
     end
 
     def check_collisions!
