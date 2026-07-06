@@ -22,13 +22,22 @@ no cross-version diff) doesn't show.
 > code or HTML.
 >
 > **Data**: read every `docs/benchmarks/*/*.json` file present — don't
-> hardcode a version list. Group by environment, order versions per
-> environment with `Gem::Version` (handles `-rc1`/`.pre.rc1` prerelease
-> ordering correctly — see `benchmark/report.rb`'s `latest_per_environment`).
-> By default, diff the two most recent recorded versions per environment; if
-> any environment has 3+ recorded versions, ask whether the user wants a
-> straight two-version diff (latest vs. previous) or a version-over-version
-> trend view, rather than guessing.
+> hardcode a version list or a version *count*. Group by environment, order
+> versions per environment with `Gem::Version` (handles `-rc1`/`.pre.rc1`
+> prerelease ordering correctly — see `benchmark/report.rb`'s
+> `latest_per_environment`). Build every chart/table as a version-over-time
+> trend that scales to however many versions a given environment actually
+> has — 1, 2, 5, whatever `docs/benchmarks/<environment>/*.json` glob
+> returns right now. Don't gate structure on a fixed count (no "if 3+
+> versions, ask the user" branching): an environment with only 1 recorded
+> version just renders as a single point/row with no delta, one with 6
+> renders a 6-point trend line, and none of this should require touching
+> the artifact's code when a 4th, 5th, etc. version is recorded later.
+> Where a chart type is inherently a two-state comparison (e.g. the
+> diverging %-change-by-scenario bar chart), anchor it to the latest vs.
+> the immediately preceding version for each environment — not a
+> user-picked pair — since that's the transition someone re-running this
+> prompt after a new version lands actually wants to see.
 >
 > Embed the raw JSON verbatim in a `<script type="application/json">` block
 > and compute every derived number (percent change, log-scale positions, GC
@@ -36,17 +45,21 @@ no cross-version diff) doesn't show.
 > numbers into the page.
 >
 > **Structure** (adapt — don't force a section that has nothing to say):
-> - Concurrency stat tiles (10-thread scaling efficiency, before → after) —
->   the headline number the #64 dispatch change trades per-call latency for.
+> - Concurrency stat tiles: 10-thread scaling efficiency as a per-environment
+>   trend line/sparkline across every recorded version, not just a single
+>   before → after pair — the #64 dispatch change is one point on that line,
+>   not the whole story once more versions accumulate.
 > - A diverging bar chart of % change in ips by scenario, grouped by
->   environment. Exclude `camping_trip_email` from this chart (it's ~5 orders
->   of magnitude slower than the rest and only has 3-5 iterations — high
->   variance, wrong scale for a shared axis) but keep it in the full table
->   with a footnote.
+>   environment, comparing each environment's latest version against its
+>   immediately preceding one (see "Data" above). Exclude `camping_trip_email`
+>   from this chart (it's ~5 orders of magnitude slower than the rest and
+>   only has 3-5 iterations — high variance, wrong scale for a shared axis)
+>   but keep it in the full table with a footnote.
 > - A full comparison table: environment × scenario × (ips, µs/call,
->   objects/call, minor GC) before/after. This also serves as the
->   accessibility "relief" for any categorical color that falls under the
->   3:1 contrast floor.
+>   objects/call, minor GC), with one column-group per recorded version (not
+>   hardcoded to 2) so a version added later just adds a column-group. This
+>   also serves as the accessibility "relief" for any categorical color that
+>   falls under the 3:1 contrast floor.
 > - A dispatch-overhead chart (native vs. thread-per-call, log scale) —
 >   **only** using scenarios/versions that actually have `native_ips` /
 >   `thread_overhead_pct` fields. That schema only exists from the #64
@@ -54,7 +67,8 @@ no cross-version diff) doesn't show.
 >   version has it.
 > - A GC/allocation-anomaly callout — **only if the data actually shows one**.
 >   Compute the callout's numbers from the data at render time (min/max
->   across scenarios); don't hardcode a sentence carried over from a prior run.
+>   across scenarios, across every recorded version, not just the latest
+>   pair); don't hardcode a sentence carried over from a prior run.
 >
 > **Environment colors**: keep `github-actions` / `claude-code-web` /
 > `local-3.3` / `local-3.4` / `local-4.0` in that fixed order (issue #76
