@@ -1,0 +1,46 @@
+# Manually dispatches the wiki_promoter composite Action to flatten/relink a
+# docs/<issue>-slug research tree, push it to the repository's wiki, update
+# Home.md, repoint the roadmap, and remove the source tree from this branch.
+#
+# The action performs its OWN checkout and Ruby setup (see cpb/wiki_promoter's
+# action/action.yml header comment) -- do not add a checkout step here, it
+# would just get reset by the action's own checkout@v4 step.
+#
+# Manually dispatched only -- run via:
+#   gh workflow run docs-to-wiki.yml --ref <branch> -f docs_path=docs/<issue>-slug [-f pr_number=<n>] [-f entry_page_name=<name>]
+# Note: like any workflow_dispatch workflow, this must already exist on the
+# default branch before GitHub will let you dispatch it against another ref.
+name: docs-to-wiki
+
+on:
+  workflow_dispatch:
+    inputs:
+      docs_path:
+        description: "Path to the docs/<issue>-<slug> research tree to migrate (required)"
+        required: true
+        type: string
+      pr_number:
+        description: "PR number this branch belongs to; posts a summary comment linking the migrated wiki page (optional)"
+        required: false
+        type: string
+      entry_page_name:
+        description: "Override for the auto-derived wiki entry page name (optional)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    name: Migrate docs tree to wiki
+    runs-on: ubuntu-latest
+    steps:
+      - name: Migrate docs to wiki
+        uses: cpb/wiki_promoter/action@187ca02a401ccf47f5dc1f51c586da8f0f26c654 # main as of 2026-07-06 (no tagged releases yet)
+        with:
+          docs_path: ${{ inputs.docs_path }}
+          wiki_deploy_token: ${{ secrets.WIKI_DEPLOY_TOKEN }}
+          entry_page_name: ${{ inputs.entry_page_name }}
+          pr_number: ${{ inputs.pr_number }}
