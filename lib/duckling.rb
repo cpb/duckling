@@ -2,6 +2,7 @@
 
 require_relative "duckling/version"
 require_relative "duckling/duckling"
+require "tzinfo"
 
 module Duckling
   # Native.parse already releases the GVL around the native call, but a bare
@@ -33,19 +34,43 @@ module Duckling
   # though both carry the same to_i/utc_offset a real Time does — #to_time
   # normalizes any of those (and anything else that offers the same
   # conversion) to a real Time before it crosses into Rust.
-  def self.parse(*args, **kwargs, &block)
-    reference_time = kwargs[:reference_time]
+  #
+  # ALTERNATIVE ARCHITECTURE (compare against main's lib/duckling.rb): here,
+  # Ruby only validates/anchors reference_zone: around the call; the actual
+  # per-date zone resolution happens inside Rust itself, at resolve_naive
+  # (ext/duckling/src/lib.rs) -- Rust calls back into this same tzinfo zone
+  # object per Naive result, since it already knows structurally (from which
+  # TimePoint match arm it's in) which results are eligible, with no need for
+  # an extra tag to reconstruct that distinction here. There is no
+  # post-processing loop in Ruby at all in this version.
+  def self.parse(text, locale: "en", dims: ["time"], reference_time: nil, reference_zone: nil, with_latent: false, &block)
     if reference_time && !reference_time.is_a?(Time) && reference_time.respond_to?(:to_time)
-      kwargs = kwargs.merge(reference_time: reference_time.to_time)
+      reference_time = reference_time.to_time
     end
 
-    kwargs.delete(:reference_zone)
+    if reference_zone
+      zone = TZInfo::Timezone.get(reference_zone)
+      if reference_time
+        zone_offset = zone.period_for(reference_time).utc_total_offset
+        if reference_time.utc_offset != zone_offset
+          raise ArgumentError,
+            "reference_time's utc_offset (#{reference_time.utc_offset}) does not match " \
+            "reference_zone #{reference_zone.inspect}'s utc_offset (#{zone_offset}) at that instant"
+        end
+      else
+        reference_time = zone.to_local(Time.now.utc)
+      end
+    end
 
-    return Native.parse(*args, **kwargs, &block) unless Fiber.scheduler
+    kwargs = {locale: locale, dims: dims, with_latent: with_latent}
+    kwargs[:reference_time] = reference_time if reference_time
+    kwargs[:reference_zone] = reference_zone if reference_zone
+
+    return Native.parse(text, **kwargs, &block) unless Fiber.scheduler
 
     Thread.new do
       Thread.current.report_on_exception = false
-      Native.parse(*args, **kwargs, &block)
+      Native.parse(text, **kwargs, &block)
     end.value
   end
 end

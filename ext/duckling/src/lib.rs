@@ -1,9 +1,11 @@
-use chrono::{FixedOffset, TimeZone};
+use chrono::{Datelike, FixedOffset, TimeZone, Timelike};
 use duckling::{
     Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options, Region, TimePoint,
     TimeValue, parse as duckling_parse,
 };
-use magnus::{Error, RArray, Ruby, Time as RubyTime, Value, function, prelude::*, scan_args};
+use magnus::{
+    Error, RArray, RClass, RModule, Ruby, Time as RubyTime, Value, function, prelude::*, scan_args,
+};
 use std::os::raw::c_void;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -185,6 +187,13 @@ fn panicking_parse(ruby: &Ruby, _args: &[Value]) -> Result<RArray, Error> {
 ///   Defaults to `Context::default()` (now, UTC) when `nil`/omitted. A
 ///   non-`Time` value raises `TypeError`.
 /// - `with_latent`: include ambiguous/latent matches (e.g. bare "morning").
+/// - `reference_zone`: an IANA zone name (e.g. `"America/New_York"`); when
+///   given, every `TimePoint::Naive` (wall-clock) result's offset is
+///   resolved against this zone for *that result's own date* via `tzinfo`
+///   (a `TZInfo::Timezone`, looked up once via `resolve_reference_zone`
+///   below) instead of the single fixed `reference_time`/default offset —
+///   see `resolve_naive`, the seam where this branches. `TimePoint::Instant`
+///   results are unaffected (issue #83's known, out-of-scope limitation).
 fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let args = scan_args::scan_args::<(String,), (), (), (), _, ()>(args)?;
     let kw = scan_args::get_kwargs::<
@@ -195,16 +204,23 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
             Option<Vec<String>>,
             Option<RubyTime>,
             Option<bool>,
+            Option<String>,
         ),
         (),
     >(
         args.keywords,
         &[],
-        &["locale", "dims", "reference_time", "with_latent"],
+        &[
+            "locale",
+            "dims",
+            "reference_time",
+            "with_latent",
+            "reference_zone",
+        ],
     )?;
 
     let text = args.required.0;
-    let (locale_str, dims_strs, ref_time, with_latent) = kw.optional;
+    let (locale_str, dims_strs, ref_time, with_latent, reference_zone) = kw.optional;
     let locale_str = locale_str.unwrap_or_else(|| "en".to_string());
     let dims_strs = dims_strs.unwrap_or_else(|| vec!["time".to_string()]);
     let with_latent = with_latent.unwrap_or(false);
@@ -212,6 +228,7 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let locale = parse_locale(ruby, &locale_str)?;
     let dims = parse_dims(ruby, &dims_strs)?;
     let context = build_context(ruby, ref_time)?;
+    let zone = resolve_reference_zone(ruby, reference_zone)?;
     let options = Options { with_latent };
 
     // Release the GVL, call duckling::parse off-GVL, and block until the
@@ -251,9 +268,23 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
 
     let out = ruby.ary_new();
     for e in &entities {
-        out.push(entity_to_ruby(ruby, e, offset)?)?;
+        out.push(entity_to_ruby(ruby, e, offset, zone)?)?;
     }
     Ok(out)
+}
+
+/// Looks up `TZInfo::Timezone.get(name)` once (with the GVL held, after
+/// `rb_thread_call_without_gvl` above has already returned) when
+/// `reference_zone:` is given, handing back the resulting `TZInfo::Timezone`
+/// Ruby object for `resolve_naive` to call back into per-result. Returns
+/// `None` untouched when `reference_zone:` is omitted, preserving today's
+/// single-fixed-offset behavior exactly.
+fn resolve_reference_zone(ruby: &Ruby, name: Option<String>) -> Result<Option<Value>, Error> {
+    let Some(name) = name else { return Ok(None) };
+    let tzinfo_module: RModule = ruby.class_object().const_get("TZInfo")?;
+    let timezone_class: RClass = tzinfo_module.const_get("Timezone")?;
+    let zone: Value = timezone_class.funcall("get", (name,))?;
+    Ok(Some(zone))
 }
 
 fn parse_locale(ruby: &Ruby, locale_str: &str) -> Result<Locale, Error> {
@@ -401,29 +432,69 @@ fn build_context(ruby: &Ruby, ref_time: Option<RubyTime>) -> Result<Context, Err
     }
 }
 
-/// Resolves a bare `NaiveDateTime` (wall-clock, no offset) against the
-/// reference offset into an absolute `DateTime<FixedOffset>`. Shared by
-/// `time_point_to_ruby` and `time_value_to_ruby` so the two call sites can't
-/// drift apart on error message or ambiguity-handling strategy.
-/// `FixedOffset` has no DST, so `.single()` is total in practice for any
-/// `NaiveDateTime` duckling can produce; the `ok_or_else` is defensive.
+/// Resolves a bare `NaiveDateTime` (wall-clock, no offset) into a real Ruby
+/// `Time`. Shared by `time_point_to_ruby` and `time_value_to_ruby` so the two
+/// call sites can't drift apart on error message or ambiguity-handling
+/// strategy.
+///
+/// This is the seam `reference_zone:` support hooks into: when `zone` is
+/// `Some` (a `TZInfo::Timezone` Ruby object, see `resolve_reference_zone`),
+/// it calls back into Ruby's `Timezone#local_time` with this value's own
+/// wall-clock components, getting back a `TZInfo::TimeWithOffset` (a `Time`
+/// subclass) carrying that *date's* real offset — no separate tag needs to
+/// cross the FFI boundary for Ruby to know which results are eligible,
+/// because this call site already has the Naive/Instant distinction in hand
+/// (only the `TimePoint::Naive` match arms call this function at all). Safe
+/// to call Ruby methods here: unlike `parse_without_gvl`, this only ever
+/// runs after `rb_thread_call_without_gvl` has returned and the GVL is held
+/// again.
+///
+/// When `zone` is `None` (the default/omitted case, unchanged from before
+/// `reference_zone:` existed), falls back to applying the single fixed
+/// `offset` uniformly — `FixedOffset` has no DST, so `.single()` is total in
+/// practice for any `NaiveDateTime` duckling can produce; the `ok_or_else`
+/// is defensive.
 fn resolve_naive(
     ruby: &Ruby,
     offset: FixedOffset,
+    zone: Option<Value>,
     value: &chrono::NaiveDateTime,
-) -> Result<chrono::DateTime<FixedOffset>, Error> {
-    offset
+) -> Result<Value, Error> {
+    if let Some(zone) = zone {
+        return zone.funcall(
+            "local_time",
+            (
+                value.year(),
+                value.month(),
+                value.day(),
+                value.hour(),
+                value.minute(),
+                value.second(),
+            ),
+        );
+    }
+
+    let resolved = offset
         .from_local_datetime(value)
         .single()
-        .ok_or_else(|| arg_error(ruby, "invalid or ambiguous naive time for reference offset"))
+        .ok_or_else(|| arg_error(ruby, "invalid or ambiguous naive time for reference offset"))?;
+    Ok(ruby.into_value(resolved))
 }
 
-fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint, offset: FixedOffset) -> Result<Value, Error> {
+fn time_point_to_ruby(
+    ruby: &Ruby,
+    tp: &TimePoint,
+    offset: FixedOffset,
+    zone: Option<Value>,
+) -> Result<Value, Error> {
     let h = ruby.hash_new();
     h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
     match tp {
         TimePoint::Naive { value, grain } => {
-            h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, value)?)?;
+            h.aset(
+                ruby.to_symbol("value"),
+                resolve_naive(ruby, offset, zone, value)?,
+            )?;
             h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
         }
         TimePoint::Instant { value, grain } => {
@@ -434,14 +505,22 @@ fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint, offset: FixedOffset) -> Resul
     Ok(h.as_value())
 }
 
-fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Result<Value, Error> {
+fn time_value_to_ruby(
+    ruby: &Ruby,
+    tv: &TimeValue,
+    offset: FixedOffset,
+    zone: Option<Value>,
+) -> Result<Value, Error> {
     let h = ruby.hash_new();
     match tv {
         TimeValue::Single { value, values, .. } => {
             h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
             match value {
                 TimePoint::Naive { value: dt, grain } => {
-                    h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, dt)?)?;
+                    h.aset(
+                        ruby.to_symbol("value"),
+                        resolve_naive(ruby, offset, zone, dt)?,
+                    )?;
                     h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
                 }
                 TimePoint::Instant { value: dt, grain } => {
@@ -451,7 +530,7 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Resul
             }
             let vals = ruby.ary_new();
             for tp in values {
-                vals.push(time_point_to_ruby(ruby, tp, offset)?)?;
+                vals.push(time_point_to_ruby(ruby, tp, offset, zone)?)?;
             }
             h.aset(ruby.to_symbol("values"), vals)?;
         }
@@ -460,18 +539,26 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Resul
             if let Some(tp) = from {
                 h.aset(
                     ruby.to_symbol("from"),
-                    time_point_to_ruby(ruby, tp, offset)?,
+                    time_point_to_ruby(ruby, tp, offset, zone)?,
                 )?;
             }
             if let Some(tp) = to {
-                h.aset(ruby.to_symbol("to"), time_point_to_ruby(ruby, tp, offset)?)?;
+                h.aset(
+                    ruby.to_symbol("to"),
+                    time_point_to_ruby(ruby, tp, offset, zone)?,
+                )?;
             }
         }
     }
     Ok(h.as_value())
 }
 
-fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<Value, Error> {
+fn entity_to_ruby(
+    ruby: &Ruby,
+    entity: &Entity,
+    offset: FixedOffset,
+    zone: Option<Value>,
+) -> Result<Value, Error> {
     let h = ruby.hash_new();
     h.aset(ruby.to_symbol("body"), entity.body.clone())?;
     h.aset(ruby.to_symbol("start"), entity.start)?;
@@ -484,7 +571,7 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<V
     if let DimensionValue::Time(ref tv) = entity.value {
         h.aset(
             ruby.to_symbol("value"),
-            time_value_to_ruby(ruby, tv, offset)?,
+            time_value_to_ruby(ruby, tv, offset, zone)?,
         )?;
     }
     Ok(h.as_value())

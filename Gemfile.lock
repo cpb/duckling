@@ -3,6 +3,7 @@ PATH
   specs:
     duckling (0.3.0.pre.rc1)
       rb_sys (~> 0.9.128)
+      tzinfo (~> 2.0)
 
 GEM
   remote: https://rubygems.org/
