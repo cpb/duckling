@@ -2,6 +2,7 @@
 
 require "test_helper"
 require "date"
+require "minitest/mock"
 
 VALID_GRAINS = %i[second minute hour day week month quarter year].freeze
 
@@ -103,5 +104,57 @@ class DucklingTest < Minitest::Test
     assert_kind_of Time, entity[:value][:value]
     assert_equal REFERENCE_TIME + 3600, entity[:value][:value]
     assert_equal(-7200, entity[:value][:value].utc_offset)
+  end
+
+  def test_naive_result_after_dst_transition_gets_post_transition_offset
+    reference_time = Time.new(2013, 1, 15, 4, 30, 0, "-05:00") # EST
+    results = Duckling.parse("june 15", locale: "en",
+      reference_time: reference_time, reference_zone: "America/New_York")
+    entity = results.find { |r| r[:dim] == :time }
+    refute_nil entity, "Expected a :time dimension result for 'june 15'"
+    assert_kind_of Time, entity[:value][:value]
+    # America/New_York is on EDT (-04:00) by June 15 2013 (2013 DST ran
+    # March 10 - November 3), not the reference's own EST (-05:00) offset --
+    # applying the real zone's per-date offset is the whole point of
+    # reference_zone:.
+    assert_equal Time.new(2013, 6, 15, 0, 0, 0, "-04:00"), entity[:value][:value]
+    assert_equal(-4 * 3600, entity[:value][:value].utc_offset)
+  end
+
+  def test_omitting_reference_zone_keeps_single_fixed_offset_behavior
+    reference_time = Time.new(2013, 1, 15, 4, 30, 0, "-05:00") # EST
+    results = Duckling.parse("june 15", locale: "en", reference_time: reference_time)
+    entity = results.find { |r| r[:dim] == :time }
+    refute_nil entity, "Expected a :time dimension result for 'june 15'"
+    assert_kind_of Time, entity[:value][:value]
+    # Without reference_zone:, today's behavior applies reference_time's own
+    # fixed offset uniformly, even though America/New_York (the zone this
+    # reference_time happens to represent) is really on EDT (-04:00) by
+    # June 15 -- this pins that unchanged default so the reference_zone:
+    # feature can never become accidentally mandatory.
+    assert_equal Time.new(2013, 6, 15, 0, 0, 0, "-05:00"), entity[:value][:value]
+    assert_equal(-5 * 3600, entity[:value][:value].utc_offset)
+  end
+
+  def test_reference_zone_without_reference_time_anchors_at_current_time_in_zone
+    fixed_now = Time.new(2013, 6, 15, 10, 0, 0, "-04:00") # EDT "now"
+    Time.stub :now, fixed_now do
+      results = Duckling.parse("today", locale: "en", reference_zone: "America/New_York")
+      entity = results.find { |r| r[:dim] == :time }
+      refute_nil entity, "Expected a :time dimension result for 'today'"
+      assert_kind_of Time, entity[:value][:value]
+      assert_equal Time.new(2013, 6, 15, 0, 0, 0, "-04:00"), entity[:value][:value]
+      assert_equal(-4 * 3600, entity[:value][:value].utc_offset)
+    end
+  end
+
+  def test_reference_time_utc_offset_disagreeing_with_zone_raises_argument_error
+    reference_time = Time.new(2013, 6, 15, 12, 0, 0, "+00:00") # UTC, disagrees with EDT -04:00
+    error = assert_raises(ArgumentError) do
+      Duckling.parse("tomorrow", locale: "en",
+        reference_time: reference_time, reference_zone: "America/New_York")
+    end
+    assert_match(/utc_offset/i, error.message,
+      "expected a mismatch error mentioning utc_offset, got: #{error.message.inspect}")
   end
 end
