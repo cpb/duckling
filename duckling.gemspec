@@ -43,6 +43,12 @@ Gem::Specification.new do |spec|
   # close to whatever's actually locked in Gemfile.lock.
   spec.add_dependency "rb_sys", "~> 0.9.128"
 
+  # Resolves reference_zone:'s per-date IANA offsets (lib/duckling.rb) — the
+  # wrapped duckling crate and this gem's own Magnus binding only understand
+  # chrono::FixedOffset, with no DST-transition concept, so that has to come
+  # from a real timezone database on the Ruby side instead.
+  spec.add_dependency "tzinfo", "~> 2.0"
+
   # only needed when developing or packaging your gem
   spec.add_development_dependency "rake-compiler", "~> 1.3.1"
   spec.add_development_dependency "benchmark-ips"

@@ -185,6 +185,15 @@ fn panicking_parse(ruby: &Ruby, _args: &[Value]) -> Result<RArray, Error> {
 ///   Defaults to `Context::default()` (now, UTC) when `nil`/omitted. A
 ///   non-`Time` value raises `TypeError`.
 /// - `with_latent`: include ambiguous/latent matches (e.g. bare "morning").
+///
+/// Each time-point Hash also carries a `:naive` boolean (`true` for
+/// `TimePoint::Naive`, `false` for `TimePoint::Instant`) — this Rust-level
+/// distinction is otherwise invisible once both are converted to a plain
+/// Ruby `Time`, so `Duckling.parse`'s `reference_zone:` support (see
+/// lib/duckling.rb) needs it to know which results it may safely reinterpret
+/// per-date against a real IANA zone via `tzinfo`, versus which it must leave
+/// as-is (`Instant`-grain arithmetic stays imprecise across a DST boundary —
+/// see issue #83).
 fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let args = scan_args::scan_args::<(String,), (), (), (), _, ()>(args)?;
     let kw = scan_args::get_kwargs::<
@@ -421,14 +430,23 @@ fn resolve_naive(
 fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint, offset: FixedOffset) -> Result<Value, Error> {
     let h = ruby.hash_new();
     h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
+    // `:naive` distinguishes TimePoint::Naive (a wall-clock date/time resolved
+    // against `offset` above) from TimePoint::Instant (already an absolute
+    // moment) -- both cross the FFI boundary as an indistinguishable Ruby
+    // `Time`, so this tag is the only way lib/duckling.rb's reference_zone:
+    // support can tell which results are eligible for per-date zone
+    // reinterpretation via tzinfo (Naive) versus which must be left alone
+    // (Instant -- see issue #83's known limitation).
     match tp {
         TimePoint::Naive { value, grain } => {
             h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, value)?)?;
             h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+            h.aset(ruby.to_symbol("naive"), true)?;
         }
         TimePoint::Instant { value, grain } => {
             h.aset(ruby.to_symbol("value"), *value)?;
             h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+            h.aset(ruby.to_symbol("naive"), false)?;
         }
     }
     Ok(h.as_value())
@@ -443,10 +461,12 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Resul
                 TimePoint::Naive { value: dt, grain } => {
                     h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, dt)?)?;
                     h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+                    h.aset(ruby.to_symbol("naive"), true)?;
                 }
                 TimePoint::Instant { value: dt, grain } => {
                     h.aset(ruby.to_symbol("value"), *dt)?;
                     h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+                    h.aset(ruby.to_symbol("naive"), false)?;
                 }
             }
             let vals = ruby.ary_new();
