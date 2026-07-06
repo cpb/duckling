@@ -4,6 +4,7 @@ require "bundler/gem_tasks"
 require "dotenv"
 require "minitest/test_task"
 require "rb_sys/extensiontask"
+require "wiki_promoter/tasks" # wiki:migrate / wiki:publish -- see AGENTS.md's Gemfile entry
 
 # Loads RB_SYS_CARGO_PROFILE=dev from .env.local when present (seeded by
 # bin/setup from .env.local.example), so local compiles default to the dev
