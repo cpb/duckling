@@ -49,6 +49,13 @@ Gem::Specification.new do |spec|
   # from a real timezone database on the Ruby side instead.
   spec.add_dependency "tzinfo", "~> 2.0"
 
+  # Without this, tzinfo falls back to reading zone data from the host's
+  # /usr/share/zoneinfo, which isn't guaranteed to exist on minimal/scratch
+  # container images. Bundling the data directly keeps reference_zone:
+  # working the same everywhere, and lets a stale IANA rule be picked up with
+  # a plain gem bump rather than a native recompile.
+  spec.add_dependency "tzinfo-data"
+
   # only needed when developing or packaging your gem
   spec.add_development_dependency "rake-compiler", "~> 1.3.1"
   spec.add_development_dependency "benchmark-ips"

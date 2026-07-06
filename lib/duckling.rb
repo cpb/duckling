@@ -2,6 +2,7 @@
 
 require_relative "duckling/version"
 require_relative "duckling/duckling"
+require "tzinfo/data"
 require "tzinfo"
 
 module Duckling
