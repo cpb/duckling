@@ -11,7 +11,7 @@ require_relative "../benchmark/report"
 # benchmark:record_pr or any git/gh command -- keep it that way so `rake test`
 # stays fast and deterministic. If you want to exercise the real suite, run
 # `bin/benchmark` by hand.
-class DucklingBenchmarkReportTest < Minitest::Test
+class BenchmarkReportTest < Minitest::Test
   def fixture_results(ips_base: 100.0)
     {
       ruby_version: RUBY_VERSION,
