@@ -54,8 +54,8 @@ emails, etc.) without running a separate HTTP service.
 
 ## Public and internal APIs
 
-- **`Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)`** — the public Ruby API. This is a thin wrapper around `Duckling::Native.parse` that conditionally dispatches through `Thread.new { ... }.value` when a `Fiber.scheduler` is installed on the calling thread (important for async frameworks like Falcon). Plain thread-pool callers skip the thread spawn.
-- **`Duckling::Native.parse(...)`** — the raw Magnus/native entrypoint. Called directly by `Duckling.parse` and by benchmarks. Releases the GVL around the underlying Rust parse call.
+- **`Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)`** — the public Ruby API. This is a thin wrapper around `Duckling::Native.parse` that conditionally dispatches through `Thread.new { ... }.value` when a `Fiber.scheduler` is installed on the calling thread (important for async frameworks like Falcon). Plain thread-pool callers skip the thread spawn. Also coerces `reference_time:` via `#to_time` before it reaches `Native.parse` (see below) — this is the one real behavioral difference between the two entrypoints, not just a dispatch detail.
+- **`Duckling::Native.parse(...)`** — the raw Magnus/native entrypoint. Called directly by `Duckling.parse` and by benchmarks. Releases the GVL around the underlying Rust parse call. Its Magnus binding only accepts a strict `kind_of?(Time)` for `reference_time:` — passing an `ActiveSupport::TimeWithZone`, stdlib `DateTime`, or anything else that merely responds to `#to_time` raises a `TypeError`; `Duckling.parse` is what makes those work by coercing first (`lib/duckling.rb`).
 - **`Duckling::PanickingNativeFake`** — test-only mock for testing panic propagation. Not part of the public API; never use in production code.
 
 ## Test guide
