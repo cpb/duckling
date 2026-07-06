@@ -3,9 +3,14 @@ use duckling::{
     Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options, Region, TimePoint,
     TimeValue, parse as duckling_parse,
 };
-use magnus::{Error, RArray, Ruby, Time as RubyTime, Value, function, prelude::*, scan_args};
+use magnus::{
+    Error, RArray, RHash, Ruby, Time as RubyTime, Value, function, prelude::*, scan_args,
+};
 use std::os::raw::c_void;
 use std::panic::{AssertUnwindSafe, catch_unwind};
+
+mod ruby_value;
+use ruby_value::serialize_unwrapped;
 
 // `Duckling::Native` holds the raw Magnus-defined entrypoint; `Duckling.parse`
 // itself is a thin Ruby-level wrapper (see lib/duckling.rb) that dispatches
@@ -481,11 +486,34 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<V
     if let Some(latent) = entity.latent {
         h.aset(ruby.to_symbol("latent"), latent)?;
     }
-    if let DimensionValue::Time(ref tv) = entity.value {
-        h.aset(
-            ruby.to_symbol("value"),
-            time_value_to_ruby(ruby, tv, offset)?,
-        )?;
+    match &entity.value {
+        DimensionValue::Time(tv) => {
+            h.aset(
+                ruby.to_symbol("value"),
+                time_value_to_ruby(ruby, tv, offset)?,
+            )?;
+        }
+        // `Grain` serde-serializes as PascalCase variant names ("Second",
+        // "NoGrain"); the shipped convention is `Grain::as_str()` symbols
+        // (:second, :no_grain) — see time_point_to_ruby. For TimeGrain the
+        // grain *is* the whole payload, so substituting the symbol replaces
+        // the generic serialization entirely.
+        DimensionValue::TimeGrain(grain) => {
+            h.aset(ruby.to_symbol("value"), ruby.to_symbol(grain.as_str()))?;
+        }
+        // Generic-serialize-then-patch-known-leaves (the pattern issue #91
+        // reuses for Time): serde's output is right except the :grain leaf,
+        // which gets the same symbol treatment as TimeGrain above.
+        DimensionValue::Duration { grain, .. } => {
+            let value = serialize_unwrapped(ruby, &entity.value)?;
+            if let Some(value_hash) = RHash::from_value(value) {
+                value_hash.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+            }
+            h.aset(ruby.to_symbol("value"), value)?;
+        }
+        other => {
+            h.aset(ruby.to_symbol("value"), serialize_unwrapped(ruby, other)?)?;
+        }
     }
     Ok(h.as_value())
 }
