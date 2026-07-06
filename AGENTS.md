@@ -96,15 +96,16 @@ The test suite covers several distinct concerns:
 ## Gem release conventions
 
 - **Versioning**: SemVer (`MAJOR.MINOR.PATCH`). Single source of truth: `Duckling::VERSION` in `lib/duckling/version.rb`.
-- **Release process**: tag-triggered CI pipeline. Bump `Duckling::VERSION` in a PR, merge it to `main`, then push a matching `vX.Y.Z` git tag for that merged commit to trigger the pipeline.
+- **Release process**: tag-triggered CI pipeline. `rake release` narrows the stock Bundler `release` task to tagging only (`release:guard_clean` + `release:source_control_push`) — building/publishing the `.gem` is CI's job, not the Rakefile's. Bump `Duckling::VERSION` in a PR, merge it to `main`, then run `rake release` (or push a matching `vX.Y.Z` git tag directly) for that merged commit to trigger the pipeline.
 - **Pipeline steps** (on tag push):
   1. CI gates (must be green before proceeding).
   2. Cross-compile `x86_64-linux` and `x86_64-darwin` binary gems via Docker containers.
-  3. Build the `ruby` source gem.
-  4. Push all three gems to RubyGems via `gem push`.
-  5. Create a GitHub release with all three gems attached.
-  6. Open and auto-merge a PR to update `CHANGELOG.md` (post-release documentation).
-  7. In parallel with the release publish path after CI, record benchmark data for this release under `docs/benchmarks/github-actions/` and open/auto-merge that PR.
+  3. Verify the pushed tag matches `Duckling::VERSION` exactly; fail the build on mismatch.
+  4. Build the `ruby` source gem.
+  5. Push all three gems to RubyGems via `gem push`.
+  6. Create a GitHub release with all three gems attached.
+  7. Open and auto-merge a PR to update `CHANGELOG.md` (post-release documentation).
+  8. In parallel with the release publish path after CI, record benchmark data for this release under `docs/benchmarks/github-actions/` and open/auto-merge that PR.
 - **Tag protection**: `v*.*.*` tags can only be created/updated by repo admins. Configured via `.github/scripts/apply-tag-ruleset.sh`.
 - **Before a release**: test cross-compilation locally or via `gh workflow run cross-gem.yml --ref <branch>`. Capture additional benchmark data points from other environments via `gh workflow run benchmark.yml --ref <branch>` (adds `docs/benchmarks/<environment>/` data) or locally via `bin/benchmark` (see "Build and test commands" above). **`benchmark.yml` has real side effects even when dispatched ad hoc**: it always branches off `origin/main`, commits/pushes, and opens+auto-merges a PR (`bundle exec rake benchmark:record_pr`) — it is not read-only data capture.
 
