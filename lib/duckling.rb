@@ -33,19 +33,35 @@ module Duckling
   # though both carry the same to_i/utc_offset a real Time does — #to_time
   # normalizes any of those (and anything else that offers the same
   # conversion) to a real Time before it crosses into Rust.
-  def self.parse(*args, **kwargs, &block)
-    reference_time = kwargs[:reference_time]
+  #
+  # ALTERNATIVE ARCHITECTURE (compare against main's lib/duckling.rb and the
+  # issue-75/rust-seam-alt worktree): here, reference_zone: is forwarded to
+  # Native.parse as a plain String and Rust does *everything* zone-related
+  # itself via chrono-tz (compiled-in IANA tzdata) -- validation, "anchor at
+  # current time in zone", and per-date Naive-result resolution (see
+  # build_context/resolve_naive in ext/duckling/src/lib.rs). There is no
+  # tzinfo runtime dependency in this version at all, and Ruby needs no
+  # reference_zone:-specific logic beyond forwarding the string through.
+  def self.parse(text, locale: "en", dims: ["time"], reference_time: nil, reference_zone: nil, with_latent: false, &block)
     if reference_time && !reference_time.is_a?(Time) && reference_time.respond_to?(:to_time)
-      kwargs = kwargs.merge(reference_time: reference_time.to_time)
+      reference_time = reference_time.to_time
     end
 
-    kwargs.delete(:reference_zone)
+    # reference_time:/reference_zone: are only included when present:
+    # Native.parse's Magnus binding treats an explicitly-passed `nil` for its
+    # Option<...> kwargs differently from the key being absent entirely (the
+    # former raises a TypeError) -- omitting the key is what lets Rust's own
+    # None-based defaults apply, same as when a caller never mentions these
+    # keywords at all.
+    kwargs = {locale: locale, dims: dims, with_latent: with_latent}
+    kwargs[:reference_time] = reference_time if reference_time
+    kwargs[:reference_zone] = reference_zone if reference_zone
 
-    return Native.parse(*args, **kwargs, &block) unless Fiber.scheduler
+    return Native.parse(text, **kwargs, &block) unless Fiber.scheduler
 
     Thread.new do
       Thread.current.report_on_exception = false
-      Native.parse(*args, **kwargs, &block)
+      Native.parse(text, **kwargs, &block)
     end.value
   end
 end

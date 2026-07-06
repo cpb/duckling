@@ -1,4 +1,5 @@
-use chrono::{FixedOffset, TimeZone};
+use chrono::{FixedOffset, Offset, TimeZone, Utc};
+use chrono_tz::Tz;
 use duckling::{
     Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options, Region, TimePoint,
     TimeValue, parse as duckling_parse,
@@ -185,6 +186,22 @@ fn panicking_parse(ruby: &Ruby, _args: &[Value]) -> Result<RArray, Error> {
 ///   Defaults to `Context::default()` (now, UTC) when `nil`/omitted. A
 ///   non-`Time` value raises `TypeError`.
 /// - `with_latent`: include ambiguous/latent matches (e.g. bare "morning").
+/// - `reference_zone`: an IANA zone name (e.g. `"America/New_York"`),
+///   resolved via `chrono-tz` (compiled-in IANA tzdata, no runtime file
+///   I/O — a good fit alongside this gem's precompiled binary distribution).
+///   When given, every `TimePoint::Naive` (wall-clock) result's offset is
+///   resolved against this zone for *that result's own date* (see
+///   `resolve_naive`), instead of the single fixed `reference_time`/default
+///   offset. `TimePoint::Instant` results are unaffected (issue #83's known,
+///   out-of-scope limitation — the wrapped duckling crate's own arithmetic,
+///   e.g. `checked_add_signed` in its `dimensions/time/mod.rs`, operates on
+///   `DateTime<FixedOffset>` throughout and has no zone concept to plumb
+///   this through internally without an upstream change to `Context` and
+///   every such call site there).
+///   `reference_time` and `reference_zone` given together: raises
+///   `ArgumentError` unless `reference_time`'s `utc_offset` agrees with the
+///   zone's real offset at that instant. `reference_zone` given alone:
+///   anchors at the current time in that zone.
 fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
     let args = scan_args::scan_args::<(String,), (), (), (), _, ()>(args)?;
     let kw = scan_args::get_kwargs::<
@@ -195,23 +212,37 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
             Option<Vec<String>>,
             Option<RubyTime>,
             Option<bool>,
+            Option<String>,
         ),
         (),
     >(
         args.keywords,
         &[],
-        &["locale", "dims", "reference_time", "with_latent"],
+        &[
+            "locale",
+            "dims",
+            "reference_time",
+            "with_latent",
+            "reference_zone",
+        ],
     )?;
 
     let text = args.required.0;
-    let (locale_str, dims_strs, ref_time, with_latent) = kw.optional;
+    let (locale_str, dims_strs, ref_time, with_latent, reference_zone_str) = kw.optional;
     let locale_str = locale_str.unwrap_or_else(|| "en".to_string());
     let dims_strs = dims_strs.unwrap_or_else(|| vec!["time".to_string()]);
     let with_latent = with_latent.unwrap_or(false);
 
     let locale = parse_locale(ruby, &locale_str)?;
     let dims = parse_dims(ruby, &dims_strs)?;
-    let context = build_context(ruby, ref_time)?;
+    let zone = match &reference_zone_str {
+        Some(name) => Some(
+            name.parse::<Tz>()
+                .map_err(|_| arg_error(ruby, format!("invalid reference_zone: {name:?}")))?,
+        ),
+        None => None,
+    };
+    let context = build_context(ruby, ref_time, zone)?;
     let options = Options { with_latent };
 
     // Release the GVL, call duckling::parse off-GVL, and block until the
@@ -251,7 +282,7 @@ fn parse(ruby: &Ruby, args: &[Value]) -> Result<RArray, Error> {
 
     let out = ruby.ary_new();
     for e in &entities {
-        out.push(entity_to_ruby(ruby, e, offset)?)?;
+        out.push(entity_to_ruby(ruby, e, offset, zone)?)?;
     }
     Ok(out)
 }
@@ -384,46 +415,115 @@ fn parse_dims(ruby: &Ruby, dims_strs: &[String]) -> Result<Vec<DimensionKind>, E
         .collect()
 }
 
-fn build_context(ruby: &Ruby, ref_time: Option<RubyTime>) -> Result<Context, Error> {
-    match ref_time {
+/// Builds the wrapped crate's `Context`, applying `reference_zone:`
+/// validation/anchoring around the plain `reference_time:` anchor
+/// computation (unchanged from before `reference_zone:` existed):
+/// - both given: raises `ArgumentError` unless `reference_time`'s offset
+///   agrees with `zone`'s real offset at that exact instant.
+/// - `zone` alone: anchors at the current time in that zone (the
+///   `reference_time: Time.now` equivalent the issue's acceptance criteria
+///   describes), instead of `Context::default()`'s UTC now.
+/// - `reference_time` alone, or neither: exactly as before.
+fn build_context(
+    ruby: &Ruby,
+    ref_time: Option<RubyTime>,
+    zone: Option<Tz>,
+) -> Result<Context, Error> {
+    let anchor = match ref_time {
         Some(time) => {
             let ts = time.timespec()?;
             let offset = FixedOffset::east_opt(time.utc_offset() as i32).ok_or_else(|| {
                 arg_error(ruby, "invalid reference_time: utc_offset out of range")
             })?;
-            let anchor = offset
-                .timestamp_opt(ts.tv_sec, ts.tv_nsec as u32)
-                .single()
-                .ok_or_else(|| arg_error(ruby, "invalid reference_time: timestamp out of range"))?;
+            Some(
+                offset
+                    .timestamp_opt(ts.tv_sec, ts.tv_nsec as u32)
+                    .single()
+                    .ok_or_else(|| {
+                        arg_error(ruby, "invalid reference_time: timestamp out of range")
+                    })?,
+            )
+        }
+        None => None,
+    };
+
+    match (anchor, zone) {
+        (Some(anchor), Some(tz)) => {
+            let zone_offset = tz.offset_from_utc_datetime(&anchor.naive_utc()).fix();
+            if zone_offset.local_minus_utc() != anchor.offset().local_minus_utc() {
+                return Err(arg_error(
+                    ruby,
+                    format!(
+                        "reference_time's utc_offset ({}) does not match reference_zone's \
+                         utc_offset ({}) at that instant",
+                        anchor.offset().local_minus_utc(),
+                        zone_offset.local_minus_utc(),
+                    ),
+                ));
+            }
             Ok(Context::new(anchor, Locale::default()))
         }
-        None => Ok(Context::default()),
+        (Some(anchor), None) => Ok(Context::new(anchor, Locale::default())),
+        (None, Some(tz)) => Ok(Context::new(
+            Utc::now().with_timezone(&tz).fixed_offset(),
+            Locale::default(),
+        )),
+        (None, None) => Ok(Context::default()),
     }
 }
 
-/// Resolves a bare `NaiveDateTime` (wall-clock, no offset) against the
-/// reference offset into an absolute `DateTime<FixedOffset>`. Shared by
-/// `time_point_to_ruby` and `time_value_to_ruby` so the two call sites can't
-/// drift apart on error message or ambiguity-handling strategy.
-/// `FixedOffset` has no DST, so `.single()` is total in practice for any
-/// `NaiveDateTime` duckling can produce; the `ok_or_else` is defensive.
+/// Resolves a bare `NaiveDateTime` (wall-clock, no offset) into an absolute
+/// `DateTime<FixedOffset>`. Shared by `time_point_to_ruby` and
+/// `time_value_to_ruby` so the two call sites can't drift apart on error
+/// message or ambiguity-handling strategy.
+///
+/// This is the seam `reference_zone:` support hooks into: when `zone` is
+/// `Some`, it resolves this value's own wall-clock components against the
+/// real IANA zone for *that date* via `chrono-tz` instead of the single
+/// fixed `offset` — no separate tag needs to cross into Ruby for it to know
+/// which results are eligible, since this call site already has the
+/// Naive/Instant distinction in hand (only the `TimePoint::Naive` match arms
+/// call this function at all). `DateTime<Tz>::fixed_offset()` converts back
+/// to the same `DateTime<FixedOffset>` shape the `None` branch already
+/// returns, so callers need no changes either way.
+///
+/// `FixedOffset` (and, per-date, `Tz`) has no ambiguity in the cases
+/// duckling can produce in practice, so `.single()` is total; the
+/// `ok_or_else` is defensive.
 fn resolve_naive(
     ruby: &Ruby,
     offset: FixedOffset,
+    zone: Option<Tz>,
     value: &chrono::NaiveDateTime,
 ) -> Result<chrono::DateTime<FixedOffset>, Error> {
+    if let Some(zone) = zone {
+        return zone
+            .from_local_datetime(value)
+            .single()
+            .map(|dt| dt.fixed_offset())
+            .ok_or_else(|| arg_error(ruby, "invalid or ambiguous naive time for reference zone"));
+    }
+
     offset
         .from_local_datetime(value)
         .single()
         .ok_or_else(|| arg_error(ruby, "invalid or ambiguous naive time for reference offset"))
 }
 
-fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint, offset: FixedOffset) -> Result<Value, Error> {
+fn time_point_to_ruby(
+    ruby: &Ruby,
+    tp: &TimePoint,
+    offset: FixedOffset,
+    zone: Option<Tz>,
+) -> Result<Value, Error> {
     let h = ruby.hash_new();
     h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
     match tp {
         TimePoint::Naive { value, grain } => {
-            h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, value)?)?;
+            h.aset(
+                ruby.to_symbol("value"),
+                resolve_naive(ruby, offset, zone, value)?,
+            )?;
             h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
         }
         TimePoint::Instant { value, grain } => {
@@ -434,14 +534,22 @@ fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint, offset: FixedOffset) -> Resul
     Ok(h.as_value())
 }
 
-fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Result<Value, Error> {
+fn time_value_to_ruby(
+    ruby: &Ruby,
+    tv: &TimeValue,
+    offset: FixedOffset,
+    zone: Option<Tz>,
+) -> Result<Value, Error> {
     let h = ruby.hash_new();
     match tv {
         TimeValue::Single { value, values, .. } => {
             h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
             match value {
                 TimePoint::Naive { value: dt, grain } => {
-                    h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, dt)?)?;
+                    h.aset(
+                        ruby.to_symbol("value"),
+                        resolve_naive(ruby, offset, zone, dt)?,
+                    )?;
                     h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
                 }
                 TimePoint::Instant { value: dt, grain } => {
@@ -451,7 +559,7 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Resul
             }
             let vals = ruby.ary_new();
             for tp in values {
-                vals.push(time_point_to_ruby(ruby, tp, offset)?)?;
+                vals.push(time_point_to_ruby(ruby, tp, offset, zone)?)?;
             }
             h.aset(ruby.to_symbol("values"), vals)?;
         }
@@ -460,18 +568,26 @@ fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Resul
             if let Some(tp) = from {
                 h.aset(
                     ruby.to_symbol("from"),
-                    time_point_to_ruby(ruby, tp, offset)?,
+                    time_point_to_ruby(ruby, tp, offset, zone)?,
                 )?;
             }
             if let Some(tp) = to {
-                h.aset(ruby.to_symbol("to"), time_point_to_ruby(ruby, tp, offset)?)?;
+                h.aset(
+                    ruby.to_symbol("to"),
+                    time_point_to_ruby(ruby, tp, offset, zone)?,
+                )?;
             }
         }
     }
     Ok(h.as_value())
 }
 
-fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<Value, Error> {
+fn entity_to_ruby(
+    ruby: &Ruby,
+    entity: &Entity,
+    offset: FixedOffset,
+    zone: Option<Tz>,
+) -> Result<Value, Error> {
     let h = ruby.hash_new();
     h.aset(ruby.to_symbol("body"), entity.body.clone())?;
     h.aset(ruby.to_symbol("start"), entity.start)?;
@@ -484,7 +600,7 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<V
     if let DimensionValue::Time(ref tv) = entity.value {
         h.aset(
             ruby.to_symbol("value"),
-            time_value_to_ruby(ruby, tv, offset)?,
+            time_value_to_ruby(ruby, tv, offset, zone)?,
         )?;
     }
     Ok(h.as_value())
