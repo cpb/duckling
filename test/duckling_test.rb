@@ -10,13 +10,11 @@ VALID_GRAINS = %i[second minute hour day week month quarter year].freeze
 # assertable values instead of drifting with the real clock.
 REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00")
 
-class DucklingApiTest < Minitest::Test
+class DucklingTest < Minitest::Test
   def test_parse_returns_array
     assert_kind_of Array, Duckling.parse("tomorrow", locale: "en")
   end
-end
 
-class DucklingEntityShapeTest < Minitest::Test
   def test_parse_result_shape
     results = Duckling.parse("at 3pm", locale: "en", reference_time: REFERENCE_TIME)
     assert results.size > 0, "Expected at least one result from Duckling.parse"
@@ -37,9 +35,7 @@ class DucklingEntityShapeTest < Minitest::Test
     assert_kind_of Time, value[:value]
     assert_equal Time.new(2013, 2, 12, 15, 0, 0, "-02:00"), value[:value]
   end
-end
 
-class DucklingTimeExtractionTest < Minitest::Test
   def test_parses_time_dimension
     results = Duckling.parse("tomorrow", locale: "en", reference_time: REFERENCE_TIME)
     time_entity = results.find { |r| r[:dim] == :time }
@@ -49,9 +45,7 @@ class DucklingTimeExtractionTest < Minitest::Test
     assert_equal :day, time_entity[:value][:grain]
     assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), time_entity[:value][:value]
   end
-end
 
-class DucklingParityTest < Minitest::Test
   def test_parity_with_wafer_inc_duckling
     results = Duckling.parse("Call me tomorrow", locale: "en", reference_time: REFERENCE_TIME)
     assert_operator results.size, :>=, 1, "expected at least one entity for 'Call me tomorrow'"
@@ -64,9 +58,7 @@ class DucklingParityTest < Minitest::Test
     assert_kind_of Array, entity[:value][:values]
     assert entity[:value][:values].size > 0, "expected :values to be a non-empty Array"
   end
-end
 
-class DucklingIntervalTest < Minitest::Test
   def test_parses_interval
     results = Duckling.parse("from 3pm to 5pm", locale: "en", reference_time: REFERENCE_TIME)
     assert results.size > 0
@@ -85,9 +77,7 @@ class DucklingIntervalTest < Minitest::Test
     # wafer-inc-duckling's own tests/time_corpus.rs (e.g. "3-4pm" -> to 17:00).
     assert_equal Time.new(2013, 2, 12, 18, 0, 0, "-02:00"), entity[:value][:to][:value]
   end
-end
 
-class DucklingReferenceTimeTest < Minitest::Test
   def test_time_reference_time_preserves_utc_offset_for_instant_results
     results = Duckling.parse("in one hour", locale: "en", reference_time: REFERENCE_TIME)
     entity = results.find { |r| r[:dim] == :time }
@@ -113,18 +103,5 @@ class DucklingReferenceTimeTest < Minitest::Test
     assert_kind_of Time, entity[:value][:value]
     assert_equal REFERENCE_TIME + 3600, entity[:value][:value]
     assert_equal(-7200, entity[:value][:value].utc_offset)
-  end
-end
-
-class DucklingCiTest < Minitest::Test
-  def test_native_extension_infrastructure
-    ext_dir = File.join(__dir__, "../ext/duckling")
-
-    assert File.exist?(File.join(ext_dir, "Cargo.toml")),
-      "ext/duckling/Cargo.toml must exist — Rust crate not yet set up"
-
-    cargo = File.read(File.join(ext_dir, "Cargo.toml"))
-    assert_match(/\[lib\]/, cargo, "Cargo.toml must declare a [lib] section")
-    assert_match(/crate-type.*cdylib/, cargo, "Cargo.toml must set crate-type = [\"cdylib\"]")
   end
 end

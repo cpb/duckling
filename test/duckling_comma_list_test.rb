@@ -42,13 +42,14 @@ COMMA_LIST_MARCH_9 = Time.new(2013, 3, 9, 0, 0, 0, "-02:00")
 COMMA_LIST_APRIL_12 = Time.new(2013, 4, 12, 0, 0, 0, "-02:00")
 COMMA_LIST_MAY_5 = Time.new(2013, 5, 5, 0, 0, 0, "-02:00")
 
-class DucklingCommaListReliableTest < Minitest::Test
+class DucklingCommaListTest < Minitest::Test
   def extracted_dates(text)
     Duckling.parse(text, locale: "en", reference_time: COMMA_LIST_REFERENCE_TIME)
       .select { |r| r[:dim] == :time }
       .map { |r| r[:value][:value] }
   end
 
+  # Reliable suite
   def test_dates_each_prefixed_by_a_name_extract_individually
     text = "Emma: March 3, Liam: March 9, Noah: April 12, Ava: May 5"
     assert_equal(
@@ -72,9 +73,7 @@ class DucklingCommaListReliableTest < Minitest::Test
       extracted_dates(text)
     )
   end
-end
 
-class DucklingCommaListKnownLimitationTest < Minitest::Test
   # See the file-level comment above for the root-cause trace. Each shape below
   # is documented by a *pair* of tests:
   #
@@ -85,12 +84,6 @@ class DucklingCommaListKnownLimitationTest < Minitest::Test
   #     dates) we actually want. Skipped so it doesn't break CI. Delete the
   #     `skip` line once the current-actual test above starts failing, to
   #     confirm the fix and re-enable the real assertion.
-
-  def extracted_dates(text)
-    Duckling.parse(text, locale: "en", reference_time: COMMA_LIST_REFERENCE_TIME)
-      .select { |r| r[:dim] == :time }
-      .map { |r| r[:value][:value] }
-  end
 
   def test_current_actual_extraction_for_bare_comma_separated_dates
     # The trailing "and may 5" isn't part of the comma chain, so it survives
