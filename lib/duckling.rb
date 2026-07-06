@@ -126,7 +126,11 @@ module Duckling
     return unless time_point && time_point[:naive]
 
     t = time_point[:value]
-    resolved = zone.local_time(t.year, t.month, t.day, t.hour, t.min, t.sec, t.usec)
+    resolved = begin
+      zone.local_time(t.year, t.month, t.day, t.hour, t.min, t.sec, t.usec)
+    rescue TZInfo::PeriodNotFound, TZInfo::AmbiguousTime => e
+      raise ArgumentError, "invalid or ambiguous naive time for reference zone: #{e.message}"
+    end
     # Rebuild as a plain Time: TZInfo::Timezone#local_time returns a
     # TZInfo::TimeWithOffset (a Time subclass) -- every other code path in
     # this gem returns a plain Time, so leaving this one as a subclass would
