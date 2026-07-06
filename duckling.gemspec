@@ -43,6 +43,11 @@ Gem::Specification.new do |spec|
   # close to whatever's actually locked in Gemfile.lock.
   spec.add_dependency "rb_sys", "~> 0.9.128"
 
+  # reference_zone: resolves IANA zone names and per-date DST offsets via
+  # ActiveSupport::TimeZone (lib/duckling.rb) rather than tzinfo directly —
+  # activesupport depends on tzinfo itself, so this pulls it in transitively.
+  spec.add_dependency "activesupport", ">= 7.0"
+
   # only needed when developing or packaging your gem
   spec.add_development_dependency "rake-compiler", "~> 1.3.1"
   spec.add_development_dependency "benchmark-ips"
