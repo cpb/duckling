@@ -10,5 +10,17 @@ crate-type = ["cdylib"]
 magnus = { version = "0.8", features = ["chrono"] }
 duckling = "0.4"
 chrono = "0.4"
+# chrono-tz vendors IANA tzdata as a git submodule pinned to one fixed commit
+# (release 2025b / 2025-03-22 as of chrono-tz 0.10.4, confirmed against the
+# chronotope/chrono-tz repo directly), not a live or build-time-refreshed
+# source. A real-world DST-rule change -- e.g. a jurisdiction dropping its
+# seasonal-change Rule for a fixed offset, the exact pattern IANA already
+# used for Yukon's 2020 switch to permanent UTC-7 (America/Whitehorse's
+# `northamerica` Zone continuation line) -- only reaches this gem once
+# chrono-tz cuts a new release with a bumped submodule pointer, this crate's
+# version constraint is bumped to match, and a new native-extension release
+# (with new cross-compiled binaries) ships. Contrast tzinfo-data (the
+# alternative approach in this issue's sibling PR): a plain Ruby gem bump
+# picks up new IANA data with no recompile at all.
 chrono-tz = "0.10"
 rb-sys = { version = "*", default-features = false, features = ["stable-api-compiled-fallback"] }
