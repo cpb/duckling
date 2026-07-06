@@ -168,4 +168,26 @@ class DucklingTest < Minitest::Test
     assert_match(/utc_offset/i, error.message,
       "expected a mismatch error mentioning utc_offset, got: #{error.message.inspect}")
   end
+
+  def test_naive_result_landing_in_a_dst_spring_forward_gap_raises_argument_error
+    # 2013-03-10 02:30 America/New_York never occurs -- clocks jump from
+    # 01:59:59 EST straight to 03:00:00 EDT. A naive result that resolves to
+    # this wall-clock value must surface as the gem's own ArgumentError
+    # contract for bad input, not an implementation-specific exception.
+    error = assert_raises(ArgumentError) do
+      Duckling.parse("march 10 2013 at 2:30am", locale: "en", reference_zone: "America/New_York")
+    end
+    assert_match(/invalid or ambiguous naive time/i, error.message,
+      "expected the naive-time-resolution contract's own message, got: #{error.message.inspect}")
+  end
+
+  def test_naive_result_landing_in_a_dst_fall_back_ambiguous_time_raises_argument_error
+    # 2013-11-03 01:30 America/New_York occurs twice -- once at EDT, once at
+    # EST -- as clocks fall back. Same ArgumentError contract applies.
+    error = assert_raises(ArgumentError) do
+      Duckling.parse("november 3 2013 at 1:30am", locale: "en", reference_zone: "America/New_York")
+    end
+    assert_match(/invalid or ambiguous naive time/i, error.message,
+      "expected the naive-time-resolution contract's own message, got: #{error.message.inspect}")
+  end
 end
