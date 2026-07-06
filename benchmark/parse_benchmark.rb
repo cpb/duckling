@@ -69,6 +69,12 @@ module DucklingBenchmark
   # pass (issue #64's dispatch-overhead comparison).
   NATIVE_LABEL_SUFFIX = "_native"
 
+  # Duckling::Native (the no-thread-spawn entrypoint, issue #64) doesn't exist
+  # on implementations from before that split landed -- bin/benchmark-replay
+  # runs this harness against those older checkouts, so the native-only
+  # scenarios below degrade gracefully instead of raising a NameError.
+  NATIVE_AVAILABLE = !!defined?(Duckling::Native)
+
   def self.run_ips
     # Duckling.parse only spawns its per-call Thread when Fiber.scheduler is
     # installed on the calling thread (see lib/duckling.rb), so the whole
@@ -84,7 +90,9 @@ module DucklingBenchmark
       report = ::Benchmark.ips do |x|
         x.config(time: 2, warmup: 1)
         CORPUS.each { |s| x.report(s[:name]) { Duckling.parse(s[:input], locale: "en") } }
-        CORPUS.each { |s| x.report("#{s[:name]}#{NATIVE_LABEL_SUFFIX}") { Duckling::Native.parse(s[:input], locale: "en") } }
+        if NATIVE_AVAILABLE
+          CORPUS.each { |s| x.report("#{s[:name]}#{NATIVE_LABEL_SUFFIX}") { Duckling::Native.parse(s[:input], locale: "en") } }
+        end
         x.compare!
       end
     end
@@ -111,7 +119,7 @@ module DucklingBenchmark
     iterations = GC_SAMPLE_ITERATIONS_OVERRIDES.fetch(name, GC_SAMPLE_ITERATIONS)
     GC.start
     before = GC.stat
-    iterations.times { Duckling::Native.parse(text, locale: "en") }
+    iterations.times { NATIVE_AVAILABLE ? Duckling::Native.parse(text, locale: "en") : Duckling.parse(text, locale: "en") }
     after = GC.stat
     {
       allocated_objects_per_call: (after[:total_allocated_objects] - before[:total_allocated_objects]) / iterations.to_f,
@@ -154,18 +162,22 @@ module DucklingBenchmark
     ips = run_ips
     scenarios = CORPUS.map do |s|
       thread_stats = ips.fetch(s[:name].to_sym)
-      native_stats = ips.fetch(:"#{s[:name]}#{NATIVE_LABEL_SUFFIX}")
-      overhead_pct = ((thread_stats[:microseconds_per_call] - native_stats[:microseconds_per_call]) /
-        native_stats[:microseconds_per_call]) * 100
-
-      {name: s[:name], input: s[:input]}
+      entry = {name: s[:name], input: s[:input]}
         .merge(thread_stats)
         .merge(measure_gc(name: s[:name], text: s[:input]))
-        .merge(
+
+      if NATIVE_AVAILABLE
+        native_stats = ips.fetch(:"#{s[:name]}#{NATIVE_LABEL_SUFFIX}")
+        overhead_pct = ((thread_stats[:microseconds_per_call] - native_stats[:microseconds_per_call]) /
+          native_stats[:microseconds_per_call]) * 100
+        entry = entry.merge(
           native_ips: native_stats[:ips],
           native_microseconds_per_call: native_stats[:microseconds_per_call],
           thread_overhead_pct: overhead_pct
         )
+      end
+
+      entry
     end
     {
       ruby_version: RUBY_VERSION,

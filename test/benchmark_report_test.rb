@@ -55,8 +55,12 @@ class DucklingBenchmarkReportTest < Minitest::Test
     assert_equal "claude-code-web", env
   end
 
-  def test_detect_environment_defaults_to_local
-    assert_equal "local", DucklingBenchmark::Report.detect_environment({})
+  def test_detect_environment_defaults_to_local_with_ruby_minor
+    assert_equal "local-3.4", DucklingBenchmark::Report.detect_environment({}, ruby_version: "3.4.5")
+  end
+
+  def test_detect_environment_buckets_by_minor_not_patch
+    assert_equal "local-3.3", DucklingBenchmark::Report.detect_environment({}, ruby_version: "3.3.8")
   end
 
   def test_write_json_and_history_round_trip

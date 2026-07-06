@@ -16,16 +16,22 @@ module DucklingBenchmark
     DEFAULT_DOCS_DIR = File.expand_path("../docs/benchmarks", __dir__)
     DEFAULT_DOCS_README_PATH = File.join(DEFAULT_DOCS_DIR, "README.md")
 
-    ENVIRONMENT_ORDER = %w[github-actions claude-code-web local].freeze
+    ENVIRONMENT_ORDER = %w[github-actions claude-code-web local-3.3 local-3.4 local-4.0].freeze
     CHART_EXCLUDED_SCENARIOS = %w[camping_trip_email].freeze
 
-    def self.detect_environment(env = ENV)
+    # Bucketed by Ruby *minor* version, not exact patch: a local dev machine's
+    # Ruby patch drifts over time (3.4.5 -> 3.4.10) the same way a CI runner's
+    # does, and github-actions/claude-code-web already tolerate that under one
+    # environment name -- local should too, just split further by minor since
+    # (unlike CI) the same dev machine's local Ruby minor version does change
+    # over a project's lifetime and previously got silently blended together.
+    def self.detect_environment(env = ENV, ruby_version: RUBY_VERSION)
       if env["GITHUB_ACTIONS"] == "true"
         "github-actions"
       elsif env["CLAUDE_CODE_REMOTE"] == "true"
         "claude-code-web"
       else
-        "local"
+        "local-#{ruby_version.split(".").first(2).join(".")}"
       end
     end
 
@@ -182,9 +188,13 @@ module DucklingBenchmark
         release-over-release trend. GitHub Actions runners, Claude Code Web
         sessions, and local dev machines have too much hardware/scheduling
         variance to compare directly — a 20-30% swing between two runs on
-        different machines is normal and not a regression. Comparing an
-        environment against *itself* over time, or against other environments
-        side by side (as below), is more meaningful than a single blended number.
+        different machines is normal and not a regression. Local results are
+        split further still, **by Ruby minor version** (`local-3.3`,
+        `local-3.4`, `local-4.0`), since a dev machine's Ruby version changes
+        over time and native-extension dispatch overhead can shift across
+        Ruby releases. Comparing an environment against *itself* over time,
+        or against other environments side by side (as below), is more
+        meaningful than a single blended number.
 
         Raw JSON lives under `<environment>/<version>.json` in this directory —
         one file per environment per recorded version.

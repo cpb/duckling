@@ -1,0 +1,86 @@
+{
+  "ruby_version": "3.3.6",
+  "ruby_platform": "x86_64-darwin24",
+  "rust_toolchain": "rustc 1.85.0 (4d91de4e4 2025-02-17)",
+  "cargo_profile": "release",
+  "scenarios": [
+    {
+      "name": "short",
+      "input": "tomorrow at 3pm",
+      "ips": 1571.4422632564347,
+      "ips_stddev_pct": 17.181668478260868,
+      "iterations": 3312,
+      "microseconds_per_call": 636.3580917874397,
+      "allocated_objects_per_call": 28.005,
+      "minor_gc_count_delta": 1,
+      "major_gc_count_delta": 0
+    },
+    {
+      "name": "medium",
+      "input": "from 13 to 15 of July",
+      "ips": 1513.3645346811907,
+      "ips_stddev_pct": 14.735379010779962,
+      "iterations": 3154,
+      "microseconds_per_call": 660.7793278376664,
+      "allocated_objects_per_call": 31.0005,
+      "minor_gc_count_delta": 1,
+      "major_gc_count_delta": 0
+    },
+    {
+      "name": "long",
+      "input": "meet me next Wednesday at 2:30pm for about 2 hours",
+      "ips": 266.5647448524584,
+      "ips_stddev_pct": 16.13116544117647,
+      "iterations": 544,
+      "microseconds_per_call": 3751.4338235294117,
+      "allocated_objects_per_call": 31.0005,
+      "minor_gc_count_delta": 1,
+      "major_gc_count_delta": 0
+    },
+    {
+      "name": "no_match",
+      "input": "the quick brown fox jumps over the lazy dog",
+      "ips": 4976.336250891033,
+      "ips_stddev_pct": 14.066573573573574,
+      "iterations": 9990,
+      "microseconds_per_call": 200.95105105105105,
+      "allocated_objects_per_call": 3.0005,
+      "minor_gc_count_delta": 0,
+      "major_gc_count_delta": 0
+    },
+    {
+      "name": "empty",
+      "input": "",
+      "ips": 60470.35463151897,
+      "ips_stddev_pct": 15.217373961295808,
+      "iterations": 122364,
+      "microseconds_per_call": 16.53702886469877,
+      "allocated_objects_per_call": 3.0005,
+      "minor_gc_count_delta": 0,
+      "major_gc_count_delta": 0
+    },
+    {
+      "name": "camping_trip_email",
+      "input": "Hey everyone,\n\nWanted to loop you all in on our camping trip planning for the summer --\nwe've got a few weekends to lock down. First up, we're thinking Yosemite\nfrom June 12th to June 15th, weather permitting; if that valley is too\ncrowded we could push it to June 19th instead. Then in July, maybe the\nsecond week, say July 8th through July 12th, we could head down to Big Sur\nalong the coast -- I know a few of you can't make it until July 10th, so\nwe might just meet everyone there by lunchtime that day.\n\nAugust is looking busy but I think the weekend of August 22nd to August\n24th would work for a shorter trip up to the Sierras, and if the weather\nholds we could extend it to August 25th. Let's also pencil in Labor Day\nweekend, August 29th through September 1st, for one last trip before\nschool starts back up on September 3rd. If anyone's free the week before,\nsay September 2nd, we could even sneak in a day hike.\n\nReply by next Friday if any of these dates don't work for you, and we'll\nfinalize the full schedule by the end of the month. Looking forward to\nseeing everyone out there!\n",
+      "ips": 1.6700478176441387,
+      "ips_stddev_pct": 0.0,
+      "iterations": 4,
+      "microseconds_per_call": 598785.25,
+      "allocated_objects_per_call": 514.45,
+      "minor_gc_count_delta": 0,
+      "major_gc_count_delta": 0
+    }
+  ],
+  "concurrency": {
+    "thread_count": 10,
+    "duration_seconds": 3,
+    "scenario_input": "medium",
+    "single_thread_ops_per_sec": 1615.3333333333333,
+    "multi_thread_ops_per_sec": 1281.6666666666667,
+    "scaling_factor": 0.7934378869170451,
+    "efficiency_pct": 7.934378869170451
+  },
+  "environment": "local-3.3",
+  "version": "0.2.0",
+  "date": "2026-07-04"
+}

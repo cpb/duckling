@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Replays the *current* benchmark harness (benchmark/, Rakefile, Gemfile,
+# gemspec) against a *historical* implementation (lib/, ext/duckling/) under
+# a given installed Ruby version, and records the result as
+# docs/benchmarks/local-<minor>/<version>.json -- for backfilling a Ruby
+# version bucket (see docs/benchmarks/README.md) that's missing a data point
+# for a version that was already recorded under a different Ruby, or for
+# correcting a bucket after a similar mixup happens again. Not part of
+# routine `bin/benchmark record-pr` usage.
+#
+# Usage: bin/benchmark-replay <ref> <ruby-version>
+#   ref           git tag/commit/branch of the historical implementation to
+#                 benchmark (e.g. v0.2.0, or a commit SHA for pre-release
+#                 versions with no tag)
+#   ruby-version  installed rbenv Ruby version to build+run under, exactly as
+#                 `rbenv versions --bare` lists it (e.g. 3.3.6, 3.4.10, 4.0.5)
+#
+# Only overlays lib/ and ext/duckling/ from <ref> -- the harness itself
+# (benchmark/, Rakefile, Gemfile, gemspec) always comes from the branch this
+# script is run from, so replaying an old version doesn't also run its own
+# (possibly outdated or missing) benchmark code.
+#
+# After running one or more replays, regenerate docs/benchmarks/README.md
+# once from the full history:
+#   ruby -Ilib -e 'require_relative "benchmark/report"; DucklingBenchmark::Report.write_docs_readme!(DucklingBenchmark::Report.render_docs_readme(DucklingBenchmark::Report.history))'
+set -euo pipefail
+
+ref="${1:?Usage: bin/benchmark-replay <ref> <ruby-version>}"
+ruby_version="${2:?Usage: bin/benchmark-replay <ref> <ruby-version>}"
+
+repo_root="$(git rev-parse --show-toplevel)"
+current_ref="$(git -C "$repo_root" symbolic-ref -q --short HEAD || git -C "$repo_root" rev-parse HEAD)"
+slug="$(echo "${ref}-${ruby_version}" | tr '/' '-')"
+worktree_dir="$repo_root/tmp/benchmark-replay/$slug"
+
+cleanup() {
+  git -C "$repo_root" worktree remove --force "$worktree_dir" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+rm -rf "$worktree_dir"
+git -C "$repo_root" worktree add --detach "$worktree_dir" "$current_ref"
+
+# Overlay just the historical implementation; harness stays at $current_ref.
+git -C "$worktree_dir" checkout "$ref" -- lib ext/duckling
+
+# Read VERSION from the historical ref directly (not by requiring the
+# just-built gem), since older refs may not expose the same require path.
+version="$(git -C "$repo_root" show "${ref}:lib/duckling/version.rb" | ruby -e 'eval($stdin.read); puts Duckling::VERSION')"
+
+echo "Replaying ${ref} (v${version}) under Ruby ${ruby_version} in ${worktree_dir}..."
+
+(
+  cd "$worktree_dir"
+  RBENV_VERSION="$ruby_version" rbenv exec bundle install
+  RBENV_VERSION="$ruby_version" rbenv exec bundle exec rake benchmark:record
+)
+
+minor="$(echo "$ruby_version" | cut -d. -f1,2)"
+src="$worktree_dir/docs/benchmarks/local-$minor/$version.json"
+dest="$repo_root/docs/benchmarks/local-$minor/$version.json"
+
+if [ ! -f "$src" ]; then
+  echo "error: expected $src to exist after benchmark:record, but it doesn't" >&2
+  exit 1
+fi
+
+mkdir -p "$(dirname "$dest")"
+cp "$src" "$dest"
+
+echo "Wrote $dest"
+echo 'Regenerate docs/benchmarks/README.md from the full history with:'
+echo '  ruby -Ilib -e '"'"'require_relative "benchmark/report"; DucklingBenchmark::Report.write_docs_readme!(DucklingBenchmark::Report.render_docs_readme(DucklingBenchmark::Report.history))'"'"
