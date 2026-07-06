@@ -2,7 +2,7 @@
 
 require "test_helper"
 require "date"
-require "minitest/mock"
+require "tzinfo"
 
 VALID_GRAINS = %i[second minute hour day week month quarter year].freeze
 
@@ -137,15 +137,26 @@ class DucklingTest < Minitest::Test
   end
 
   def test_reference_zone_without_reference_time_anchors_at_current_time_in_zone
-    fixed_now = Time.new(2013, 6, 15, 10, 0, 0, "-04:00") # EDT "now"
-    Time.stub :now, fixed_now do
-      results = Duckling.parse("today", locale: "en", reference_zone: "America/New_York")
-      entity = results.find { |r| r[:dim] == :time }
-      refute_nil entity, "Expected a :time dimension result for 'today'"
-      assert_kind_of Time, entity[:value][:value]
-      assert_equal Time.new(2013, 6, 15, 0, 0, 0, "-04:00"), entity[:value][:value]
-      assert_equal(-4 * 3600, entity[:value][:value].utc_offset)
-    end
+    # Stubbing Ruby's Time.now would not affect this at all: when
+    # reference_time: is omitted, Native.parse's default Context comes from
+    # Rust's own chrono::Utc::now() (ext/duckling crate's resolve.rs), which
+    # never calls back into Ruby. So instead of faking "now", assert against
+    # a real ground-truth oracle (tzinfo) for whatever instant the suite
+    # actually runs at -- this holds regardless of *how* an implementation
+    # sources "now" (Ruby-side Time.now, Rust-side Utc::now(), etc.), since
+    # it only pins the observable contract: the resolved offset/date must
+    # match the zone's real current offset/date, not reference_time:'s.
+    zone = TZInfo::Timezone.get("America/New_York")
+    utc_now = Time.now.utc
+    expected_offset = zone.period_for(utc_now).utc_total_offset
+    expected_date = zone.to_local(utc_now).to_date
+
+    results = Duckling.parse("today", locale: "en", reference_zone: "America/New_York")
+    entity = results.find { |r| r[:dim] == :time }
+    refute_nil entity, "Expected a :time dimension result for 'today'"
+    assert_kind_of Time, entity[:value][:value]
+    assert_equal expected_date, entity[:value][:value].to_date
+    assert_equal expected_offset, entity[:value][:value].utc_offset
   end
 
   def test_reference_time_utc_offset_disagreeing_with_zone_raises_argument_error

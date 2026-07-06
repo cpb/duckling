@@ -10,9 +10,12 @@ gem "irb"
 gem "rake"
 
 gem "minitest"
-# minitest 6.x split Object#stub / MiniTest::Mock out of minitest core into
-# this separate gem — needed for Time.stub in
-# test/duckling_reference_zone_without_reference_time_test.rb.
-gem "minitest-mock"
+
+# Test-only ground-truth oracle for asserting real IANA zone offsets in
+# test/duckling_test.rb's reference_zone: "anchors at current time" case,
+# since faking "now" via Ruby's Time.now has no effect on the Rust-side
+# default clock (chrono::Utc::now(), read in ext/duckling/src/resolve.rs)
+# that's actually used when reference_time: is omitted today.
+gem "tzinfo"
 
 gem "standard"
