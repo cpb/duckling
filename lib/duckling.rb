@@ -39,6 +39,8 @@ module Duckling
       kwargs = kwargs.merge(reference_time: reference_time.to_time)
     end
 
+    kwargs.delete(:reference_zone)
+
     return Native.parse(*args, **kwargs, &block) unless Fiber.scheduler
 
     Thread.new do
