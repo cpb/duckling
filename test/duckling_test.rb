@@ -190,4 +190,22 @@ class DucklingTest < Minitest::Test
     assert_match(/invalid or ambiguous naive time/i, error.message,
       "expected the naive-time-resolution contract's own message, got: #{error.message.inspect}")
   end
+
+  def test_apply_reference_zone_skips_non_time_entities
+    zone = TZInfo::Timezone.get("America/New_York")
+    # A non-:time entity could carry a :value shape that happens to collide
+    # with the time-entity shape apply_reference_zone expects; it must be
+    # ignored based on :dim, not inferred from whatever :value looks like.
+    entities = [{dim: :number, value: {type: :value, value: 42}}]
+    result = Duckling.send(:apply_reference_zone, entities, zone)
+    assert_equal 42, result.first[:value][:value]
+  end
+
+  def test_apply_reference_zone_raises_on_unrecognized_time_value_shape
+    zone = TZInfo::Timezone.get("America/New_York")
+    entities = [{dim: :time, value: {type: :unrecognized_shape}}]
+    assert_raises(ArgumentError) do
+      Duckling.send(:apply_reference_zone, entities, zone)
+    end
+  end
 end

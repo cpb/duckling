@@ -104,9 +104,18 @@ module Duckling
   # Walks every :time entity's resolved time point(s), reinterpreting each
   # TimePoint::Naive result's offset against `zone` for that result's own
   # date, in place. TimePoint::Instant results (`:naive` false) are left
-  # untouched — see the reference_zone: note on .parse above.
+  # untouched — see the reference_zone: note on .parse above. Gates on
+  # entity[:dim] (the authoritative tag ext/duckling/src/lib.rs sets on every
+  # entity) rather than inferring "this looks like a time value" from
+  # value[:type] alone, and raises on any value[:type] this doesn't recognize
+  # instead of silently leaving it untouched — value[:type] must stay in
+  # lockstep with time_value_to_ruby in ext/duckling/src/lib.rs, so an
+  # unrecognized shape means that lockstep broke and needs a loud signal, not
+  # a quiet no-op that returns wrong offsets.
   def self.apply_reference_zone(results, zone)
     results.each do |entity|
+      next unless entity[:dim] == :time
+
       value = entity[:value]
       next unless value
 
@@ -117,6 +126,8 @@ module Duckling
       when :interval
         reinterpret_time_point!(value[:from], zone)
         reinterpret_time_point!(value[:to], zone)
+      else
+        raise ArgumentError, "unrecognized time value shape: #{value[:type].inspect}"
       end
     end
     results
