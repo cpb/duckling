@@ -62,7 +62,11 @@ module Duckling
 
     zone = nil
     if reference_zone
-      zone = TZInfo::Timezone.get(reference_zone)
+      zone = begin
+        TZInfo::Timezone.get(reference_zone)
+      rescue TZInfo::InvalidTimezoneIdentifier
+        raise ArgumentError, "invalid reference_zone: #{reference_zone.inspect}"
+      end
       if reference_time
         zone_offset = zone.period_for(reference_time).utc_total_offset
         if reference_time.utc_offset != zone_offset
@@ -122,7 +126,17 @@ module Duckling
     return unless time_point && time_point[:naive]
 
     t = time_point[:value]
-    time_point[:value] = zone.local_time(t.year, t.month, t.day, t.hour, t.min, t.sec, t.usec)
+    resolved = zone.local_time(t.year, t.month, t.day, t.hour, t.min, t.sec, t.usec)
+    # Rebuild as a plain Time: TZInfo::Timezone#local_time returns a
+    # TZInfo::TimeWithOffset (a Time subclass) -- every other code path in
+    # this gem returns a plain Time, so leaving this one as a subclass would
+    # be a real (if kind_of?-invisible) inconsistency for callers doing
+    # anything stricter, like instance_of?(Time).
+    time_point[:value] = Time.new(
+      resolved.year, resolved.month, resolved.day,
+      resolved.hour, resolved.min, resolved.sec + Rational(resolved.nsec, 1_000_000_000),
+      resolved.utc_offset
+    )
   end
   private_class_method :reinterpret_time_point!
 end
