@@ -5,11 +5,6 @@ require "date"
 
 VALID_GRAINS = %i[second minute hour day week month quarter year].freeze
 
-# Matches the reference time used throughout the pyduckling / wafer-inc-duckling
-# corpora (2013-02-12T04:30:00-02:00), so relative expressions resolve to fixed,
-# assertable values instead of drifting with the real clock.
-REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00")
-
 class DucklingTest < Minitest::Test
   def test_parse_returns_array
     assert_kind_of Array, Duckling.parse("tomorrow", locale: "en")

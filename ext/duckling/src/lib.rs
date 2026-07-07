@@ -7,6 +7,9 @@ use magnus::{Error, RArray, Ruby, Time as RubyTime, Value, function, prelude::*,
 use std::os::raw::c_void;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
+mod ruby_value;
+use ruby_value::serialize_symbolized;
+
 // `Duckling::Native` holds the raw Magnus-defined entrypoint; `Duckling.parse`
 // itself is a thin Ruby-level wrapper (see lib/duckling.rb) that dispatches
 // through a `Thread.new { ... }.value` so a calling Fiber on an Async::Reactor
@@ -481,11 +484,43 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<V
     if let Some(latent) = entity.latent {
         h.aset(ruby.to_symbol("latent"), latent)?;
     }
-    if let DimensionValue::Time(ref tv) = entity.value {
-        h.aset(
-            ruby.to_symbol("value"),
-            time_value_to_ruby(ruby, tv, offset)?,
-        )?;
+    match &entity.value {
+        DimensionValue::Time(tv) => {
+            h.aset(
+                ruby.to_symbol("value"),
+                time_value_to_ruby(ruby, tv, offset)?,
+            )?;
+        }
+        // `Grain` serde-serializes as PascalCase variant names ("Second",
+        // "NoGrain"); the shipped convention is `Grain::as_str()` symbols
+        // (:second, :no_grain) — see time_point_to_ruby. For TimeGrain the
+        // grain *is* the whole tagged payload, so the hash is built directly
+        // rather than serialized-then-patched.
+        DimensionValue::TimeGrain(grain) => {
+            let value = ruby.hash_new();
+            value.aset(ruby.to_symbol("TimeGrain"), ruby.to_symbol(grain.as_str()))?;
+            h.aset(ruby.to_symbol("value"), value)?;
+        }
+        // Duration has exactly three scalar fields, so — like TimeGrain above
+        // — the tagged hash is built directly rather than serialized then
+        // patched: a serialize-then-patch here would silently no-op if the
+        // crate's serde representation of Duration ever changed shape.
+        DimensionValue::Duration {
+            value: count,
+            grain,
+            normalized_seconds,
+        } => {
+            let payload = ruby.hash_new();
+            payload.aset(ruby.to_symbol("value"), *count)?;
+            payload.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+            payload.aset(ruby.to_symbol("normalized_seconds"), *normalized_seconds)?;
+            let tagged = ruby.hash_new();
+            tagged.aset(ruby.to_symbol("Duration"), payload)?;
+            h.aset(ruby.to_symbol("value"), tagged)?;
+        }
+        other => {
+            h.aset(ruby.to_symbol("value"), serialize_symbolized(ruby, other)?)?;
+        }
     }
     Ok(h.as_value())
 }

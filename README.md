@@ -40,9 +40,8 @@ Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_lat
 - `locale:` (String, default `"en"`) — a `lang[-region]` tag, e.g. `"en"` or
   `"en-GB"`. An unrecognized language or region raises `ArgumentError`.
 - `dims:` (Array of String, default `["time"]`) — which dimensions to
-  extract. See "Supported dimensions" below — only `"time"` currently
-  produces a populated `:value`. An unrecognized dimension name raises
-  `ArgumentError`.
+  extract. See "Supported dimensions" below. An unrecognized dimension name
+  raises `ArgumentError`.
 - `reference_time:` (`Time`, default `nil`) — anchors relative expressions
   like "tomorrow" or "next week". Its `utc_offset` is preserved into every
   time result's `:value` — both wall-clock expressions ("tomorrow", "next
@@ -67,8 +66,10 @@ Each entity in the returned array is a `Hash` with:
 - `:start` / `:end` (Integer) — character offsets into the input text.
 - `:dim` (Symbol) — the dimension, e.g. `:time`.
 - `:latent` (Boolean) — present only when the match is latent.
-- `:value` (Hash) — present only for the `:time` dimension today. Shape
-  depends on whether it's a single point in time or an interval:
+- `:value` — every entity carries one; its shape depends on `:dim`.
+
+  For `:time`, it's a `Hash` shaped depending on whether it's a single point
+  in time or an interval:
 
   ```ruby
   # a single point in time, e.g. "tomorrow"
@@ -90,15 +91,21 @@ Each entity in the returned array is a `Hash` with:
   `17:00`. This matches upstream [duckling](https://github.com/wafer-inc/duckling)
   behavior.
 
+  Every other dimension's `:value` is serde's externally-tagged
+  representation of the underlying Rust value, with all Hash keys
+  symbolized — a one-pair `Hash` keyed by a PascalCase tag matching the
+  dimension (`{Numeral: 42.0}`, `{Email: "user@example.com"}`,
+  `{Url: {value: "...", domain: "..."}}`, `{Temperature: {Value: {value:
+  37.0, unit: "celsius"}}}`). See `test/duckling_parse_dimensions_test.rb`
+  for the exact shape of every dimension.
+
 ### Supported dimensions
 
-In 0.2.0, only `"time"` is fully supported — it's the only dimension whose
-entities come back with a populated `:value`. Other dimension names
-(`number`, `ordinal`, `temperature`, `distance`, `volume`, `quantity`,
-`amount-of-money`, `email`, `phone-number`, `url`, `credit-card-number`,
-`time-grain`, `duration`) are accepted by `dims:` without error, but their
-entities currently have no `:value` key. Broader dimension support is
-planned for future releases.
+`dims:` accepts `time`, `number`, `ordinal`, `temperature`, `distance`,
+`volume`, `quantity`, `amount-of-money`, `email`, `phone-number`, `url`,
+`credit-card-number`, `time-grain`, and `duration` — every entity comes back
+with a populated `:value` (see "Return value" above for the shape). An
+unrecognized dimension name raises `ArgumentError`.
 
 ### Known limitation: bare comma-separated lists
 

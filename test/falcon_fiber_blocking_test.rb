@@ -61,8 +61,6 @@ class FalconFiberBlockingTest < Minitest::Test
     fifteen minute journey.
   TEXT
 
-  REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00")
-
   # How often the ticker Fiber is asked to wake up.
   TICK_INTERVAL = 0.001 # 1ms
 
