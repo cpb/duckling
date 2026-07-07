@@ -35,8 +35,6 @@ require "test_helper"
 # one entity. See DucklingCommaListKnownLimitationTest below for the specific
 # shapes that fail, including one case where the surviving :value isn't even
 # reliably the leftmost date in the collapsed run.
-COMMA_LIST_REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00")
-
 COMMA_LIST_MARCH_3 = Time.new(2013, 3, 3, 0, 0, 0, "-02:00")
 COMMA_LIST_MARCH_9 = Time.new(2013, 3, 9, 0, 0, 0, "-02:00")
 COMMA_LIST_APRIL_12 = Time.new(2013, 4, 12, 0, 0, 0, "-02:00")
@@ -44,7 +42,7 @@ COMMA_LIST_MAY_5 = Time.new(2013, 5, 5, 0, 0, 0, "-02:00")
 
 class DucklingCommaListTest < Minitest::Test
   def extracted_dates(text)
-    Duckling.parse(text, locale: "en", reference_time: COMMA_LIST_REFERENCE_TIME)
+    Duckling.parse(text, locale: "en", reference_time: REFERENCE_TIME)
       .select { |r| r[:dim] == :time }
       .map { |r| r[:value][:value] }
   end

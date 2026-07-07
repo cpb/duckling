@@ -2,19 +2,6 @@
 
 require "test_helper"
 
-# Matches the reference time used throughout the pyduckling / wafer-inc-duckling
-# corpora (2013-02-12T04:30:00-02:00, a Tuesday), so relative expressions
-# resolve to fixed, assertable values instead of drifting with the real clock.
-# See test/duckling_test.rb for the same convention. Guarded with `unless
-# defined?` since this file may load in the same process as duckling_test.rb
-# (which defines the same top-level constant) via `bundle exec rake test`, or
-# standalone via `bin/test test/duckling_time_test.rb`. A real `Time` (not an
-# Integer): `Native.parse`'s `reference_time:` requires a `Time`-like value
-# (or something responding to `#to_time`) so its `utc_offset` can be threaded
-# through to `Naive` results via `Context::timezone()` — an Integer can't
-# carry an offset at all.
-REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00") unless defined?(REFERENCE_TIME)
-
 # Extended corpus for bare/relative weekday parsing, ported from the kind of
 # cases the Ruby port's design docs point at in the original Haskell/pyduckling
 # corpus (`Duckling.Time.EN.Corpus`) — bare weekday names, abbreviations, and
