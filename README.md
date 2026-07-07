@@ -24,7 +24,8 @@ require "duckling"
 Duckling.parse("tomorrow", locale: "en")
 # =>
 # [{ body: "tomorrow", start: 0, end: 8, dim: :time,
-#    value: { type: :value, value: 2026-07-02 00:00:00 +0000, grain: :day, values: [...] } }]
+#    value: { Time: { Single: { value: { Naive: { value: 2026-07-02 00:00:00 +0000, grain: :day } },
+#                                values: [...] } } } }]
 # (the date resolves relative to now; pass reference_time: for a fixed anchor)
 ```
 
@@ -68,36 +69,45 @@ Each entity in the returned array is a `Hash` with:
 - `:latent` (Boolean) — present only when the match is latent.
 - `:value` — every entity carries one; its shape depends on `:dim`.
 
-  For `:time`, it's a `Hash` shaped depending on whether it's a single point
-  in time or an interval:
+  Every dimension's `:value` is serde's externally-tagged representation of
+  the underlying Rust value, with all Hash keys symbolized — a one-pair
+  `Hash` keyed by a PascalCase tag matching the dimension (`{Numeral: 42.0}`,
+  `{Email: "user@example.com"}`, `{Url: {value: "...", domain: "..."}}`,
+  `{Temperature: {Value: {value: 37.0, unit: "celsius"}}}`). See
+  `test/duckling_parse_dimensions_test.rb` for the exact shape of every
+  dimension.
+
+  `:time` is the one dimension with additional nested tagging, since its
+  underlying leaf datetimes aren't serde-serializable as Ruby `Time`
+  objects and need patching after the fact (see `ext/duckling/src/lib.rs`'s
+  `patch_time_value`/`patch_time_point`):
 
   ```ruby
   # a single point in time, e.g. "tomorrow"
-  { type: :value, value: 2026-07-02 00:00:00 +0000, grain: :day, values: [...] }
+  { Time: { Single: { value: { Naive: { value: 2026-07-02 00:00:00 +0000, grain: :day } },
+                       values: [...] } } }
 
   # an interval, e.g. "from 3pm to 5pm"
-  { type: :interval,
-    from: { type: :value, value: 2013-02-12 15:00:00 -0200, grain: :hour },
-    to:   { type: :value, value: 2013-02-12 18:00:00 -0200, grain: :hour } }
+  { Time: { Interval: {
+      from: { Naive: { value: 2013-02-12 15:00:00 -0200, grain: :hour } },
+      to:   { Naive: { value: 2013-02-12 18:00:00 -0200, grain: :hour } },
+      values: [...] } } }
   ```
 
-  `grain` is one of `second`, `minute`, `hour`, `day`, `week`, `month`,
-  `quarter`, `year`. The nested `value:` (and interval `from:`/`to:`) is
-  always a real Ruby `Time`, not a formatted string — its `utc_offset`
-  matches `reference_time:`'s (or UTC, if `reference_time:` was omitted).
+  Every `TimePoint` (the primary `value:`, each `values:` recurrence entry,
+  and an interval's `from:`/`to:`) is tagged `Naive` (wall-clock, no
+  timezone assumption — e.g. "tomorrow", "5pm") or `Instant` (offset-aware —
+  e.g. "in one hour", "now"). `grain` is one of `second`, `minute`, `hour`,
+  `day`, `week`, `month`, `quarter`, `year`. The nested `value:` is always a
+  real Ruby `Time`, not a formatted string — its `utc_offset` matches
+  `reference_time:`'s (or UTC, if `reference_time:` was omitted). A holiday
+  match (e.g. "christmas") additionally carries `holidayBeta:` (a String)
+  alongside `Single`'s `value:`/`values:`.
 
   **Gotcha:** an interval's `:to` is the *exclusive* boundary, not the
   literal named time — `"from 3pm to 5pm"` resolves `:to` to `18:00`, not
   `17:00`. This matches upstream [duckling](https://github.com/wafer-inc/duckling)
   behavior.
-
-  Every other dimension's `:value` is serde's externally-tagged
-  representation of the underlying Rust value, with all Hash keys
-  symbolized — a one-pair `Hash` keyed by a PascalCase tag matching the
-  dimension (`{Numeral: 42.0}`, `{Email: "user@example.com"}`,
-  `{Url: {value: "...", domain: "..."}}`, `{Temperature: {Value: {value:
-  37.0, unit: "celsius"}}}`). See `test/duckling_parse_dimensions_test.rb`
-  for the exact shape of every dimension.
 
 ### Supported dimensions
 
