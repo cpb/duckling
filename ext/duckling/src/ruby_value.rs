@@ -82,13 +82,13 @@ where
 {
     let serialized: Value = serde_magnus::serialize(ruby, input)?;
 
-    if let Some(hash) = RHash::from_value(serialized) {
-        if hash.len() == 1 {
-            let pair: RArray = hash.funcall("first", ())?;
-            let payload: Value = pair.entry(1)?;
-            symbolize_keys_in_place(ruby, payload)?;
-            return Ok(payload);
-        }
+    if let Some(hash) = RHash::from_value(serialized)
+        && hash.len() == 1
+    {
+        let pair: RArray = hash.funcall("first", ())?;
+        let payload: Value = pair.entry(1)?;
+        symbolize_keys_in_place(ruby, payload)?;
+        return Ok(payload);
     }
 
     symbolize_keys_in_place(ruby, serialized)?;
