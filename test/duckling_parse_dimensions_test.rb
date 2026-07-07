@@ -3,21 +3,14 @@
 require "test_helper"
 
 # One representative case per non-Time dimension, pinning the exact `:value`
-# shape produced by the generic serde_magnus conversion (issue #90). Every
-# dimension keeps serde's externally-tagged representation uniformly: the
-# PascalCase `DimensionValue` tag wraps each payload (`{Numeral: 42.0}`,
+# shape produced by the generic serde_magnus conversion. Every dimension
+# keeps serde's externally-tagged representation uniformly: the PascalCase
+# `DimensionValue` tag wraps each payload (`{Numeral: 42.0}`,
 # `{Url: {value:, domain:}}`), and measurement dimensions carry the nested
 # `MeasurementValue` tag the same way (`{Temperature: {Value: {...}}}`) —
 # one consistent tagged shape rather than a mix of unwrapped and tagged
 # layers.
 class DucklingParseDimensionsTest < Minitest::Test
-  def entity_for(text, dim)
-    results = Duckling.parse(text, locale: "en", dims: [dim])
-    entity = results.find { |r| r[:dim] == dim.to_sym }
-    refute_nil entity, "expected a #{dim.inspect} entity for #{text.inspect}, got: #{results.inspect}"
-    entity
-  end
-
   def test_number_value_is_a_tagged_float
     assert_equal({Numeral: 33.0}, entity_for("thirty three", "number")[:value])
   end

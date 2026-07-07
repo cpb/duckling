@@ -2,14 +2,13 @@
 
 require "test_helper"
 
-REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00") unless defined?(REFERENCE_TIME)
-
 # Exercises the native entity conversion (including the serde_magnus
 # symbolizer's delete/re-insert hash rewriting) under GC.stress across every
 # dimension. The failure mode this guards against is a use-after-free of a
-# magnus::Value the GC couldn't see — PR #53's equivalent verification of the
-# same symbolizer caught a real segfault — so the point is executing the
-# conversion with a GC pass forced between allocations, not the assertions.
+# magnus::Value the GC couldn't see — an equivalent verification of the same
+# symbolizer previously caught a real segfault (see the wiki for the writeup)
+# — so the point is executing the conversion with a GC pass forced between
+# allocations, not the assertions.
 class DucklingGcStressTest < Minitest::Test
   CASES = [
     ["thirty three", "number"],
@@ -32,10 +31,10 @@ class DucklingGcStressTest < Minitest::Test
   # GC.stress forces a collection at every allocation, so a single pass over
   # CASES already interposes a GC between every allocation the conversion
   # makes — extra passes add heap-layout variety, not new coverage. Each pass
-  # costs ~6s (every allocation pays a full-heap mark), so the default stays
-  # small enough for every `bundle exec rake`; bump the env var to re-run the
-  # ~300-call adoption-time verification (20 passes, mirroring PR #53's).
-  ITERATIONS = Integer(ENV.fetch("DUCKLING_GC_STRESS_ITERATIONS", 2))
+  # costs ~6s (every allocation pays a full-heap mark), so the default is a
+  # single pass; bump the env var to re-run the full ~300-call verification
+  # (20 passes).
+  ITERATIONS = Integer(ENV.fetch("DUCKLING_GC_STRESS_ITERATIONS", 1))
 
   def test_parse_survives_gc_stress_across_all_dimensions
     GC.stress = true

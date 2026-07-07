@@ -1,5 +1,4 @@
 use magnus::r_hash::ForEach;
-use magnus::value::ReprValue;
 use magnus::{Error, RArray, RHash, Ruby, TryConvert, Value};
 
 /// Recursively rewrites every `Hash` reachable from `value` (including
@@ -34,13 +33,21 @@ pub fn symbolize_keys_in_place(ruby: &Ruby, value: Value) -> Result<(), Error> {
 
         for i in 0..keys.len() as isize {
             let k: Value = keys.entry(i)?;
-            let v: Value = hash.delete(k)?;
-            symbolize_keys_in_place(ruby, v)?;
-            let key = match String::try_convert(k) {
-                Ok(s) => ruby.to_symbol(s.as_str()).as_value(),
-                Err(_) => k,
-            };
-            hash.aset(key, v)?;
+            match String::try_convert(k) {
+                // Only a String key needs the hash structure itself touched
+                // (delete under the old key, reinsert under the new Symbol);
+                // serde_magnus already emits Symbol keys for struct fields,
+                // so most entries just need their value recursed into.
+                Ok(s) => {
+                    let v: Value = hash.delete(k)?;
+                    symbolize_keys_in_place(ruby, v)?;
+                    hash.aset(ruby.to_symbol(s.as_str()), v)?;
+                }
+                Err(_) => {
+                    let v: Value = hash.aref(k)?;
+                    symbolize_keys_in_place(ruby, v)?;
+                }
+            }
         }
         return Ok(());
     }

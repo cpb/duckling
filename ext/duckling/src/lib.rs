@@ -3,9 +3,7 @@ use duckling::{
     Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options, Region, TimePoint,
     TimeValue, parse as duckling_parse,
 };
-use magnus::{
-    Error, RArray, RHash, Ruby, Time as RubyTime, Value, function, prelude::*, scan_args,
-};
+use magnus::{Error, RArray, Ruby, Time as RubyTime, Value, function, prelude::*, scan_args};
 use std::os::raw::c_void;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -503,19 +501,22 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<V
             value.aset(ruby.to_symbol("TimeGrain"), ruby.to_symbol(grain.as_str()))?;
             h.aset(ruby.to_symbol("value"), value)?;
         }
-        // Generic-serialize-then-patch-known-leaves (the pattern issue #91
-        // reuses for Time): serde's output is right except the :grain leaf
-        // inside the tagged payload, which gets the same symbol treatment as
-        // TimeGrain above.
-        DimensionValue::Duration { grain, .. } => {
-            let value = serialize_symbolized(ruby, &entity.value)?;
-            if let Some(tagged) = RHash::from_value(value) {
-                let payload: Value = tagged.aref(ruby.to_symbol("Duration"))?;
-                if let Some(payload_hash) = RHash::from_value(payload) {
-                    payload_hash.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
-                }
-            }
-            h.aset(ruby.to_symbol("value"), value)?;
+        // Duration has exactly three scalar fields, so — like TimeGrain above
+        // — the tagged hash is built directly rather than serialized then
+        // patched: a serialize-then-patch here would silently no-op if the
+        // crate's serde representation of Duration ever changed shape.
+        DimensionValue::Duration {
+            value: count,
+            grain,
+            normalized_seconds,
+        } => {
+            let payload = ruby.hash_new();
+            payload.aset(ruby.to_symbol("value"), *count)?;
+            payload.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+            payload.aset(ruby.to_symbol("normalized_seconds"), *normalized_seconds)?;
+            let tagged = ruby.hash_new();
+            tagged.aset(ruby.to_symbol("Duration"), payload)?;
+            h.aset(ruby.to_symbol("value"), tagged)?;
         }
         other => {
             h.aset(ruby.to_symbol("value"), serialize_symbolized(ruby, other)?)?;
