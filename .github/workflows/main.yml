@@ -13,22 +13,55 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  # Baseline: matches the Claude Code Web sandbox exactly (see #28). This is
+  # the only entry required by branch protection on `main` (context
+  # "Ruby 3.3.6") — keep this job's `name` unchanged, or update branch
+  # protection's required check to match before renaming it. Split into its
+  # own job (rather than folded into the informational matrix below) so the
+  # `informational` job can `needs:` it and get skipped automatically by
+  # GitHub Actions when this fails (see #98).
+  baseline:
+    runs-on: ubuntu-latest
+    name: "Ruby 3.3.6"
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@0dafeac902942906541bc140009cdbf32665b601 # v1.315.0
+        with:
+          ruby-version: '3.3.6'
+          bundler-cache: true
+      - name: Set up Rust
+        # Pinned to match the Claude Code Web sandbox's pre-installed Rust
+        # (see #28) so CI tests the same toolchain an agent can run there
+        # without installing anything extra. Bump the pinned value here when
+        # the sandbox image's Rust version changes (check via
+        # `rustc --version` in a fresh Claude Code Web session).
+        uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable as of 2026-06-30
+        with:
+          toolchain: '1.94.1'
+          components: clippy, rustfmt
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path ext/duckling/Cargo.toml --check
+      - name: Run clippy
+        run: cargo clippy --manifest-path ext/duckling/Cargo.toml -- -D warnings
+      - name: Run the default task
+        run: bundle exec rake
+
+  # Forward-compat signals only — not required to merge (see issue #29).
+  # `needs: baseline` means GitHub Actions automatically skips this job when
+  # `baseline` fails, instead of always running all entries in parallel
+  # regardless of the baseline's outcome (see #98).
+  informational:
+    needs: baseline
     runs-on: ubuntu-latest
     name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Baseline: matches the Claude Code Web sandbox exactly (see #28).
-          # This is the only entry required by branch protection on `main`
-          # (context "Ruby 3.3.6") — keep this `name` unchanged, or update
-          # branch protection's required check to match before renaming it.
-          - name: "Ruby 3.3.6"
-            ruby: '3.3.6'
-            rust: '1.94.1'
-          # Forward-compat signal: newer Ruby ABI, same pinned Rust. Not
-          # required to merge — informational only (see issue #29).
+          # Forward-compat signal: newer Ruby ABI, same pinned Rust.
           - name: "Ruby 3.4 (informational)"
             ruby: '3.4'
             rust: '1.94.1'
@@ -53,10 +86,8 @@ jobs:
         # `rust` is 1.94.1 for every entry except "Rust latest", pinned to
         # match the Claude Code Web sandbox's pre-installed Rust (see #28) so
         # CI tests the same toolchain an agent can run there without
-        # installing anything extra. Bump the pinned value here when the
-        # sandbox image's Rust version changes (check via `rustc --version`
-        # in a fresh Claude Code Web session). The "Rust latest" entry floats
-        # on `stable` deliberately, as a forward-compat signal.
+        # installing anything extra. The "Rust latest" entry floats on
+        # `stable` deliberately, as a forward-compat signal.
         uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable as of 2026-06-30
         with:
           toolchain: ${{ matrix.rust }}
