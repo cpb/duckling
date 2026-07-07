@@ -69,6 +69,18 @@ class DucklingParseTimeBasicTest < Minitest::Test
     assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
+  def test_tomorrow_tagged_naive_shape
+    entity = time_entity_for("tomorrow")
+    naive = entity[:value][:Time][:Single][:value][:Naive]
+    assert_kind_of Time, naive[:value],
+      "Expected entity[:value][:Time][:Single][:value][:Naive][:value] to be a real Ruby Time"
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), naive[:value]
+    assert_equal :day, naive[:grain]
+    values = entity[:value][:Time][:Single][:values]
+    assert_kind_of Array, values
+    refute_empty values
+  end
+
   def test_this_week
     entity = time_entity_for("this week")
     assert_equal :value, entity[:value][:type]
