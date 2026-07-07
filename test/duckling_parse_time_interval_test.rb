@@ -115,6 +115,47 @@ class DucklingParseTimeIntervalTest < Minitest::Test
     assert_equal :hour, to_point[:grain]
   end
 
+  # patch_time_value (ext/duckling/src/lib.rs) walks Interval's `values`
+  # recurrence array and patches each entry's `from`/`to` individually, the
+  # same way it patches the top-level `from`/`to` above — pin that here so a
+  # regression in that walk (entries silently reverting to serde's raw
+  # RFC3339-String/PascalCase-grain placeholders) fails a test instead of
+  # shipping unnoticed.
+  def test_interval_recurrence_values_are_individually_tagged
+    entity = entity_for("from 3pm to 5pm", :time, reference_time: REFERENCE_TIME)
+    interval = entity[:value][:Time][:Interval]
+
+    values = interval[:values]
+    assert_kind_of Array, values
+    refute_empty values
+
+    first = values.first
+    from_point = time_point(first[:from])
+    assert_kind_of Time, from_point[:value], "expected values.first[:from] to be a real Ruby Time, got: #{from_point[:value].inspect}"
+    assert_equal :hour, from_point[:grain]
+
+    to_point = time_point(first[:to])
+    assert_kind_of Time, to_point[:value], "expected values.first[:to] to be a real Ruby Time, got: #{to_point[:value].inspect}"
+    assert_equal :hour, to_point[:grain]
+  end
+
+  # Companion to the recurrence-values test above: pins the current
+  # unbounded-endpoint contract (issue #91) — TimeValue::Interval's `from`/`to`
+  # fields have no `skip_serializing_if`, so the generic serialize-then-patch
+  # path always emits the key, `nil` when the interval is unbounded, unlike
+  # the pre-#91 flattened shape which omitted the key entirely in this case.
+  def test_unbounded_interval_after_3pm_has_explicit_nil_to
+    entity = entity_for("after 3pm", :time, reference_time: REFERENCE_TIME)
+    interval = entity[:value][:Time][:Interval]
+
+    assert interval.key?(:from), "expected :from to be a real bound"
+    from_point = time_point(interval[:from])
+    assert_kind_of Time, from_point[:value]
+
+    assert interval.key?(:to), "expected :to key to be present (even if nil) for an unbounded interval"
+    assert_nil interval[:to], "expected :to to be explicitly nil for an unbounded interval, got: #{interval[:to].inspect}"
+  end
+
   def test_last_night_interval
     entity = entity_for("last night", :time, reference_time: REFERENCE_TIME)
     from, to = interval_points(entity)

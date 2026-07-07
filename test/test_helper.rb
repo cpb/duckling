@@ -34,5 +34,7 @@ end
 # payload regardless of which of the two tags is present, since most
 # call sites don't need to distinguish Naive from Instant.
 def time_point(tagged)
-  tagged[:Naive] || tagged[:Instant]
+  return flunk("expected a :Naive- or :Instant-tagged TimePoint, got: nil") if tagged.nil?
+  tagged[:Naive] || tagged[:Instant] ||
+    flunk("expected a :Naive- or :Instant-tagged TimePoint, got: #{tagged.inspect}")
 end

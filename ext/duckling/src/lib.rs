@@ -118,6 +118,19 @@ fn arg_error(ruby: &Ruby, message: impl Into<String>) -> Error {
     Error::new(ruby.exception_arg_error(), message.into())
 }
 
+/// Shorthand for internal invariant violations in the generic-serialize-then-
+/// patch walk (`patch_time_point`, `patch_time_value`, and `entity_to_ruby`'s
+/// `Time` branch): these only fire if `serde_magnus`'s serialization of
+/// `TimeValue`/`TimePoint` drifts from the typed walk built against it — a
+/// wrapper bug, not anything the caller did wrong. Deliberately
+/// `RuntimeError` (matching `panic_error`'s convention for "shouldn't happen"
+/// cases), not `arg_error`'s `ArgumentError`, so a caller `rescue
+/// ArgumentError`-ing their own bad `locale:`/`dims:` input handling doesn't
+/// inadvertently swallow a real bug here.
+fn internal_error(ruby: &Ruby, message: impl Into<String>) -> Error {
+    Error::new(ruby.exception_runtime_error(), message.into())
+}
+
 /// Payload for the test-only panicking fake below — same "plain owned Rust
 /// data only" rule as `ParsePayload`.
 struct PanicFakePayload {
@@ -439,14 +452,15 @@ fn patch_time_point(
     offset: FixedOffset,
 ) -> Result<(), Error> {
     let outer = RHash::from_value(point)
-        .ok_or_else(|| arg_error(ruby, "expected serialized TimePoint to be a Hash"))?;
+        .ok_or_else(|| internal_error(ruby, "expected serialized TimePoint to be a Hash"))?;
     let tag = match tp {
         TimePoint::Naive { .. } => "Naive",
         TimePoint::Instant { .. } => "Instant",
     };
     let inner: Value = outer.aref(ruby.to_symbol(tag))?;
-    let inner = RHash::from_value(inner)
-        .ok_or_else(|| arg_error(ruby, "expected serialized TimePoint payload to be a Hash"))?;
+    let inner = RHash::from_value(inner).ok_or_else(|| {
+        internal_error(ruby, "expected serialized TimePoint payload to be a Hash")
+    })?;
     match tp {
         TimePoint::Naive { value, grain } => {
             inner.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, value)?)?;
@@ -478,12 +492,12 @@ fn patch_time_value(
     offset: FixedOffset,
 ) -> Result<(), Error> {
     let outer = RHash::from_value(serialized)
-        .ok_or_else(|| arg_error(ruby, "expected serialized TimeValue to be a Hash"))?;
+        .ok_or_else(|| internal_error(ruby, "expected serialized TimeValue to be a Hash"))?;
     match tv {
         TimeValue::Single { value, values, .. } => {
             let inner: Value = outer.aref(ruby.to_symbol("Single"))?;
             let inner = RHash::from_value(inner).ok_or_else(|| {
-                arg_error(ruby, "expected serialized Single payload to be a Hash")
+                internal_error(ruby, "expected serialized Single payload to be a Hash")
             })?;
 
             let point: Value = inner.aref(ruby.to_symbol("value"))?;
@@ -491,7 +505,7 @@ fn patch_time_value(
 
             let vals: Value = inner.aref(ruby.to_symbol("values"))?;
             let vals = RArray::from_value(vals).ok_or_else(|| {
-                arg_error(ruby, "expected serialized Single values to be an Array")
+                internal_error(ruby, "expected serialized Single values to be an Array")
             })?;
             for (i, tp) in values.iter().enumerate() {
                 let entry: Value = vals.entry(i as isize)?;
@@ -503,7 +517,7 @@ fn patch_time_value(
         } => {
             let inner: Value = outer.aref(ruby.to_symbol("Interval"))?;
             let inner = RHash::from_value(inner).ok_or_else(|| {
-                arg_error(ruby, "expected serialized Interval payload to be a Hash")
+                internal_error(ruby, "expected serialized Interval payload to be a Hash")
             })?;
 
             if let Some(tp) = from {
@@ -517,12 +531,12 @@ fn patch_time_value(
 
             let vals: Value = inner.aref(ruby.to_symbol("values"))?;
             let vals = RArray::from_value(vals).ok_or_else(|| {
-                arg_error(ruby, "expected serialized Interval values to be an Array")
+                internal_error(ruby, "expected serialized Interval values to be an Array")
             })?;
             for (i, endpoints) in values.iter().enumerate() {
                 let entry: Value = vals.entry(i as isize)?;
                 let entry = RHash::from_value(entry).ok_or_else(|| {
-                    arg_error(
+                    internal_error(
                         ruby,
                         "expected serialized IntervalEndpoints entry to be a Hash",
                     )
@@ -561,7 +575,7 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<V
             // grains) using the typed `tv` this serialization came from.
             let serialized = serialize_symbolized(ruby, &entity.value)?;
             let outer = RHash::from_value(serialized).ok_or_else(|| {
-                arg_error(ruby, "expected serialized DimensionValue to be a Hash")
+                internal_error(ruby, "expected serialized DimensionValue to be a Hash")
             })?;
             let time_payload: Value = outer.aref(ruby.to_symbol("Time"))?;
             patch_time_value(ruby, time_payload, tv, offset)?;
