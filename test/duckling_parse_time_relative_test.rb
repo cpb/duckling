@@ -102,4 +102,42 @@ class DucklingParseTimeRelativeTest < Minitest::Test
     assert_equal Time.new(2013, 2, 19, 0, 0, 0, "-02:00"), entity[:value][:value]
     assert_equal(-7200, entity[:value][:value].utc_offset)
   end
+
+  # Issue #91: migrate :time onto the unified serde_magnus tagged shape
+  # established for the other 13 dimensions in #90. "christmas" is the
+  # representative case for two pieces of Time-specific behavior that shape
+  # migration must preserve and correctly re-tag:
+  #
+  # 1. Holiday recognition: duckling resolves "christmas" with
+  #    `holiday: Some("Christmas")` on the Rust side. Under #90's convention,
+  #    `Option::Some` fields keep their serde `rename`d key (`holidayBeta`)
+  #    symbolized, holding the plain String unchanged — unlike `quantity`'s
+  #    `product:`, which #90 documented as an *explicit* nil key when absent;
+  #    `holiday`'s `skip_serializing_if` means it must be entirely ABSENT
+  #    (not nil) when not present, though that absent case isn't covered here.
+  # 2. Recurrence: duckling returns up to 3 upcoming occurrences in `values`
+  #    (including the primary as element 0). Each element of that array must
+  #    be individually tagged the same way the top-level `value` is
+  #    (`{Naive: {value:, grain:}}` / `{Instant: {value:, grain:}}`) — the
+  #    tagging convention applies uniformly to every nested `TimePoint`, not
+  #    just the top-level one.
+  def test_christmas_holiday_and_recurrence
+    entity = time_entity("christmas")
+
+    single = entity[:value][:Time][:Single]
+
+    assert_equal "Christmas", single[:holidayBeta]
+
+    primary = single[:value][:Naive]
+    refute_nil primary, "Expected the primary time point to be tagged :Naive, got: #{single[:value].inspect}"
+    assert_kind_of Time, primary[:value]
+    assert_equal 2013, primary[:value].year
+    assert_equal 12, primary[:value].month
+    assert_equal 25, primary[:value].day
+
+    assert_kind_of Array, single[:values]
+    refute_empty single[:values]
+    assert single[:values].first.key?(:Naive),
+      "Expected each recurrence entry to be individually tagged (e.g. :Naive), got: #{single[:values].first.inspect}"
+  end
 end
