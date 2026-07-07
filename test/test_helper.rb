@@ -25,3 +25,14 @@ def entity_for(text, dim, reference_time: nil)
   refute_nil entity, "expected a #{dim.inspect} entity for #{text.inspect}, got: #{results.inspect}"
   entity
 end
+
+# Issue #91: `:time`'s `:value` uses the same unified externally-tagged shape
+# as the other 13 dimensions (#90) — every `TimePoint` (a `Single` result's
+# primary `value`/each `values` entry, or an `Interval`'s `from`/`to`) is
+# individually tagged `{Naive: {value:, grain:}}` or `{Instant: {value:, grain:}}`.
+# This unwraps one tagged `TimePoint` hash down to its plain `{value:, grain:}`
+# payload regardless of which of the two tags is present, since most
+# call sites don't need to distinguish Naive from Instant.
+def time_point(tagged)
+  tagged[:Naive] || tagged[:Instant]
+end
