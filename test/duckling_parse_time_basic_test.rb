@@ -25,6 +25,29 @@ class DucklingParseTimeBasicTest < Minitest::Test
     assert_equal(-7200, entity[:value][:value].utc_offset)
   end
 
+  # Pins the post-#90 tagged shape for :time's Single/Instant case (issue #91).
+  # The critical assertion is the explicit `is_a?(Time)` check on the datetime
+  # leaf: a generic serde_magnus serialization of DateTime<FixedOffset> would
+  # produce a plain Ruby String there, and a bare `assert_equal` against a
+  # Time literal would NOT catch that regression (String#== against a
+  # stringified Time could coincidentally match), so this test must assert
+  # the type explicitly rather than relying on equality alone.
+  def test_now_value_is_tagged_instant_shape_with_real_time
+    entity = time_entity_for("now")
+    single = entity[:value][:Time][:Single]
+
+    instant_value = single[:value][:Instant][:value]
+    assert_kind_of Time, instant_value, "Expected the Instant leaf's :value to be a real Ruby Time, not a serialized String"
+    assert_equal REFERENCE_TIME, instant_value
+    assert_equal(-7200, instant_value.utc_offset)
+
+    assert_equal :second, single[:value][:Instant][:grain]
+
+    refute_empty single[:values]
+    first_value = single[:values].first[:Instant][:value]
+    assert_kind_of Time, first_value
+  end
+
   def test_today
     entity = time_entity_for("today")
     assert_equal :value, entity[:value][:type]
