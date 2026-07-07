@@ -3,7 +3,9 @@ use duckling::{
     Context, DimensionKind, DimensionValue, Entity, Lang, Locale, Options, Region, TimePoint,
     TimeValue, parse as duckling_parse,
 };
-use magnus::{Error, RArray, Ruby, Time as RubyTime, Value, function, prelude::*, scan_args};
+use magnus::{
+    Error, RArray, RHash, Ruby, Time as RubyTime, Value, function, prelude::*, scan_args,
+};
 use std::os::raw::c_void;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -421,57 +423,122 @@ fn resolve_naive(
         .ok_or_else(|| arg_error(ruby, "invalid or ambiguous naive time for reference offset"))
 }
 
-fn time_point_to_ruby(ruby: &Ruby, tp: &TimePoint, offset: FixedOffset) -> Result<Value, Error> {
-    let h = ruby.hash_new();
-    h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
+/// Patches a single generically-serialized `TimePoint` leaf in place: `point`
+/// is the externally-tagged one-key Hash `serde_magnus` produced for it
+/// (`{Naive: {value:, grain:}}` or `{Instant: {value:, grain:}}`), still
+/// holding serde's placeholder String datetime and raw PascalCase grain. `tp`
+/// is the typed Rust value the serialization came from, giving us everything
+/// needed to overwrite both leaves with the real thing: a genuine Magnus
+/// `Time` (running `resolve_naive`'s reference-offset resolution for
+/// `Naive`, direct `IntoValue` for `Instant`) and `Grain::as_str()`'s
+/// lowercase-snake_case symbol.
+fn patch_time_point(
+    ruby: &Ruby,
+    point: Value,
+    tp: &TimePoint,
+    offset: FixedOffset,
+) -> Result<(), Error> {
+    let outer = RHash::from_value(point)
+        .ok_or_else(|| arg_error(ruby, "expected serialized TimePoint to be a Hash"))?;
+    let tag = match tp {
+        TimePoint::Naive { .. } => "Naive",
+        TimePoint::Instant { .. } => "Instant",
+    };
+    let inner: Value = outer.aref(ruby.to_symbol(tag))?;
+    let inner = RHash::from_value(inner)
+        .ok_or_else(|| arg_error(ruby, "expected serialized TimePoint payload to be a Hash"))?;
     match tp {
         TimePoint::Naive { value, grain } => {
-            h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, value)?)?;
-            h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+            inner.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, value)?)?;
+            inner.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
         }
         TimePoint::Instant { value, grain } => {
-            h.aset(ruby.to_symbol("value"), *value)?;
-            h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+            inner.aset(ruby.to_symbol("value"), *value)?;
+            inner.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
         }
     }
-    Ok(h.as_value())
+    Ok(())
 }
 
-fn time_value_to_ruby(ruby: &Ruby, tv: &TimeValue, offset: FixedOffset) -> Result<Value, Error> {
-    let h = ruby.hash_new();
+/// Patches every datetime/grain leaf reachable from a generically-serialized
+/// `TimeValue` (`serialized` is the `{Single: {...}}` / `{Interval: {...}}`
+/// payload, i.e. `entity.value`'s serialization with the outer `Time` tag
+/// already unwrapped) using the typed `tv` this serialization came from to
+/// walk to exactly the same positions `serde_magnus` placed them at: the
+/// `Single` case's primary `value` plus every `values` recurrence entry, or
+/// the `Interval` case's `from`/`to` plus every `values` recurrence entry's
+/// own `from`/`to`. Every other field `serde_magnus` produced (`values`
+/// array framing, `holidayBeta`) is left untouched — this only overwrites
+/// the known problem leaves, per issue #91's "generic-serialize-then-patch"
+/// design.
+fn patch_time_value(
+    ruby: &Ruby,
+    serialized: Value,
+    tv: &TimeValue,
+    offset: FixedOffset,
+) -> Result<(), Error> {
+    let outer = RHash::from_value(serialized)
+        .ok_or_else(|| arg_error(ruby, "expected serialized TimeValue to be a Hash"))?;
     match tv {
         TimeValue::Single { value, values, .. } => {
-            h.aset(ruby.to_symbol("type"), ruby.to_symbol("value"))?;
-            match value {
-                TimePoint::Naive { value: dt, grain } => {
-                    h.aset(ruby.to_symbol("value"), resolve_naive(ruby, offset, dt)?)?;
-                    h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
-                }
-                TimePoint::Instant { value: dt, grain } => {
-                    h.aset(ruby.to_symbol("value"), *dt)?;
-                    h.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
-                }
+            let inner: Value = outer.aref(ruby.to_symbol("Single"))?;
+            let inner = RHash::from_value(inner).ok_or_else(|| {
+                arg_error(ruby, "expected serialized Single payload to be a Hash")
+            })?;
+
+            let point: Value = inner.aref(ruby.to_symbol("value"))?;
+            patch_time_point(ruby, point, value, offset)?;
+
+            let vals: Value = inner.aref(ruby.to_symbol("values"))?;
+            let vals = RArray::from_value(vals).ok_or_else(|| {
+                arg_error(ruby, "expected serialized Single values to be an Array")
+            })?;
+            for (i, tp) in values.iter().enumerate() {
+                let entry: Value = vals.entry(i as isize)?;
+                patch_time_point(ruby, entry, tp, offset)?;
             }
-            let vals = ruby.ary_new();
-            for tp in values {
-                vals.push(time_point_to_ruby(ruby, tp, offset)?)?;
-            }
-            h.aset(ruby.to_symbol("values"), vals)?;
         }
-        TimeValue::Interval { from, to, .. } => {
-            h.aset(ruby.to_symbol("type"), ruby.to_symbol("interval"))?;
+        TimeValue::Interval {
+            from, to, values, ..
+        } => {
+            let inner: Value = outer.aref(ruby.to_symbol("Interval"))?;
+            let inner = RHash::from_value(inner).ok_or_else(|| {
+                arg_error(ruby, "expected serialized Interval payload to be a Hash")
+            })?;
+
             if let Some(tp) = from {
-                h.aset(
-                    ruby.to_symbol("from"),
-                    time_point_to_ruby(ruby, tp, offset)?,
-                )?;
+                let point: Value = inner.aref(ruby.to_symbol("from"))?;
+                patch_time_point(ruby, point, tp, offset)?;
             }
             if let Some(tp) = to {
-                h.aset(ruby.to_symbol("to"), time_point_to_ruby(ruby, tp, offset)?)?;
+                let point: Value = inner.aref(ruby.to_symbol("to"))?;
+                patch_time_point(ruby, point, tp, offset)?;
+            }
+
+            let vals: Value = inner.aref(ruby.to_symbol("values"))?;
+            let vals = RArray::from_value(vals).ok_or_else(|| {
+                arg_error(ruby, "expected serialized Interval values to be an Array")
+            })?;
+            for (i, endpoints) in values.iter().enumerate() {
+                let entry: Value = vals.entry(i as isize)?;
+                let entry = RHash::from_value(entry).ok_or_else(|| {
+                    arg_error(
+                        ruby,
+                        "expected serialized IntervalEndpoints entry to be a Hash",
+                    )
+                })?;
+                if let Some(tp) = &endpoints.from {
+                    let point: Value = entry.aref(ruby.to_symbol("from"))?;
+                    patch_time_point(ruby, point, tp, offset)?;
+                }
+                if let Some(tp) = &endpoints.to {
+                    let point: Value = entry.aref(ruby.to_symbol("to"))?;
+                    patch_time_point(ruby, point, tp, offset)?;
+                }
             }
         }
     }
-    Ok(h.as_value())
+    Ok(())
 }
 
 fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<Value, Error> {
@@ -486,10 +553,19 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<V
     }
     match &entity.value {
         DimensionValue::Time(tv) => {
-            h.aset(
-                ruby.to_symbol("value"),
-                time_value_to_ruby(ruby, tv, offset)?,
-            )?;
+            // Generic serialize-then-patch (issue #91), same convention #90
+            // uses for the other 13 dimensions: serde_magnus gives us the
+            // structural shape (`Single`/`Interval` discrimination, `values`,
+            // `holidayBeta`) for free; `patch_time_value` then overwrites the
+            // known-problem leaves (datetime placeholders, raw-PascalCase
+            // grains) using the typed `tv` this serialization came from.
+            let serialized = serialize_symbolized(ruby, &entity.value)?;
+            let outer = RHash::from_value(serialized).ok_or_else(|| {
+                arg_error(ruby, "expected serialized DimensionValue to be a Hash")
+            })?;
+            let time_payload: Value = outer.aref(ruby.to_symbol("Time"))?;
+            patch_time_value(ruby, time_payload, tv, offset)?;
+            h.aset(ruby.to_symbol("value"), serialized)?;
         }
         // `Grain` serde-serializes as PascalCase variant names ("Second",
         // "NoGrain"); the shipped convention is `Grain::as_str()` symbols
