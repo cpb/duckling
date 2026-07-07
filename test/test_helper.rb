@@ -15,9 +15,12 @@ require "minitest/autorun"
 REFERENCE_TIME = Time.new(2013, 2, 12, 4, 30, 0, "-02:00")
 
 # Parses `text` for `dim` and returns the first matching entity, failing the
-# calling test if none is found.
-def entity_for(text, dim)
-  results = Duckling.parse(text, locale: "en", dims: [dim])
+# calling test if none is found. `reference_time:` is threaded through for
+# dims (like :time) whose resolution depends on an anchor moment.
+def entity_for(text, dim, reference_time: nil)
+  parse_kwargs = {locale: "en", dims: [dim.to_s]}
+  parse_kwargs[:reference_time] = reference_time if reference_time
+  results = Duckling.parse(text, **parse_kwargs)
   entity = results.find { |r| r[:dim] == dim.to_sym }
   refute_nil entity, "expected a #{dim.inspect} entity for #{text.inspect}, got: #{results.inspect}"
   entity

@@ -6,15 +6,8 @@ require "test_helper"
 # wafer-inc-duckling / pyduckling en time corpus: now, today, yesterday,
 # tomorrow, and this/next/last week, month, and year.
 class DucklingParseTimeBasicTest < Minitest::Test
-  def time_entity_for(text)
-    results = Duckling.parse(text, locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time }
-    refute_nil entity, "Expected a :time dimension result for #{text.inspect}, got: #{results.inspect}"
-    entity
-  end
-
   def test_now
-    entity = time_entity_for("now")
+    entity = entity_for("now", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
     assert_equal REFERENCE_TIME, entity[:value][:value]
@@ -33,7 +26,7 @@ class DucklingParseTimeBasicTest < Minitest::Test
   # stringified Time could coincidentally match), so this test must assert
   # the type explicitly rather than relying on equality alone.
   def test_now_value_is_tagged_instant_shape_with_real_time
-    entity = time_entity_for("now")
+    entity = entity_for("now", :time, reference_time: REFERENCE_TIME)
     single = entity[:value][:Time][:Single]
 
     instant_value = single[:value][:Instant][:value]
@@ -49,28 +42,28 @@ class DucklingParseTimeBasicTest < Minitest::Test
   end
 
   def test_today
-    entity = time_entity_for("today")
+    entity = entity_for("today", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
     assert_equal Time.new(2013, 2, 12, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_yesterday
-    entity = time_entity_for("yesterday")
+    entity = entity_for("yesterday", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
     assert_equal Time.new(2013, 2, 11, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_tomorrow
-    entity = time_entity_for("tomorrow")
+    entity = entity_for("tomorrow", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
     assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_tomorrow_tagged_naive_shape
-    entity = time_entity_for("tomorrow")
+    entity = entity_for("tomorrow", :time, reference_time: REFERENCE_TIME)
     naive = entity[:value][:Time][:Single][:value][:Naive]
     assert_kind_of Time, naive[:value],
       "Expected entity[:value][:Time][:Single][:value][:Naive][:value] to be a real Ruby Time"
@@ -82,7 +75,7 @@ class DucklingParseTimeBasicTest < Minitest::Test
   end
 
   def test_this_week
-    entity = time_entity_for("this week")
+    entity = entity_for("this week", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :week, entity[:value][:grain]
     # Week containing 2013-02-12 (Tuesday) starts Monday 2013-02-11.
@@ -90,56 +83,56 @@ class DucklingParseTimeBasicTest < Minitest::Test
   end
 
   def test_next_week
-    entity = time_entity_for("next week")
+    entity = entity_for("next week", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :week, entity[:value][:grain]
     assert_equal Time.new(2013, 2, 18, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_last_week
-    entity = time_entity_for("last week")
+    entity = entity_for("last week", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :week, entity[:value][:grain]
     assert_equal Time.new(2013, 2, 4, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_this_month
-    entity = time_entity_for("this month")
+    entity = entity_for("this month", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :month, entity[:value][:grain]
     assert_equal Time.new(2013, 2, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_next_month
-    entity = time_entity_for("next month")
+    entity = entity_for("next month", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :month, entity[:value][:grain]
     assert_equal Time.new(2013, 3, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_last_month
-    entity = time_entity_for("last month")
+    entity = entity_for("last month", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :month, entity[:value][:grain]
     assert_equal Time.new(2013, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_this_year
-    entity = time_entity_for("this year")
+    entity = entity_for("this year", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :year, entity[:value][:grain]
     assert_equal Time.new(2013, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_next_year
-    entity = time_entity_for("next year")
+    entity = entity_for("next year", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :year, entity[:value][:grain]
     assert_equal Time.new(2014, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
   end
 
   def test_last_year
-    entity = time_entity_for("last year")
+    entity = entity_for("last year", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :year, entity[:value][:grain]
     assert_equal Time.new(2012, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]

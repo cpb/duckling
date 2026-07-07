@@ -17,15 +17,8 @@ require "test_helper"
 # friends) — each test below asserts `.utc_offset` explicitly in addition to
 # the resolved `Time`, since `Time#==` only compares the instant.
 class DucklingParseTimeRelativeTest < Minitest::Test
-  def time_entity(text)
-    results = Duckling.parse(text, locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time }
-    refute_nil entity, "Expected a :time dimension result for #{text.inspect}, got: #{results.inspect}"
-    entity
-  end
-
   def test_in_a_minute
-    entity = time_entity("in a minute")
+    entity = entity_for("in a minute", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
     assert_equal REFERENCE_TIME + 60, entity[:value][:value]
@@ -33,7 +26,7 @@ class DucklingParseTimeRelativeTest < Minitest::Test
   end
 
   def test_in_2_minutes
-    entity = time_entity("in 2 minutes")
+    entity = entity_for("in 2 minutes", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
     assert_equal REFERENCE_TIME + 120, entity[:value][:value]
@@ -41,7 +34,7 @@ class DucklingParseTimeRelativeTest < Minitest::Test
   end
 
   def test_2_minutes_from_now
-    entity = time_entity("2 minutes from now")
+    entity = entity_for("2 minutes from now", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
     assert_equal REFERENCE_TIME + 120, entity[:value][:value]
@@ -49,7 +42,7 @@ class DucklingParseTimeRelativeTest < Minitest::Test
   end
 
   def test_in_half_an_hour
-    entity = time_entity("in half an hour")
+    entity = entity_for("in half an hour", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :second, entity[:value][:grain]
     assert_equal REFERENCE_TIME + 1800, entity[:value][:value]
@@ -57,7 +50,7 @@ class DucklingParseTimeRelativeTest < Minitest::Test
   end
 
   def test_in_one_hour
-    entity = time_entity("in one hour")
+    entity = entity_for("in one hour", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     # Per wafer-inc-duckling's own tests/time_corpus.rs (test_time_in_one_hour),
     # "in one hour" resolves at :minute grain, not :second like the shorter
@@ -68,7 +61,7 @@ class DucklingParseTimeRelativeTest < Minitest::Test
   end
 
   def test_in_1h
-    entity = time_entity("in 1h")
+    entity = entity_for("in 1h", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :minute, entity[:value][:grain]
     assert_equal REFERENCE_TIME + 3600, entity[:value][:value]
@@ -76,7 +69,7 @@ class DucklingParseTimeRelativeTest < Minitest::Test
   end
 
   def test_7_days_ago
-    entity = time_entity("7 days ago")
+    entity = entity_for("7 days ago", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     # Per wafer-inc-duckling's own tests/time_corpus.rs (test_time_7_days_ago),
     # a bare day-count offset ("N days ago") resolves at :hour grain, floored
@@ -88,7 +81,7 @@ class DucklingParseTimeRelativeTest < Minitest::Test
   end
 
   def test_a_week_ago
-    entity = time_entity("a week ago")
+    entity = entity_for("a week ago", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
     assert_equal Time.new(2013, 2, 5, 0, 0, 0, "-02:00"), entity[:value][:value]
@@ -96,7 +89,7 @@ class DucklingParseTimeRelativeTest < Minitest::Test
   end
 
   def test_in_1_week
-    entity = time_entity("in 1 week")
+    entity = entity_for("in 1 week", :time, reference_time: REFERENCE_TIME)
     assert_equal :value, entity[:value][:type]
     assert_equal :day, entity[:value][:grain]
     assert_equal Time.new(2013, 2, 19, 0, 0, 0, "-02:00"), entity[:value][:value]
@@ -122,7 +115,7 @@ class DucklingParseTimeRelativeTest < Minitest::Test
   #    tagging convention applies uniformly to every nested `TimePoint`, not
   #    just the top-level one.
   def test_christmas_holiday_and_recurrence
-    entity = time_entity("christmas")
+    entity = entity_for("christmas", :time, reference_time: REFERENCE_TIME)
 
     single = entity[:value][:Time][:Single]
 

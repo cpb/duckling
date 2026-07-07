@@ -9,9 +9,7 @@ require "test_helper"
 # not just that *an* entity was found.
 class DucklingParseTimeIntervalTest < Minitest::Test
   def test_hour_interval_3_4pm
-    results = Duckling.parse("3-4pm", locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time && r[:value][:type] == :interval }
-    refute_nil entity, "expected an interval :time entity for '3-4pm'"
+    entity = entity_for("3-4pm", :time, reference_time: REFERENCE_TIME)
 
     value = entity[:value]
     assert_equal :value, value[:from][:type]
@@ -26,9 +24,7 @@ class DucklingParseTimeIntervalTest < Minitest::Test
   end
 
   def test_minute_grain_interval_3_30_to_6pm
-    results = Duckling.parse("3:30 to 6 PM", locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time && r[:value][:type] == :interval }
-    refute_nil entity, "expected an interval :time entity for '3:30 to 6 PM'"
+    entity = entity_for("3:30 to 6 PM", :time, reference_time: REFERENCE_TIME)
 
     value = entity[:value]
     assert_equal :value, value[:from][:type]
@@ -46,9 +42,7 @@ class DucklingParseTimeIntervalTest < Minitest::Test
   end
 
   def test_date_range_july_13_15
-    results = Duckling.parse("July 13-15", locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time && r[:value][:type] == :interval }
-    refute_nil entity, "expected an interval :time entity for 'July 13-15'"
+    entity = entity_for("July 13-15", :time, reference_time: REFERENCE_TIME)
 
     value = entity[:value]
     assert_equal :value, value[:from][:type]
@@ -63,9 +57,7 @@ class DucklingParseTimeIntervalTest < Minitest::Test
   end
 
   def test_last_2_days
-    results = Duckling.parse("last 2 days", locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time && r[:value][:type] == :interval }
-    refute_nil entity, "expected an interval :time entity for 'last 2 days'"
+    entity = entity_for("last 2 days", :time, reference_time: REFERENCE_TIME)
 
     value = entity[:value]
     assert_equal :day, value[:from][:grain]
@@ -77,9 +69,7 @@ class DucklingParseTimeIntervalTest < Minitest::Test
   end
 
   def test_next_3_days
-    results = Duckling.parse("next 3 days", locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time && r[:value][:type] == :interval }
-    refute_nil entity, "expected an interval :time entity for 'next 3 days'"
+    entity = entity_for("next 3 days", :time, reference_time: REFERENCE_TIME)
 
     value = entity[:value]
     assert_equal :day, value[:from][:grain]
@@ -91,9 +81,7 @@ class DucklingParseTimeIntervalTest < Minitest::Test
   end
 
   def test_tonight_interval
-    results = Duckling.parse("tonight", locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time && r[:value][:type] == :interval }
-    refute_nil entity, "expected an interval :time entity for 'tonight'"
+    entity = entity_for("tonight", :time, reference_time: REFERENCE_TIME)
 
     value = entity[:value]
     assert_equal :hour, value[:from][:grain]
@@ -103,9 +91,7 @@ class DucklingParseTimeIntervalTest < Minitest::Test
   end
 
   def test_interval_tagged_shape_3pm_to_5pm
-    results = Duckling.parse("from 3pm to 5pm", locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time }
-    refute_nil entity, "expected a :time entity for 'from 3pm to 5pm'"
+    entity = entity_for("from 3pm to 5pm", :time, reference_time: REFERENCE_TIME)
 
     value = entity[:value]
     assert value.key?(:Time), "expected value to be tagged with :Time, got: #{value.inspect}"
@@ -127,9 +113,7 @@ class DucklingParseTimeIntervalTest < Minitest::Test
   end
 
   def test_last_night_interval
-    results = Duckling.parse("last night", locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time && r[:value][:type] == :interval }
-    refute_nil entity, "expected an interval :time entity for 'last night'"
+    entity = entity_for("last night", :time, reference_time: REFERENCE_TIME)
 
     value = entity[:value]
     assert_equal :hour, value[:from][:grain]
