@@ -102,6 +102,30 @@ class DucklingParseTimeIntervalTest < Minitest::Test
     assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), value[:to][:value]
   end
 
+  def test_interval_tagged_shape_3pm_to_5pm
+    results = Duckling.parse("from 3pm to 5pm", locale: "en", reference_time: REFERENCE_TIME)
+    entity = results.find { |r| r[:dim] == :time }
+    refute_nil entity, "expected a :time entity for 'from 3pm to 5pm'"
+
+    value = entity[:value]
+    assert value.key?(:Time), "expected value to be tagged with :Time, got: #{value.inspect}"
+    time_value = value[:Time]
+    assert time_value.key?(:Interval), "expected :Time value to be tagged :Interval, got: #{time_value.inspect}"
+    refute time_value.key?(:Single), "expected :Time value NOT to be tagged :Single for an interval expression"
+
+    interval = time_value[:Interval]
+
+    from_point = interval[:from][:Naive]
+    assert_kind_of Time, from_point[:value], "expected :from value to be a real Ruby Time, got: #{from_point[:value].inspect}"
+    assert_equal Time.new(2013, 2, 12, 15, 0, 0, "-02:00"), from_point[:value]
+    assert_equal :hour, from_point[:grain]
+
+    to_point = interval[:to][:Naive]
+    assert_kind_of Time, to_point[:value], "expected :to value to be a real Ruby Time, got: #{to_point[:value].inspect}"
+    assert_equal Time.new(2013, 2, 12, 18, 0, 0, "-02:00"), to_point[:value]
+    assert_equal :hour, to_point[:grain]
+  end
+
   def test_last_night_interval
     results = Duckling.parse("last night", locale: "en", reference_time: REFERENCE_TIME)
     entity = results.find { |r| r[:dim] == :time && r[:value][:type] == :interval }
