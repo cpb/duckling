@@ -10,7 +10,7 @@ use std::os::raw::c_void;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 mod ruby_value;
-use ruby_value::serialize_unwrapped;
+use ruby_value::serialize_symbolized;
 
 // `Duckling::Native` holds the raw Magnus-defined entrypoint; `Duckling.parse`
 // itself is a thin Ruby-level wrapper (see lib/duckling.rb) that dispatches
@@ -496,23 +496,29 @@ fn entity_to_ruby(ruby: &Ruby, entity: &Entity, offset: FixedOffset) -> Result<V
         // `Grain` serde-serializes as PascalCase variant names ("Second",
         // "NoGrain"); the shipped convention is `Grain::as_str()` symbols
         // (:second, :no_grain) — see time_point_to_ruby. For TimeGrain the
-        // grain *is* the whole payload, so substituting the symbol replaces
-        // the generic serialization entirely.
+        // grain *is* the whole tagged payload, so the hash is built directly
+        // rather than serialized-then-patched.
         DimensionValue::TimeGrain(grain) => {
-            h.aset(ruby.to_symbol("value"), ruby.to_symbol(grain.as_str()))?;
+            let value = ruby.hash_new();
+            value.aset(ruby.to_symbol("TimeGrain"), ruby.to_symbol(grain.as_str()))?;
+            h.aset(ruby.to_symbol("value"), value)?;
         }
         // Generic-serialize-then-patch-known-leaves (the pattern issue #91
-        // reuses for Time): serde's output is right except the :grain leaf,
-        // which gets the same symbol treatment as TimeGrain above.
+        // reuses for Time): serde's output is right except the :grain leaf
+        // inside the tagged payload, which gets the same symbol treatment as
+        // TimeGrain above.
         DimensionValue::Duration { grain, .. } => {
-            let value = serialize_unwrapped(ruby, &entity.value)?;
-            if let Some(value_hash) = RHash::from_value(value) {
-                value_hash.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+            let value = serialize_symbolized(ruby, &entity.value)?;
+            if let Some(tagged) = RHash::from_value(value) {
+                let payload: Value = tagged.aref(ruby.to_symbol("Duration"))?;
+                if let Some(payload_hash) = RHash::from_value(payload) {
+                    payload_hash.aset(ruby.to_symbol("grain"), ruby.to_symbol(grain.as_str()))?;
+                }
             }
             h.aset(ruby.to_symbol("value"), value)?;
         }
         other => {
-            h.aset(ruby.to_symbol("value"), serialize_unwrapped(ruby, other)?)?;
+            h.aset(ruby.to_symbol("value"), serialize_symbolized(ruby, other)?)?;
         }
     }
     Ok(h.as_value())

@@ -55,42 +55,23 @@ pub fn symbolize_keys_in_place(ruby: &Ruby, value: Value) -> Result<(), Error> {
     Ok(())
 }
 
-/// Serializes `input` via `serde_magnus`, strips serde's externally-tagged
-/// single-key wrapper (e.g. `{"Numeral" => 42.0}` → `42.0`,
-/// `{"Url" => {"value" => ..., "domain" => ...}}` → symbol-keyed inner Hash),
-/// and symbolizes every Hash key in the returned payload. The discarded tag
-/// is redundant with the entity-level `:dim` key, which is computed
-/// independently via `DimensionValue::dim_kind()`.
+/// Serializes `input` via `serde_magnus` and symbolizes every Hash key in
+/// the result, preserving serde's externally-tagged representation verbatim
+/// (e.g. `{Numeral: 42.0}`, `{Url: {value:, domain:}}`,
+/// `{Temperature: {Value: {value:, unit:}}}`). The PascalCase tag key is
+/// kept uniformly across every enum layer — the outer `DimensionValue` tag
+/// and nested tags like `MeasurementValue`'s `Value`/`Interval` get the same
+/// treatment, so consumers see one consistent tagged shape rather than a
+/// mix of unwrapped and tagged layers.
 ///
-/// If the serialized value is not a single-key Hash (unreachable for every
-/// externally-tagged enum duckling 0.4.0 serializes today; reachable only if
-/// a future crate version changes its serde representation), this does not
-/// raise: the whole value is symbolized and returned verbatim. A shape drift
-/// shouldn't turn an otherwise-successful parse into an exception, and the
-/// raw tagged shape is strictly more debuggable than a lost result — the
-/// per-dimension tests pin the expected shapes and will catch such drift at
-/// upgrade time.
-///
-/// GC safety: every intermediate `Value` (`serialized`, the `[key, value]`
-/// pair, `payload`) lives in a stack-scanned local, and nothing is deleted
-/// from the outer hash before the payload is returned — see
-/// `symbolize_keys_in_place`'s note for why heap-held `Vec<Value>`s are the
-/// thing to avoid.
-pub fn serialize_unwrapped<T>(ruby: &Ruby, input: &T) -> Result<Value, Error>
+/// GC safety: the serialized `Value` lives in a stack-scanned local for the
+/// duration of this function — see `symbolize_keys_in_place`'s note for why
+/// heap-held `Vec<Value>`s are the thing to avoid.
+pub fn serialize_symbolized<T>(ruby: &Ruby, input: &T) -> Result<Value, Error>
 where
     T: serde::Serialize + ?Sized,
 {
     let serialized: Value = serde_magnus::serialize(ruby, input)?;
-
-    if let Some(hash) = RHash::from_value(serialized)
-        && hash.len() == 1
-    {
-        let pair: RArray = hash.funcall("first", ())?;
-        let payload: Value = pair.entry(1)?;
-        symbolize_keys_in_place(ruby, payload)?;
-        return Ok(payload);
-    }
-
     symbolize_keys_in_place(ruby, serialized)?;
     Ok(serialized)
 }
