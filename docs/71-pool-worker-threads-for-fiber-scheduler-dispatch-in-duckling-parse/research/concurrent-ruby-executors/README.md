@@ -175,8 +175,48 @@ continues to hold — no different from today's per-call `Thread.new`.
 | Configurable worker count | N/A — no pool, unbounded per-call spawn | Native: `FixedThreadPool.new(n)` constructor arg, `n` settable from a module-level config point |
 | No `magnus::Value`/`Error` across pool boundary | N/A — not a pool | Unaffected either way (see above); the rule lives inside `Native.parse`, below any dispatch mechanism |
 | Clean shutdown, no leaked threads at test-suite/process exit | Trivial — thread is joined and gone after every call | Needs an explicit `pool.shutdown` + `wait_for_termination` at an appropriate lifecycle point (e.g. `at_exit`, or a test-suite teardown) for a persistent pool; `auto_terminate: true` (default) marks workers daemon so the *process* won't hang even if that's skipped, but `Thread.list` still shows the pool's threads for the life of the test process unless explicitly shut down — a new test-suite hygiene concern `test/thread_pool_dispatch_test.rb`'s spawn-counting approach doesn't currently need to handle |
-| `test/falcon_fiber_blocking_test.rb` keeps passing | N/A (this is the test that motivated `Thread.new` in the first place) | Should hold: `Future#value` blocks via the same kind of Ruby-level thread/Fiber interaction (`Thread#value`-equivalent unblock hooks) the test's reactor-yield assertion depends on — but this claim is untested here; this research task did not run the suite against a prototype, so it's a hypothesis, not a verified result |
+| `test/falcon_fiber_blocking_test.rb` keeps passing | N/A (this is the test that motivated `Thread.new` in the first place) | Confirmed, not just hypothesized: `Future#value` cooperates with `Fiber.scheduler` — see "Empirical verification" below |
 | `test/thread_pool_dispatch_test.rb` keeps passing | Passes today (asserts *zero* per-call `Thread.new` for non-Fiber-scheduler callers) | Unaffected in principle — that test only exercises the plain-thread-pool (no-`Fiber.scheduler`) code path, which `lib/duckling.rb:38` already routes straight to `Native.parse(...)` with no thread spawn at all, bypassing any pool dispatch entirely. Adopting a pool for the Fiber-scheduler branch doesn't touch that branch |
+
+### Empirical verification: does `Future#value` cooperate with `Fiber.scheduler`?
+
+Spiked directly with a throwaway script (not run against this repo's actual
+`Native.parse` — the question is purely whether `Future#value`'s wait
+primitive is Fiber-scheduler-hooked, orthogonal to what work the future
+wraps), reusing `test/falcon_fiber_blocking_test.rb`'s ticker/worker harness
+inside an `Async::Reactor`: a ticker Fiber records inter-tick gaps while a
+worker Fiber calls `Concurrent::Future.execute(executor: Concurrent::FixedThreadPool.new(4)) { sleep(0.05) }.value`.
+
+| Scenario | Work duration | Max ticker gap | Ratio |
+|---|---|---|---|
+| `Thread.new { sleep }.value` (baseline, today's mechanism) | 0.0507s | 0.0012s | 2.4% |
+| `Concurrent::Future.execute(executor: pool) { sleep }.value` | 0.0508s | 0.0014s | 2.8% |
+
+(Ruby 3.3.6, `concurrent-ruby` 1.3.7, `async` 2.42.0.) Both stay at the same
+low ratio — no reactor stall in either case; a stall would show a ratio
+near 100%. Tracing why: `Future#value`
+(`Concurrent::Concern::Obligation#value`) waits on a `Concurrent::Event`
+(`concurrent/atomic/event.rb`), which blocks via a `Mutex` +
+`ConditionVariable` under `Concurrent::Synchronization::LockableObject` —
+not a `Thread#join`/`Thread#value` at all. `Mutex#lock` and
+`ConditionVariable#wait` are themselves Fiber-scheduler-hooked (see
+[hand-rolled-pool's empirical verification section](../hand-rolled-pool/README.md#empirical-verification-bare-queuepopmutexlockconditionvariablewait-are-fiber-scheduler-hooked)
+for the same finding applied to the hand-rolled side), so `Future#value`
+cooperates with `Fiber.scheduler` transitively through that wait, without
+needing a `Thread#value`-shaped primitive at all.
+
+**This closes the "unverified hypothesis" flagged in the headline finding
+of the top-level README and in the comparison table row above:
+`Future#value` does let the calling Fiber yield to the reactor for the
+work's duration** — confirmed empirically, not just claimed by API-shape
+analogy. It also means the "con" recorded against `concurrent-ruby`
+elsewhere in this repo's docs (that `IVar#value`/`Future#value` doesn't
+know about `Fiber.scheduler` any more than a hand-rolled `Queue` does) no
+longer holds: the hand-rolled side of that comparison turns out to already
+cooperate too (cross-linked above), which reopens rather than closes the
+hand-rolled-vs-`concurrent-ruby` comparison — see that doc's finding and
+[the plan's Open Questions](../../plans/01-pool-design-recommendation.md#open-questions)
+for what this changes.
 
 ### Net assessment (factual, not prescriptive)
 

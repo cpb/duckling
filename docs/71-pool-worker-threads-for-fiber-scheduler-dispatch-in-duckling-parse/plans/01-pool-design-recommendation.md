@@ -9,6 +9,17 @@ Build a **hand-rolled, stdlib-only `Queue`-based worker pool** in-repo
 (`Duckling::Pool` or similar), not `concurrent-ruby`. Do not adopt any other
 standalone thread-pool gem — none is a live candidate (see Rationale).
 
+**Flagged for operator review:** the crux argument below rests on "pooling
+cannot reduce per-call `Thread.new` to zero," which a later spike
+([hand-rolled-pool's empirical verification](../research/hand-rolled-pool/README.md#empirical-verification-bare-queuepopmutexlockconditionvariablewait-are-fiber-scheduler-hooked))
+found to be false: a bare `Queue#pop` on the calling Fiber already
+cooperates with `Fiber.scheduler`, so the per-call wait-wrapper thread this
+Decision assumes as an unavoidable floor is not actually needed. This
+doesn't automatically flip the hand-rolled-vs-`concurrent-ruby` choice
+(both approaches turn out to reach zero per-call threads, not just
+hand-rolled), but it removes the specific asymmetry this Decision was
+based on — see Open Questions.
+
 ## Rationale
 
 **Maintenance/adoption signal** rules out everything except `concurrent-ruby`
@@ -165,23 +176,25 @@ tied to issue #71's acceptance criteria:
 
 ## Open questions
 
-- **`Future#value`'s Fiber-scheduler cooperation is unverified.** The
-  concurrent-ruby research explicitly labels this a hypothesis, not a
-  confirmed result
-  ([concurrent-ruby-executors, comparison table](../research/concurrent-ruby-executors/README.md#comparison-against-issue-71s-constraints)).
-  This plan doesn't need it resolved (it recommends hand-rolled), but a
-  future session reconsidering `concurrent-ruby` must spike this first.
+- **`Future#value`'s Fiber-scheduler cooperation — resolved, confirmed.**
+  Spiked and verified: `Future#value` does cooperate with
+  `Fiber.scheduler` (transitively, via the `Mutex`/`ConditionVariable` its
+  `Concurrent::Event` wait is built on)
+  ([concurrent-ruby-executors, empirical verification](../research/concurrent-ruby-executors/README.md#empirical-verification-does-futurevalue-cooperate-with-fiberscheduler)).
 - **Whether a queue-native `Fiber::Scheduler` hook exists that could avoid
-  the per-call wait-wrapper thread entirely.** The hand-rolled doc's "one
-  thread per call is the floor" conclusion is based on the same
-  block/unblock-hook reasoning already proven for today's
-  `Thread.new{...}.value`, but explicitly was *not* separately verified
-  against Ruby's `Fiber::Scheduler` API surface for a lower-level primitive
-  that might avoid it
-  ([hand-rolled-pool "Open questions"](../research/hand-rolled-pool/README.md#open-questions-this-document-deliberately-leaves-unresolved)).
-  Worth a quick spike before committing to "one thread per call" as
-  permanent, since it changes what "materially closer to `Native.parse`"
-  can actually mean.
+  the per-call wait-wrapper thread entirely — resolved, confirmed yes.**
+  Spiked directly: a bare `Queue#pop`/`Mutex#lock`/`ConditionVariable#wait`
+  called on the calling Fiber's own thread (no `Thread.new` wrapper at all)
+  already yields to the `Async::Reactor`
+  ([hand-rolled-pool, empirical verification](../research/hand-rolled-pool/README.md#empirical-verification-bare-queuepopmutexlockconditionvariablewait-are-fiber-scheduler-hooked)).
+  This overturns the "one thread per call is the floor" conclusion the
+  Decision above was based on — the per-call wait-wrapper thread in step 5
+  and the pseudocode sketch may not be needed at all, for either a
+  hand-rolled or `concurrent-ruby`-backed pool. **Needs operator input**:
+  does this change the Decision, and if the wait-wrapper thread is dropped,
+  does step 1's benchmark target change too (the pool could then approach
+  `Native.parse`'s own cost directly, not "queue-handoff cost plus one
+  thread spawn")?
 - **The Ruby 3.4+ nuance flagged in `current-dispatch-terrain`**: a later
   spike (commit `875a840`, migrated off-repo) suggested `rb_nogvl` +
   `RB_NOGVL_OFFLOAD_SAFE` might obviate the `Thread` wrapper entirely on

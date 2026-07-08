@@ -35,6 +35,15 @@ test code.
 
 ## Headline finding
 
+**Update: the finding below has been superseded by a follow-up spike — see
+the flag in [plans/01-pool-design-recommendation.md](plans/01-pool-design-recommendation.md#decision)
+and the empirical verification sections in
+[research/hand-rolled-pool](research/hand-rolled-pool/README.md#empirical-verification-bare-queuepopmutexlockconditionvariablewait-are-fiber-scheduler-hooked)
+and
+[research/concurrent-ruby-executors](research/concurrent-ruby-executors/README.md#empirical-verification-does-futurevalue-cooperate-with-fiberscheduler).
+Kept below for the historical reasoning trail; needs operator review before
+the plan's Decision is treated as final.**
+
 The research surfaced a finding sharper than "which library to use": **no
 candidate — library or hand-rolled — is proven to eliminate per-call thread
 spawning**, since only `Thread#value`/`Thread#join`-shaped waits cooperate
@@ -43,3 +52,10 @@ with `Fiber.scheduler`, not a bare `Queue#pop`. The
 stdlib pool specifically because its version of that limit is mechanically
 proven, where `concurrent-ruby`'s equivalent (`Future#value`) is an
 unverified hypothesis.
+
+Both halves of that finding turned out to be wrong on closer inspection: a
+direct spike showed a bare `Queue#pop` on the calling Fiber's own thread
+*does* cooperate with `Fiber.scheduler` (no wrapper thread needed), and
+`concurrent-ruby`'s `Future#value` cooperates too (transitively, via
+`Mutex`/`ConditionVariable`). See the empirical verification sections
+linked above for the numbers.

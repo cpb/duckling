@@ -282,6 +282,58 @@ could avoid entirely (vs. this "still one thread per call" ceiling) is
 out of scope for this research document and would need to be checked
 against the Ruby version(s) this gem supports before being treated as fact.
 
+### Empirical verification: bare `Queue#pop`/`Mutex#lock`/`ConditionVariable#wait` ARE Fiber-scheduler-hooked
+
+§3's claim above — that "a bare `Queue#pop`/`ConditionVariable#wait` on the
+current thread is not [Fiber-scheduler-hooked]" — does not hold up against
+a direct experiment. Spiking the same ticker/worker harness
+`test/falcon_fiber_blocking_test.rb` uses (an `Async::Reactor` ticker Fiber
+recording inter-tick gaps, a worker Fiber blocking on the primitive under
+test), swapping in each primitive called **directly on the calling Fiber's
+own OS thread** — no `Thread.new{...}.value` wrapper at all, a feeder
+`Thread` supplies the eventual wakeup after a fixed delay:
+
+| Primitive under test (called directly on the calling Fiber) | Simulated work duration | Max ticker gap | Ratio |
+|---|---|---|---|
+| `Queue#pop` | 0.2006s | 0.0012s | 0.6% |
+| `Mutex#lock` (contended) | 0.1006s | 0.0012s | 1.2% |
+| `ConditionVariable#wait` | 0.1006s | 0.0012s | 1.2% |
+
+(Ruby 3.3.6, `async` 2.42.0 — confirmed same-OS-thread for ticker and
+worker Fibers via `Thread.current.object_id`, so this is genuinely testing
+single-OS-thread cooperative scheduling, not accidental multi-threading.
+`async`'s `Scheduler` implements the `#block`/`#unblock` `Fiber::Scheduler`
+hooks (`async/scheduler.rb`), which back `Thread#join`, `Mutex#lock`,
+`Queue#pop`/`push`, `ConditionVariable#wait`, and `SizedQueue#pop`/`push`
+per Ruby's `Fiber::Scheduler` design — not a narrower "just `Thread#value`"
+surface as this document previously assumed.)
+
+In every case the ticker kept ticking at its normal ~1ms cadence throughout
+the ~100–200ms simulated blocking call — no reactor stall; a stall would
+show a ratio near 100%, not the <2% observed. **This falsifies the "one
+thread per call is the floor" conclusion §3 rests on**: if a bare
+`Queue#pop` on the calling Fiber's own thread already yields to the
+reactor, the per-call `Thread.new { reply.pop }.value` wait-wrapper in the
+pseudocode sketch is not actually needed — the calling Fiber could
+`reply_queue.pop` directly, reducing per-call thread spawns to **zero**
+rather than one.
+
+This also reopens the "Cons" bullet in §2 above (that `Concurrent::IVar#value`/
+`Future#value` "blocks the native thread the same way `Queue#pop` does" and
+"does not automatically know about `Fiber.scheduler`, so it does not solve
+the Fiber-yield requirement any more directly than a hand-rolled `Queue`
+does"): both halves of that comparison turn out to already cooperate with
+`Fiber.scheduler` (see
+[concurrent-ruby-executors' empirical verification section](../concurrent-ruby-executors/README.md#empirical-verification-does-futurevalue-cooperate-with-fiberscheduler)
+for the `Future#value` side). **This reopens rather than resolves the
+"crux" argument in
+[`plans/01-pool-design-recommendation.md`](../../plans/01-pool-design-recommendation.md#the-crux-does-pooling-actually-eliminate-per-call-threadnew),**
+which chose hand-rolled over `concurrent-ruby` specifically because the
+hand-rolled per-call-thread limit was believed to be mechanically proven
+where `concurrent-ruby`'s wasn't — evidence now says neither pays that cost
+at all. Needs operator review before the plan's Decision is treated as
+final; see that doc's Open Questions.
+
 ### 4. Clean shutdown across Minitest + process exit
 
 - **Process exit**: `at_exit { Duckling::Pool.shutdown! if @workers }` — a
