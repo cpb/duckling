@@ -33,17 +33,25 @@ module Duckling
   # though both carry the same to_i/utc_offset a real Time does — #to_time
   # normalizes any of those (and anything else that offers the same
   # conversion) to a real Time before it crosses into Rust.
-  def self.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false)
+  def self.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false, reference_zone: nil)
     reference_time = reference_time.to_time if reference_time && !reference_time.is_a?(Time) && reference_time.respond_to?(:to_time)
 
     kwargs = {locale: locale, dims: dims, with_latent: with_latent}
     kwargs[:reference_time] = reference_time if reference_time
 
-    return Native.parse(text, **kwargs) unless Fiber.scheduler
-
-    Thread.new do
-      Thread.current.report_on_exception = false
+    entities = if Fiber.scheduler
+      Thread.new do
+        Thread.current.report_on_exception = false
+        Native.parse(text, **kwargs)
+      end.value
+    else
       Native.parse(text, **kwargs)
-    end.value
+    end
+
+    apply_reference_zone(entities, reference_zone)
+  end
+
+  def self.apply_reference_zone(entities, reference_zone)
+    entities
   end
 end
