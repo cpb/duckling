@@ -274,19 +274,118 @@ class DucklingTest < Minitest::Test
       "expected the offset-mismatch ArgumentError, but got the unrelated " \
       "'unknown keyword' error raised because reference_zone: isn't " \
       "recognized/validated yet: #{error.message.inspect}")
-    assert_match(/offset/i, error.message,
+    # Pin the specific complaint: the Rust side's resolve_naive failure is also
+    # an ArgumentError that contains the word "offset" ("invalid or ambiguous
+    # naive time for reference offset"), so a bare /offset/ match wouldn't rule
+    # that impostor out.
+    assert_match(/does not match reference_zone/, error.message,
       "expected an ArgumentError describing the reference_time:/" \
       "reference_zone: offset mismatch, got: #{error.message.inspect}")
   end
 
   # Characterizes apply_reference_zone's loud-failure behavior when a :time
   # entity's :value doesn't match the known Single/Interval shape — a future
-  # drift in the Rust side's serialized shape must not pass unnoticed.
+  # drift in the Rust side's serialized shape must not pass unnoticed. Asserts
+  # the named Duckling::ShapeError specifically (not bare RuntimeError, which
+  # the native-panic path also raises) so an unrelated RuntimeError can't
+  # satisfy it.
   def test_reference_zone_raises_on_unrecognized_time_value_shape
     malformed_entity = {dim: :time, value: {Time: {NotARealTag: {}}}}
 
-    assert_raises(RuntimeError) do
+    assert_raises(Duckling::ShapeError) do
       Duckling.apply_reference_zone([malformed_entity], "America/New_York")
     end
+  end
+
+  # Companion to the above, one layer deeper: a TimePoint tagged neither :Naive
+  # nor :Instant must also fail loudly, so serde drift at the point layer can't
+  # slip a result through resolved against the wrong offset.
+  def test_reference_zone_raises_on_unrecognized_time_point_shape
+    malformed_entity = {dim: :time, value: {Time: {Single: {value: {NotARealTag: {}}}}}}
+
+    assert_raises(Duckling::ShapeError) do
+      Duckling.apply_reference_zone([malformed_entity], "America/New_York")
+    end
+  end
+
+  # Finding 2: a Single's `values` recurrence array — populated on essentially
+  # every parse, not only explicit recurrences — is reinterpreted per entry, so
+  # each occurrence picks up its own date's DST offset. "every monday at 3am"
+  # anchored 2026-03-01 yields two Mondays straddling the 03-08 transition: the
+  # earlier must resolve to EST (-18000), the later to EDT (-14400), wall clock
+  # preserved.
+  def test_reference_zone_resolves_single_values_across_dst_transition
+    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+    entity = entity_for("every monday at 3am", :time,
+      reference_time: reference_time, reference_zone: "America/New_York")
+    resolved = entity[:value][:Time][:Single][:values].map { |p| time_point(p)[:value] }
+    before = resolved.find { |t| t.day == 2 }
+    after = resolved.find { |t| t.day == 9 }
+
+    assert_equal 3, before.hour, "expected the 3am wall clock preserved, got #{before.inspect}"
+    assert_equal(-18000, before.utc_offset,
+      "expected the pre-transition recurrence entry (March 2) to resolve to EST (-18000), got #{before.inspect}")
+    assert_equal 3, after.hour, "expected the 3am wall clock preserved, got #{after.inspect}"
+    assert_equal(-14400, after.utc_offset,
+      "expected the post-transition recurrence entry (March 9) to resolve to EDT (-14400), got #{after.inspect}")
+  end
+
+  # Finding 2: an Interval's `values` endpoint pairs are reinterpreted the same
+  # way, each leg independently. "from March 7th 3:00am to March 9th 3:00am"
+  # anchored 2026-03-01 produces a values entry straddling the 03-08
+  # transition: its `from` (March 7) must resolve to EST (-18000) and its `to`
+  # (March 9) to EDT (-14400).
+  def test_reference_zone_resolves_interval_values_endpoints_independently
+    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+    entity = entity_for("from March 7th 2026 3:00am to March 9th 2026 3:00am", :time,
+      reference_time: reference_time, reference_zone: "America/New_York")
+    endpoints = entity[:value][:Time][:Interval][:values].first
+    from = time_point(endpoints[:from])[:value]
+    to = time_point(endpoints[:to])[:value]
+
+    assert_equal(-18000, from.utc_offset,
+      "expected the values entry `from` leg (March 7, pre-transition) to resolve to EST (-18000), got #{from.inspect}")
+    assert_equal(-14400, to.utc_offset,
+      "expected the values entry `to` leg (March 9, post-transition) to resolve to EDT (-14400), got #{to.inspect}")
+  end
+
+  # Finding 1: a DST gap in a *generated* recurrence entry must not destroy the
+  # whole result — unlike a primary value the caller named, which still raises
+  # (test_reference_zone_raises_argument_error_for_dst_spring_forward_gap).
+  # "every sunday at 2:30am" anchored 2026-02-28 generates 2026-03-08 02:30,
+  # which the spring-forward gap skips; that entry resolves deterministically to
+  # the post-transition offset (EDT, -14400) with its 2:30 wall clock kept, and
+  # the call as a whole returns normally.
+  def test_reference_zone_resolves_recurrence_gap_entry_deterministically
+    reference_time = Time.new(2026, 2, 28, 9, 0, 0, "-05:00")
+    entity = entity_for("every sunday at 2:30am", :time,
+      reference_time: reference_time, reference_zone: "America/New_York")
+    gap_entry = entity[:value][:Time][:Single][:values]
+      .map { |p| time_point(p)[:value] }
+      .find { |t| t.month == 3 && t.day == 8 }
+
+    refute_nil gap_entry, "expected a 2026-03-08 recurrence entry"
+    assert_equal 2, gap_entry.hour, "expected the 2:30 wall clock preserved through the gap, got #{gap_entry.inspect}"
+    assert_equal 30, gap_entry.min
+    assert_equal(-14400, gap_entry.utc_offset,
+      "expected the spring-forward gap recurrence entry to take the post-transition offset (EDT, -14400), got #{gap_entry.inspect}")
+  end
+
+  # Finding 1, fall-back side: an ambiguous recurrence entry resolves to its
+  # first (pre-transition) occurrence rather than raising. "every sunday at
+  # 1:30am" anchored 2026-10-22 generates 2026-11-01 01:30, which the fall-back
+  # overlap makes ambiguous; it resolves to the first occurrence (EDT, -14400).
+  def test_reference_zone_resolves_recurrence_overlap_entry_deterministically
+    reference_time = Time.new(2026, 10, 22, 9, 0, 0, "-04:00")
+    entity = entity_for("every sunday at 1:30am", :time,
+      reference_time: reference_time, reference_zone: "America/New_York")
+    overlap_entry = entity[:value][:Time][:Single][:values]
+      .map { |p| time_point(p)[:value] }
+      .find { |t| t.month == 11 && t.day == 1 }
+
+    refute_nil overlap_entry, "expected a 2026-11-01 recurrence entry"
+    assert_equal 1, overlap_entry.hour, "expected the 1:30 wall clock preserved through the overlap, got #{overlap_entry.inspect}"
+    assert_equal(-14400, overlap_entry.utc_offset,
+      "expected the fall-back overlap recurrence entry to take the first (pre-transition) occurrence (EDT, -14400), got #{overlap_entry.inspect}")
   end
 end

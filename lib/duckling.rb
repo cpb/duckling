@@ -6,6 +6,15 @@ require_relative "duckling/version"
 require_relative "duckling/duckling"
 
 module Duckling
+  # Raised when the serialized :time :value shape drifts from the typed walk in
+  # ext/duckling/src/lib.rs's patch_time_value/patch_time_point — a wrapper bug.
+  # Deliberately a RuntimeError subclass (not ArgumentError) so a caller
+  # rescuing ArgumentError around bad locale:/reference_zone: input can't
+  # swallow it, and a *named* one (not bare RuntimeError) so it's greppable and
+  # can't be satisfied by the unrelated native-panic RuntimeError. Mirrors the
+  # internal_error() class in lib.rs.
+  class ShapeError < RuntimeError; end
+
   # Native.parse already releases the GVL around the native call, but a bare
   # GVL release alone does not hand control back to an Async::Reactor —
   # Ruby 3.4's Fiber::Scheduler#blocking_operation_wait auto-offload path
@@ -46,6 +55,12 @@ module Duckling
   # principled resolution — silently preferring either would resolve results
   # against an offset the caller never asked for — so that combination raises
   # rather than guessing.
+  #
+  # reference_zone: only reinterprets result offsets after the fact; it does
+  # NOT anchor the parse. Given without reference_time:, relative expressions
+  # ("tomorrow") still anchor on the machine-local clock, not on "now" in that
+  # zone, so on a US host reference_zone: "Asia/Tokyo" can land on the wrong
+  # calendar day. Pass a reference_time: in the zone to anchor as well.
   def self.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false, reference_zone: nil)
     reference_time = reference_time.to_time if reference_time && !reference_time.is_a?(Time) && reference_time.respond_to?(:to_time)
 
@@ -93,15 +108,24 @@ module Duckling
     entities
   end
 
+  # Walks the Single/Interval + Naive/Instant tagged shape. A primary value
+  # (single[:value], or an interval's from/to) is resolved strictly: a
+  # wall-clock the caller literally named that a DST gap skipped or a fall-back
+  # overlap made ambiguous has no honest answer and raises. Each `values`
+  # recurrence entry is instead an occurrence the parser *generated*, not a
+  # time the caller named — and every Single carries a populated `values`
+  # array, not just explicit recurrences — so one collateral bad occurrence
+  # must not destroy the whole result; those resolve deterministically
+  # (lenient: true — see local_time_in_zone).
   def self.reinterpret_time_value!(value, zone)
     if (single = value && value[:Single])
       reinterpret_time_point!(single[:value], zone)
-      single[:values]&.each { |point| reinterpret_time_point!(point, zone) }
+      single[:values]&.each { |point| reinterpret_time_point!(point, zone, lenient: true) }
     elsif (interval = value && value[:Interval])
       reinterpret_interval_endpoints!(interval, zone)
-      interval[:values]&.each { |endpoints| reinterpret_interval_endpoints!(endpoints, zone) }
+      interval[:values]&.each { |endpoints| reinterpret_interval_endpoints!(endpoints, zone, lenient: true) }
     else
-      raise "unrecognized :time value shape, expected a :Single or :Interval tag: #{value.inspect}"
+      raise ShapeError, "unrecognized :time value shape, expected a :Single or :Interval tag: #{value.inspect}"
     end
   end
   private_class_method :reinterpret_time_value!
@@ -109,19 +133,19 @@ module Duckling
   # An Interval's from/to are Option<TimePoint> on the Rust side, and serde
   # emits Option::None as a present key holding nil — hence the nil tolerance
   # in reinterpret_time_point!, rather than a missing-key check here.
-  def self.reinterpret_interval_endpoints!(endpoints, zone)
-    reinterpret_time_point!(endpoints[:from], zone)
-    reinterpret_time_point!(endpoints[:to], zone)
+  def self.reinterpret_interval_endpoints!(endpoints, zone, lenient: false)
+    reinterpret_time_point!(endpoints[:from], zone, lenient: lenient)
+    reinterpret_time_point!(endpoints[:to], zone, lenient: lenient)
   end
   private_class_method :reinterpret_interval_endpoints!
 
-  def self.reinterpret_time_point!(point, zone)
+  def self.reinterpret_time_point!(point, zone, lenient: false)
     return if point.nil?
 
     if (naive = point[:Naive])
-      naive[:value] = local_time_in_zone(zone, naive[:value])
+      naive[:value] = local_time_in_zone(zone, naive[:value], lenient: lenient)
     elsif !point.key?(:Instant)
-      raise "unrecognized TimePoint shape, expected a :Naive or :Instant tag: #{point.inspect}"
+      raise ShapeError, "unrecognized TimePoint shape, expected a :Naive or :Instant tag: #{point.inspect}"
     end
   end
   private_class_method :reinterpret_time_point!
@@ -132,20 +156,43 @@ module Duckling
   # per-date DST offset.
   #
   # A wall-clock that a spring-forward gap skipped, or that a fall-back overlap
-  # made ambiguous, has no single correct offset; surface that as an ArgumentError
-  # about the caller's input rather than leaking a TZInfo internal.
-  def self.local_time_in_zone(zone, time)
+  # made ambiguous, has no single correct offset. For a primary value
+  # (lenient: false) — the caller's own named input — surface that as an
+  # ArgumentError rather than leaking a TZInfo internal. For a generated
+  # recurrence entry (lenient: true), resolve it deterministically instead,
+  # keeping the wall-clock hour: a gap takes the transition's post-transition
+  # offset, an overlap takes the first (pre-transition) occurrence.
+  def self.local_time_in_zone(zone, time, lenient: false)
     zone.local_time(time.year, time.month, time.day, time.hour, time.min, time.sec, time.subsec)
   rescue TZInfo::PeriodNotFound
-    raise ArgumentError,
-      "#{time.strftime("%Y-%m-%d %H:%M:%S")} does not exist in #{zone.identifier} " \
-      "(skipped by a daylight-saving spring-forward transition)"
+    unless lenient
+      raise ArgumentError,
+        "#{time.strftime("%Y-%m-%d %H:%M:%S")} does not exist in #{zone.identifier} " \
+        "(skipped by a daylight-saving spring-forward transition)"
+    end
+    Time.new(time.year, time.month, time.day, time.hour, time.min, time.sec + time.subsec,
+      post_transition_offset(zone, time))
   rescue TZInfo::AmbiguousTime
-    raise ArgumentError,
-      "#{time.strftime("%Y-%m-%d %H:%M:%S")} is ambiguous in #{zone.identifier} " \
-      "(it occurs twice around a daylight-saving fall-back transition)"
+    unless lenient
+      raise ArgumentError,
+        "#{time.strftime("%Y-%m-%d %H:%M:%S")} is ambiguous in #{zone.identifier} " \
+        "(it occurs twice around a daylight-saving fall-back transition)"
+    end
+    zone.local_time(time.year, time.month, time.day, time.hour, time.min, time.sec, time.subsec, true)
   end
   private_class_method :local_time_in_zone
+
+  # The post-transition UTC offset of the spring-forward transition that
+  # created the gap `time` fell into. DST transitions are months apart, so the
+  # single offset-increasing transition within a day of `time` is necessarily
+  # the one whose gap it landed in.
+  def self.post_transition_offset(zone, time)
+    midnight = Time.utc(time.year, time.month, time.day)
+    transition = zone.transitions_up_to(midnight + 86400, midnight - 86400)
+      .find { |t| t.offset.observed_utc_offset > t.previous_offset.observed_utc_offset }
+    transition.offset.observed_utc_offset
+  end
+  private_class_method :post_transition_offset
 
   def self.timezone_for(reference_zone)
     TZInfo::Timezone.get(reference_zone)
