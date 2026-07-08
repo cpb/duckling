@@ -39,11 +39,21 @@ module Duckling
       kwargs = kwargs.merge(reference_time: reference_time.to_time)
     end
 
-    return Native.parse(*args, **kwargs, &block) unless Fiber.scheduler
+    reference_zone = kwargs.delete(:reference_zone)
 
-    Thread.new do
-      Thread.current.report_on_exception = false
+    entities = if Fiber.scheduler
+      Thread.new do
+        Thread.current.report_on_exception = false
+        Native.parse(*args, **kwargs, &block)
+      end.value
+    else
       Native.parse(*args, **kwargs, &block)
-    end.value
+    end
+
+    apply_reference_zone(entities, reference_zone)
+  end
+
+  def self.apply_reference_zone(entities, reference_zone)
+    entities
   end
 end
