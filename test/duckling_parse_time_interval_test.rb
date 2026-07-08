@@ -9,14 +9,6 @@ require "test_helper"
 # Duckling.parse (issue #91's unified externally-tagged convention), not just
 # that *an* entity was found.
 class DucklingParseTimeIntervalTest < Minitest::Test
-  # Unwraps an Interval-shaped entity down to its {from:, to:} pair of plain
-  # `{value:, grain:}` payloads — see test_helper.rb's `time_point`.
-  def interval_points(entity)
-    interval = entity[:value][:Time][:Interval]
-    refute_nil interval, "Expected entity[:value][:Time] to be tagged :Interval, got: #{entity[:value].inspect}"
-    [time_point(interval[:from]), time_point(interval[:to])]
-  end
-
   def test_hour_interval_3_4pm
     entity = entity_for("3-4pm", :time, reference_time: REFERENCE_TIME)
     from, to = interval_points(entity)

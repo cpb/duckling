@@ -109,6 +109,11 @@ Each entity in the returned array is a `Hash` with:
   `17:00`. This matches upstream [duckling](https://github.com/wafer-inc/duckling)
   behavior.
 
+  **Gotcha:** an unbounded interval (e.g. `"after 3pm"`, `"until 5pm"`)
+  still carries both `:from` and `:to` keys — the missing bound is an
+  explicit `nil` value, not an absent key. Check `interval[:to].nil?`
+  (not `interval.key?(:to)`) to detect an unbounded endpoint.
+
 ### Supported dimensions
 
 `dims:` accepts `time`, `number`, `ordinal`, `temperature`, `distance`,

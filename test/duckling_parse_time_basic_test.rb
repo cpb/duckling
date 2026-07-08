@@ -6,14 +6,6 @@ require "test_helper"
 # wafer-inc-duckling / pyduckling en time corpus: now, today, yesterday,
 # tomorrow, and this/next/last week, month, and year.
 class DucklingParseTimeBasicTest < Minitest::Test
-  # Unwraps a Single-shaped entity's primary tagged TimePoint down to its
-  # plain `{value:, grain:}` payload — see test_helper.rb's `time_point`.
-  def single_point(entity)
-    single = entity[:value][:Time][:Single]
-    refute_nil single, "Expected entity[:value][:Time] to be tagged :Single, got: #{entity[:value].inspect}"
-    time_point(single[:value])
-  end
-
   def test_now
     entity = entity_for("now", :time, reference_time: REFERENCE_TIME)
     point = single_point(entity)

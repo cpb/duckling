@@ -38,3 +38,19 @@ def time_point(tagged)
   tagged[:Naive] || tagged[:Instant] ||
     flunk("expected a :Naive- or :Instant-tagged TimePoint, got: #{tagged.inspect}")
 end
+
+# Unwraps a Single-shaped entity's primary tagged TimePoint down to its plain
+# `{value:, grain:}` payload — see `time_point`.
+def single_point(entity)
+  single = entity[:value][:Time][:Single] ||
+    flunk("Expected entity[:value][:Time] to be tagged :Single, got: #{entity[:value].inspect}")
+  time_point(single[:value])
+end
+
+# Unwraps an Interval-shaped entity down to its {from:, to:} pair of plain
+# `{value:, grain:}` payloads — see `time_point`.
+def interval_points(entity)
+  interval = entity[:value][:Time][:Interval] ||
+    flunk("Expected entity[:value][:Time] to be tagged :Interval, got: #{entity[:value].inspect}")
+  [time_point(interval[:from]), time_point(interval[:to])]
+end

@@ -34,7 +34,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (`:second`, `:no_grain`, ...) — only the wrapping shape changed. Migrate by
   reaching through the new tags, e.g.
   `entity[:value][:Time][:Single][:value][:Naive][:value]` in place of the
-  old `entity[:value][:value]`.
+  old `entity[:value][:value]`. One behavior change bundled with the shape
+  migration: an unbounded interval (e.g. `"after 3pm"`) now carries an
+  explicit `to: nil` (or `from: nil`) key instead of omitting the key
+  entirely — check `interval[:to].nil?` rather than `interval.key?(:to)`
+  to detect an unbounded endpoint.
 
 ## [0.2.0] - 2026-07-01
 
