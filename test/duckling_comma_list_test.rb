@@ -44,7 +44,7 @@ class DucklingCommaListTest < Minitest::Test
   def extracted_dates(text)
     Duckling.parse(text, locale: "en", reference_time: REFERENCE_TIME)
       .select { |r| r[:dim] == :time }
-      .map { |r| r[:value][:value] }
+      .map { |r| time_point(r[:value][:Time][:Single][:value])[:value] }
   end
 
   # Reliable suite

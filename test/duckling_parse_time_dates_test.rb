@@ -10,88 +10,81 @@ require "test_helper"
 # test suite (2013-02-12T04:30:00-02:00), so relative/implied-year
 # expressions resolve to fixed, assertable values.
 class DucklingParseTimeDatesTest < Minitest::Test
-  def first_time_entity(text)
-    results = Duckling.parse(text, locale: "en", reference_time: REFERENCE_TIME)
-    entity = results.find { |r| r[:dim] == :time }
-    refute_nil entity, "Expected a :time dimension result for #{text.inspect}, got: #{results.inspect}"
-    entity
-  end
-
   def test_iso_date
-    entity = first_time_entity("2015-03-03")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :day, entity[:value][:grain]
-    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("2015-03-03", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_short_iso_date
-    entity = first_time_entity("2015-3-3")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :day, entity[:value][:grain]
-    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("2015-3-3", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_us_slash_date_full_year
-    entity = first_time_entity("3/3/2015")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :day, entity[:value][:grain]
-    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("3/3/2015", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_us_slash_date_two_digit_year
-    entity = first_time_entity("3/3/15")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :day, entity[:value][:grain]
-    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("3/3/15", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_month_name_date_with_explicit_year
-    entity = first_time_entity("march 3 2015")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :day, entity[:value][:grain]
-    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("march 3 2015", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2015, 3, 3, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_month_name_date_implied_current_year
-    entity = first_time_entity("march 3")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :day, entity[:value][:grain]
+    entity = entity_for("march 3", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :day, point[:grain]
     # No year specified — should resolve against REFERENCE_TIME's year (2013).
-    assert_equal Time.new(2013, 3, 3, 0, 0, 0, "-02:00"), entity[:value][:value]
+    assert_equal Time.new(2013, 3, 3, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_day_of_month_month_then_day
-    entity = first_time_entity("february 15")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :day, entity[:value][:grain]
-    assert_equal Time.new(2013, 2, 15, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("february 15", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2013, 2, 15, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_day_of_month_ordinal_of_month
-    entity = first_time_entity("the 15th of february")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :day, entity[:value][:grain]
-    assert_equal Time.new(2013, 2, 15, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("the 15th of february", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2013, 2, 15, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_numeric_month_slash_year
-    entity = first_time_entity("2/2013")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :month, entity[:value][:grain]
-    assert_equal Time.new(2013, 2, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("2/2013", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :month, point[:grain]
+    assert_equal Time.new(2013, 2, 1, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_month_name_and_year
-    entity = first_time_entity("October 2014")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :month, entity[:value][:grain]
-    assert_equal Time.new(2014, 10, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("October 2014", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :month, point[:grain]
+    assert_equal Time.new(2014, 10, 1, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_year_only
-    entity = first_time_entity("in 2014")
-    assert_equal :value, entity[:value][:type]
-    assert_equal :year, entity[:value][:grain]
-    assert_equal Time.new(2014, 1, 1, 0, 0, 0, "-02:00"), entity[:value][:value]
+    entity = entity_for("in 2014", :time, reference_time: REFERENCE_TIME)
+    point = single_point(entity)
+    assert_equal :year, point[:grain]
+    assert_equal Time.new(2014, 1, 1, 0, 0, 0, "-02:00"), point[:value]
   end
 end

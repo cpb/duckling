@@ -18,8 +18,9 @@ class DucklingParseLocaleTest < Minitest::Test
     refute_empty results, "Expected a non-empty result for 'tomorrow' with locale: \"en\""
     time_entity = results.find { |r| r[:dim] == :time }
     refute_nil time_entity, "Expected a :time dimension result for 'tomorrow'"
-    assert_equal :day, time_entity[:value][:grain]
-    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), time_entity[:value][:value]
+    point = time_point(time_entity[:value][:Time][:Single][:value])
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_invalid_locale_raises_argument_error
@@ -44,8 +45,9 @@ class DucklingParseLocaleTest < Minitest::Test
     refute_empty results, "Expected omitted locale: to default to \"en\" and parse normally"
     time_entity = results.find { |r| r[:dim] == :time }
     refute_nil time_entity, "Expected a :time dimension result when locale: is omitted"
-    assert_equal :day, time_entity[:value][:grain]
-    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), time_entity[:value][:value]
+    point = time_point(time_entity[:value][:Time][:Single][:value])
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), point[:value]
   end
 
   def test_valid_region_qualified_locale_parses_normally
@@ -54,7 +56,8 @@ class DucklingParseLocaleTest < Minitest::Test
     refute_empty results, "Expected a non-empty result for 'tomorrow' with locale: \"en-GB\""
     time_entity = results.find { |r| r[:dim] == :time }
     refute_nil time_entity, "Expected a :time dimension result for 'tomorrow' with locale: \"en-GB\""
-    assert_equal :day, time_entity[:value][:grain]
-    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), time_entity[:value][:value]
+    point = time_point(time_entity[:value][:Time][:Single][:value])
+    assert_equal :day, point[:grain]
+    assert_equal Time.new(2013, 2, 13, 0, 0, 0, "-02:00"), point[:value]
   end
 end

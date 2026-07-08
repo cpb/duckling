@@ -22,6 +22,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `Naive` results too, not just `Instant` ones. Callers parsing the old
   ISO-ish string (with or without an offset suffix) should read `.value`
   directly as a `Time` instead.
+- **Breaking:** `:time`'s `:value` now uses the same unified,
+  externally-tagged shape as every other dimension: a single result is
+  `{Time: {Single: {value: {Naive:|Instant: {value:, grain:}}, values: [...],
+  holidayBeta: "..."}}}`, and an interval result is `{Time: {Interval: {from:
+  {Naive:|Instant: {...}}, to: {...}, values: [...]}}}`. Previously `:time`
+  kept its own bespoke flattened shape (`{type:, value:, grain:, values:}` /
+  `{type:, from:, to:}`) even after every other dimension moved onto the
+  tagged convention. `:value` is still always a real Ruby `Time`, never a
+  String, and `grain` is still the lowercase-snake_case symbol convention
+  (`:second`, `:no_grain`, ...) — only the wrapping shape changed. Migrate by
+  reaching through the new tags, e.g.
+  `entity[:value][:Time][:Single][:value][:Naive][:value]` in place of the
+  old `entity[:value][:value]`. One behavior change bundled with the shape
+  migration: an unbounded interval (e.g. `"after 3pm"`) now carries an
+  explicit `to: nil` (or `from: nil`) key instead of omitting the key
+  entirely — check `interval[:to].nil?` rather than `interval.key?(:to)`
+  to detect an unbounded endpoint.
 
 ## [0.2.0] - 2026-07-01
 
