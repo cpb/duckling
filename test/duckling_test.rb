@@ -115,17 +115,26 @@ class DucklingTest < Minitest::Test
   # result is resolved against its own date, not a single offset applied
   # uniformly across both.
   def test_reference_zone_resolves_naive_offset_per_date_across_dst_transition
+    # America/New_York's real UTC offset at this instant (2026-03-01, before
+    # the 03-08 spring-forward) is -18000 (EST) — matching the fixed offset
+    # reference_time: carries, so this doesn't trip the offset-mismatch check
+    # covered by test_reference_zone_mismatched_reference_time_offset_raises_argument_error.
+    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
     before_entity = entity_for("March 7th 2026 3:00am", :time,
-      reference_time: REFERENCE_TIME, reference_zone: "America/New_York")
+      reference_time: reference_time, reference_zone: "America/New_York")
     after_entity = entity_for("March 9th 2026 3:00am", :time,
-      reference_time: REFERENCE_TIME, reference_zone: "America/New_York")
+      reference_time: reference_time, reference_zone: "America/New_York")
 
     before_value = single_point(before_entity)[:value]
     after_value = single_point(after_entity)[:value]
 
+    assert_equal 3, before_value.hour,
+      "expected the wall-clock hour (3am) to be preserved, got #{before_value.inspect}"
     assert_equal(-18000, before_value.utc_offset,
       "Expected 'March 7th 2026' (before the 2026-03-08 America/New_York DST transition) " \
       "to resolve to EST (UTC-5, -18000s) when reference_zone: is given, got #{before_value.utc_offset}")
+    assert_equal 3, after_value.hour,
+      "expected the wall-clock hour (3am) to be preserved, got #{after_value.inspect}"
     assert_equal(-14400, after_value.utc_offset,
       "Expected 'March 9th 2026' (after the 2026-03-08 America/New_York DST transition) " \
       "to resolve to EDT (UTC-4, -14400s) when reference_zone: is given, got #{after_value.utc_offset}")
@@ -138,7 +147,7 @@ class DucklingTest < Minitest::Test
   def test_reference_zone_raises_argument_error_for_dst_spring_forward_gap
     reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
 
-    assert_raises(ArgumentError) do
+    error = assert_raises(ArgumentError) do
       Duckling.parse(
         "March 8 2026 2:30am",
         locale: "en",
@@ -147,6 +156,18 @@ class DucklingTest < Minitest::Test
         reference_zone: "America/New_York"
       )
     end
+
+    # Since reference_zone: is currently stripped before reaching
+    # Native.parse (lib/duckling.rb), any unrelated ArgumentError elsewhere
+    # in the call path would otherwise also satisfy a bare assert_raises here
+    # — see test_reference_zone_mismatched_reference_time_offset_raises_argument_error
+    # for the same impostor concern. Pin down the actual gap complaint.
+    refute_match(/unknown keyword/i, error.message,
+      "expected the DST-gap ArgumentError, but got the unrelated 'unknown " \
+      "keyword' error raised because reference_zone: isn't recognized/" \
+      "validated yet: #{error.message.inspect}")
+    assert_match(/gap|nonexistent|does not exist|spring.forward/i, error.message,
+      "expected an ArgumentError describing the DST spring-forward gap, got: #{error.message.inspect}")
   end
 
   # TimePoint::Instant results (e.g. "in 3 hours" — relative/duration-based,
@@ -157,19 +178,28 @@ class DucklingTest < Minitest::Test
   # reference_zone:'s DST awareness only applies to :Naive (wall-clock)
   # results.
   def test_reference_zone_leaves_instant_result_unaffected
-    without_zone = entity_for("in 3 hours", :time, reference_time: REFERENCE_TIME)
+    # See test_reference_zone_resolves_naive_offset_per_date_across_dst_transition
+    # for why reference_time: must itself agree with America/New_York's real
+    # offset at this instant, rather than reusing REFERENCE_TIME's -02:00.
+    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+    without_zone = entity_for("in 3 hours", :time, reference_time: reference_time)
     with_zone = entity_for("in 3 hours", :time,
-      reference_time: REFERENCE_TIME, reference_zone: "America/New_York")
+      reference_time: reference_time, reference_zone: "America/New_York")
 
     instant_without = single_point(without_zone)[:value]
     instant_with = single_point(with_zone)[:value]
 
     assert_equal instant_without, instant_with,
       "expected reference_zone: to leave a TimePoint::Instant result's resolved Time completely unaffected"
+    assert_equal instant_without.utc_offset, instant_with.utc_offset,
+      "expected reference_zone: to leave a TimePoint::Instant result's utc_offset completely " \
+      "unaffected (Time#== only compares the instant, not utc_offset, so this needs its own assertion)"
+  end
 
-    # reference_zone: must be validated as a real IANA zone name — an
-    # unrecognized identifier should be rejected rather than silently
-    # accepted and ignored.
+  # Split from test_reference_zone_leaves_instant_result_unaffected so a
+  # failure here isn't masked under, or misattributed to, that test's
+  # differently-named primary assertion.
+  def test_reference_zone_rejects_unrecognized_zone_name
     assert_raises(ArgumentError) do
       Duckling.parse(
         "in 3 hours",
@@ -190,15 +220,23 @@ class DucklingTest < Minitest::Test
   # standard time) must resolve to EST (UTC-5) while the `to` leg (March 9,
   # already daylight time) must resolve to EDT (UTC-4).
   def test_reference_zone_resolves_interval_legs_independently_across_dst_transition
+    # See test_reference_zone_resolves_naive_offset_per_date_across_dst_transition
+    # for why reference_time: must itself agree with America/New_York's real
+    # offset at this instant, rather than reusing REFERENCE_TIME's -02:00.
+    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
     entity = entity_for("from March 7th 2026 3:00am to March 9th 2026 3:00am", :time,
-      reference_time: REFERENCE_TIME, reference_zone: "America/New_York")
+      reference_time: reference_time, reference_zone: "America/New_York")
     from_point, to_point = interval_points(entity)
 
+    assert_equal 3, from_point[:value].hour,
+      "expected the `from` leg's wall-clock hour (3am) to be preserved, got #{from_point[:value].inspect}"
     assert_equal(-18000, from_point[:value].utc_offset,
       "expected the `from` leg (March 7, before the spring-forward " \
       "transition) to resolve to America/New_York's EST offset (-18000), " \
       "got #{from_point[:value].utc_offset} (#{from_point[:value].inspect})")
 
+    assert_equal 3, to_point[:value].hour,
+      "expected the `to` leg's wall-clock hour (3am) to be preserved, got #{to_point[:value].inspect}"
     assert_equal(-14400, to_point[:value].utc_offset,
       "expected the `to` leg (March 9, after the spring-forward " \
       "transition) to resolve to America/New_York's EDT offset (-14400), " \
