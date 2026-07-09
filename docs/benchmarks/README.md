@@ -140,14 +140,14 @@ Ruby 3.4.5 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` pro
 
 | Scenario | ips | µs/call | objects/call | minor GC | major GC |
 |---|---|---|---|---|---|
-| short | 1122.6 | 890.8 | 83.0 | 3 | 0 |
-| medium | 1061.7 | 941.9 | 149.0 | 6 | 0 |
-| long | 259.2 | 3858.3 | 149.0 | 6 | 0 |
-| no_match | 2350.7 | 425.4 | 3.0 | 0 | 0 |
-| empty | 4930.6 | 202.8 | 3.0 | 0 | 0 |
-| camping_trip_email | 1.7 | 588323.5 | 2133.6 | 0 | 0 |
+| short | 793.1 | 1260.8 | 83.0 | 3 | 0 |
+| medium | 773.6 | 1292.7 | 149.0 | 6 | 0 |
+| long | 190.9 | 5237.4 | 149.0 | 6 | 0 |
+| no_match | 1677.7 | 596.1 | 3.0 | 0 | 0 |
+| empty | 3595.0 | 278.2 | 3.0 | 0 | 0 |
+| camping_trip_email | 1.3 | 783123.3 | 2133.6 | 0 | 0 |
 
-10-thread throughput: 9409.0 ops/sec vs 1566.7 ops/sec single-threaded (6.01x, 60.1% of ideal linear scaling).
+10-thread throughput: 6791.7 ops/sec vs 1060.3 ops/sec single-threaded (6.41x, 64.1% of ideal linear scaling).
 
 #### Dispatch overhead: native vs thread-per-call (local-3.4 v0.3.0-rc2)
 
@@ -155,20 +155,20 @@ Thread-per-call is `Duckling.parse` measured with a Fiber scheduler installed (t
 
 | Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |
 |---|---|---|---|---|---|
-| short | 1541.4 | 1122.6 | 648.7 | 890.8 | 37.3% |
-| medium | 1478.2 | 1061.7 | 676.5 | 941.9 | 39.2% |
-| long | 299.1 | 259.2 | 3343.7 | 3858.3 | 15.4% |
-| no_match | 5207.1 | 2350.7 | 192.0 | 425.4 | 121.5% |
-| empty | 54337.3 | 4930.6 | 18.4 | 202.8 | 1002.0% |
-| camping_trip_email | 1.7 | 1.7 | 579847.0 | 588323.5 | 1.5% |
+| short | 1105.4 | 793.1 | 904.6 | 1260.8 | 39.4% |
+| medium | 1077.8 | 773.6 | 927.8 | 1292.7 | 39.3% |
+| long | 210.0 | 190.9 | 4761.0 | 5237.4 | 10.0% |
+| no_match | 3743.2 | 1677.7 | 267.2 | 596.1 | 123.1% |
+| empty | 39235.9 | 3595.0 | 25.5 | 278.2 | 991.4% |
+| camping_trip_email | 1.3 | 1.3 | 772353.7 | 783123.3 | 1.4% |
 
 ```mermaid
 xychart-beta
     title "local-3.4 v0.3.0-rc2: native vs thread-per-call dispatch (ips)"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
-    bar "native" [1541.4, 1478.2, 299.1, 5207.1, 54337.3]
-    bar "thread-per-call" [1122.6, 1061.7, 259.2, 2350.7, 4930.6]
+    bar "native" [1105.4, 1077.8, 210.0, 3743.2, 39235.9]
+    bar "thread-per-call" [793.1, 773.6, 190.9, 1677.7, 3595.0]
 ```
 
 ### local-4.0 (v0.3.0-rc1, 2026-07-04)
@@ -216,7 +216,7 @@ xychart-beta
     bar "github-actions" [2179.5, 1863.2, 412.0, 5068.6, 13714.8]
     bar "claude-code-web" [1228.1, 1152.8, 308.1, 2368.1, 6493.4]
     bar "local-3.3" [1294.7, 1136.9, 298.4, 2307.3, 3347.9]
-    bar "local-3.4" [1122.6, 1061.7, 259.2, 2350.7, 4930.6]
+    bar "local-3.4" [793.1, 773.6, 190.9, 1677.7, 3595.0]
     bar "local-4.0" [1211.9, 1136.8, 261.7, 2470.9, 5564.1]
 ```
 
@@ -225,5 +225,5 @@ xychart-beta
     title "10-thread concurrency scaling efficiency (%) -- latest run per environment"
     x-axis [github-actions, claude-code-web, local-3.3, local-3.4, local-4.0]
     y-axis "efficiency %"
-    bar "efficiency_pct" [17.6, 27.4, 54.1, 60.1, 52.5]
+    bar "efficiency_pct" [17.6, 27.4, 54.1, 64.1, 52.5]
 ```
