@@ -160,8 +160,18 @@ module Duckling
   # (lenient: false) — the caller's own named input — surface that as an
   # ArgumentError rather than leaking a TZInfo internal. For a generated
   # recurrence entry (lenient: true), resolve it deterministically instead,
-  # keeping the wall-clock hour: a gap takes the transition's post-transition
-  # offset, an overlap takes the first (pre-transition) occurrence.
+  # matching what ActiveSupport::TimeZone#parse/#local do with the same input:
+  # a gap shifts the wall clock forward by the transition's delta (02:30 on a
+  # US spring-forward day becomes 03:30 EDT), an overlap takes the first
+  # (pre-transition) occurrence.
+  #
+  # Preserving the gap's original wall clock and merely stamping the
+  # post-transition offset on it would produce a Time whose offset the zone
+  # does not observe at that instant — 02:30 -04:00 is 06:30Z, and at 06:30Z
+  # New York is still on EST — so it would read back as 01:30 EST, an hour
+  # before the occurrence it stands for and on the wrong side of the
+  # transition. Shifting forward keeps the instant and its rendered local
+  # time in agreement.
   def self.local_time_in_zone(zone, time, lenient: false)
     zone.local_time(time.year, time.month, time.day, time.hour, time.min, time.sec, time.subsec)
   rescue TZInfo::PeriodNotFound
@@ -170,8 +180,9 @@ module Duckling
         "#{time.strftime("%Y-%m-%d %H:%M:%S")} does not exist in #{zone.identifier} " \
         "(skipped by a daylight-saving spring-forward transition)"
     end
-    Time.new(time.year, time.month, time.day, time.hour, time.min, time.sec + time.subsec,
-      post_transition_offset(zone, time))
+    shifted = time + gap_delta(zone, time)
+    zone.local_time(shifted.year, shifted.month, shifted.day, shifted.hour, shifted.min,
+      shifted.sec, shifted.subsec)
   rescue TZInfo::AmbiguousTime
     unless lenient
       raise ArgumentError,
@@ -182,17 +193,25 @@ module Duckling
   end
   private_class_method :local_time_in_zone
 
-  # The post-transition UTC offset of the spring-forward transition that
-  # created the gap `time` fell into. DST transitions are months apart, so the
-  # single offset-increasing transition within a day of `time` is necessarily
-  # the one whose gap it landed in.
-  def self.post_transition_offset(zone, time)
+  # How wide the spring-forward gap `time` fell into is — i.e. how far forward
+  # a skipped wall clock must move to land on a real one. DST transitions are
+  # months apart, so the single offset-increasing transition within a day of
+  # `time` is necessarily the one whose gap it landed in.
+  #
+  # Read from the transition rather than assumed to be 3600. This is the one
+  # place the behavior deliberately departs from ActiveSupport, whose
+  # TimeWithZone#get_period_and_ensure_valid_local_time hardcodes `@time +=
+  # 1.hour` and retries: for Australia/Lord_Howe's 30-minute gap that lands
+  # half an hour past the gap's end (02:15 → 03:15 rather than 02:45). Every
+  # one-hour gap — i.e. every zone in current use but Lord Howe — resolves
+  # identically either way.
+  def self.gap_delta(zone, time)
     midnight = Time.utc(time.year, time.month, time.day)
     transition = zone.transitions_up_to(midnight + 86400, midnight - 86400)
       .find { |t| t.offset.observed_utc_offset > t.previous_offset.observed_utc_offset }
-    transition.offset.observed_utc_offset
+    transition.offset.observed_utc_offset - transition.previous_offset.observed_utc_offset
   end
-  private_class_method :post_transition_offset
+  private_class_method :gap_delta
 
   def self.timezone_for(reference_zone)
     TZInfo::Timezone.get(reference_zone)

@@ -353,9 +353,12 @@ class DucklingTest < Minitest::Test
   # whole result — unlike a primary value the caller named, which still raises
   # (test_reference_zone_raises_argument_error_for_dst_spring_forward_gap).
   # "every sunday at 2:30am" anchored 2026-02-28 generates 2026-03-08 02:30,
-  # which the spring-forward gap skips; that entry resolves deterministically to
-  # the post-transition offset (EDT, -14400) with its 2:30 wall clock kept, and
-  # the call as a whole returns normally.
+  # which the spring-forward gap skips; that entry resolves deterministically by
+  # shifting forward past the gap to 03:30 EDT, and the call as a whole returns
+  # normally. Shifting forward (rather than keeping the 2:30 wall clock and
+  # stamping EDT on it) is what ActiveSupport::TimeZone#parse/#local do with the
+  # same input, and is the only resolution whose instant and rendered local time
+  # agree — see local_time_in_zone.
   def test_reference_zone_resolves_recurrence_gap_entry_deterministically
     reference_time = Time.new(2026, 2, 28, 9, 0, 0, "-05:00")
     entity = entity_for("every sunday at 2:30am", :time,
@@ -365,10 +368,39 @@ class DucklingTest < Minitest::Test
       .find { |t| t.month == 3 && t.day == 8 }
 
     refute_nil gap_entry, "expected a 2026-03-08 recurrence entry"
-    assert_equal 2, gap_entry.hour, "expected the 2:30 wall clock preserved through the gap, got #{gap_entry.inspect}"
+    assert_equal 3, gap_entry.hour,
+      "expected the skipped 2:30 wall clock to shift forward past the gap to 3:30, got #{gap_entry.inspect}"
     assert_equal 30, gap_entry.min
     assert_equal(-14400, gap_entry.utc_offset,
       "expected the spring-forward gap recurrence entry to take the post-transition offset (EDT, -14400), got #{gap_entry.inspect}")
+
+    # The bug this guards against: 2:30 -04:00 is 06:30Z, and New York is still
+    # on EST at 06:30Z, so that Time would carry an offset the zone doesn't
+    # observe at its own instant. Assert the offset is the real one for this
+    # instant, which .hour and .utc_offset alone can't catch (they'd both pass
+    # on 2:30 -04:00 if .hour were 2).
+    real_offset = TZInfo::Timezone.get("America/New_York").period_for(gap_entry).observed_utc_offset
+    assert_equal real_offset, gap_entry.utc_offset,
+      "expected the resolved Time's utc_offset to be the offset America/New_York actually " \
+      "observes at that instant, got #{gap_entry.inspect} (real offset #{real_offset})"
+  end
+
+  # A gap shifts forward by the transition's own width, not by a hardcoded
+  # hour. Australia/Lord_Howe springs forward only 30 minutes (02:00 → 02:30 on
+  # 2026-10-04), so a skipped 02:15 resolves to 02:45 — where ActiveSupport's
+  # `@time += 1.hour` retry would overshoot to 03:15. Exercises
+  # local_time_in_zone directly: no English time expression reliably generates a
+  # Lord Howe recurrence entry landing in that 30-minute window.
+  def test_reference_zone_gap_shifts_by_transition_width_not_a_hardcoded_hour
+    zone = TZInfo::Timezone.get("Australia/Lord_Howe")
+    skipped = Time.new(2026, 10, 4, 2, 15, 0, "+10:30")
+
+    resolved = Duckling.send(:local_time_in_zone, zone, skipped, lenient: true)
+
+    assert_equal 2, resolved.hour, "expected a 30-minute shift to 02:45, got #{resolved.inspect}"
+    assert_equal 45, resolved.min, "expected a 30-minute shift to 02:45, got #{resolved.inspect}"
+    assert_equal zone.period_for(resolved).observed_utc_offset, resolved.utc_offset,
+      "expected the resolved Time to carry the offset Lord Howe observes at its own instant"
   end
 
   # Finding 1, fall-back side: an ambiguous recurrence entry resolves to its
