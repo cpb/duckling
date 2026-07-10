@@ -142,32 +142,23 @@ class DucklingTest < Minitest::Test
 
   # America/New_York springs forward from 2:00am straight to 3:00am on
   # 2026-03-08, so "2:30am" that day is a local time that never actually
-  # occurs — it must raise rather than silently pick an arbitrary (wrong)
-  # offset.
-  def test_reference_zone_raises_argument_error_for_dst_spring_forward_gap
+  # occurs. There's no benefit to raising over it just because this is a
+  # primary value the caller literally named rather than a generated
+  # recurrence entry — it resolves the same deterministic way either kind
+  # does (see test_reference_zone_resolves_recurrence_gap_entry_deterministically
+  # and local_time_in_zone): shifted forward past the gap to 3:30 EDT.
+  def test_reference_zone_resolves_primary_gap_deterministically
     reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
 
-    error = assert_raises(ArgumentError) do
-      Duckling.parse(
-        "March 8 2026 2:30am",
-        locale: "en",
-        dims: ["time"],
-        reference_time: reference_time,
-        reference_zone: "America/New_York"
-      )
-    end
+    entity = entity_for("March 8 2026 2:30am", :time,
+      reference_time: reference_time, reference_zone: "America/New_York")
+    resolved = single_point(entity)[:value]
 
-    # Since reference_zone: is currently stripped before reaching
-    # Native.parse (lib/duckling.rb), any unrelated ArgumentError elsewhere
-    # in the call path would otherwise also satisfy a bare assert_raises here
-    # — see test_reference_zone_mismatched_reference_time_offset_raises_argument_error
-    # for the same impostor concern. Pin down the actual gap complaint.
-    refute_match(/unknown keyword/i, error.message,
-      "expected the DST-gap ArgumentError, but got the unrelated 'unknown " \
-      "keyword' error raised because reference_zone: isn't recognized/" \
-      "validated yet: #{error.message.inspect}")
-    assert_match(/gap|nonexistent|does not exist|spring.forward/i, error.message,
-      "expected an ArgumentError describing the DST spring-forward gap, got: #{error.message.inspect}")
+    assert_equal 3, resolved.hour,
+      "expected the skipped 2:30 wall clock to shift forward past the gap to 3:30, got #{resolved.inspect}"
+    assert_equal 30, resolved.min
+    assert_equal(-14400, resolved.utc_offset,
+      "expected the spring-forward gap primary value to take the post-transition offset (EDT, -14400), got #{resolved.inspect}")
   end
 
   # TimePoint::Instant results (e.g. "in 3 hours" — relative/duration-based,
@@ -349,10 +340,11 @@ class DucklingTest < Minitest::Test
       "expected the values entry `to` leg (March 9, post-transition) to resolve to EDT (-14400), got #{to.inspect}")
   end
 
-  # Finding 1: a DST gap in a *generated* recurrence entry must not destroy the
-  # whole result — unlike a primary value the caller named, which still raises
-  # (test_reference_zone_raises_argument_error_for_dst_spring_forward_gap).
-  # "every sunday at 2:30am" anchored 2026-02-28 generates 2026-03-08 02:30,
+  # Finding 1: a DST gap in a *generated* recurrence entry resolves the same
+  # deterministic way a primary value does
+  # (test_reference_zone_resolves_primary_gap_deterministically) — no
+  # ArgumentError either way, so one collateral bad occurrence can't destroy
+  # the whole result. "every sunday at 2:30am" anchored 2026-02-28 generates 2026-03-08 02:30,
   # which the spring-forward gap skips; that entry resolves deterministically by
   # shifting forward past the gap to 03:30 EDT, and the call as a whole returns
   # normally. Shifting forward (rather than keeping the 2:30 wall clock and
@@ -395,7 +387,7 @@ class DucklingTest < Minitest::Test
     zone = TZInfo::Timezone.get("Australia/Lord_Howe")
     skipped = Time.new(2026, 10, 4, 2, 15, 0, "+10:30")
 
-    resolved = Duckling.send(:local_time_in_zone, zone, skipped, lenient: true)
+    resolved = Duckling.send(:local_time_in_zone, zone, skipped)
 
     assert_equal 2, resolved.hour, "expected a 30-minute shift to 02:45, got #{resolved.inspect}"
     assert_equal 45, resolved.min, "expected a 30-minute shift to 02:45, got #{resolved.inspect}"
@@ -419,5 +411,20 @@ class DucklingTest < Minitest::Test
     assert_equal 1, overlap_entry.hour, "expected the 1:30 wall clock preserved through the overlap, got #{overlap_entry.inspect}"
     assert_equal(-14400, overlap_entry.utc_offset,
       "expected the fall-back overlap recurrence entry to take the first (pre-transition) occurrence (EDT, -14400), got #{overlap_entry.inspect}")
+  end
+
+  # Primary-value counterpart to test_reference_zone_resolves_recurrence_overlap_entry_deterministically:
+  # a caller-named wall clock that a fall-back overlap makes ambiguous resolves
+  # to its first (pre-transition) occurrence too, same as a recurrence entry —
+  # no ArgumentError either way.
+  def test_reference_zone_resolves_primary_overlap_deterministically
+    reference_time = Time.new(2026, 10, 22, 9, 0, 0, "-04:00")
+    entity = entity_for("November 1st 2026 1:30am", :time,
+      reference_time: reference_time, reference_zone: "America/New_York")
+    resolved = single_point(entity)[:value]
+
+    assert_equal 1, resolved.hour, "expected the 1:30 wall clock preserved through the overlap, got #{resolved.inspect}"
+    assert_equal(-14400, resolved.utc_offset,
+      "expected the fall-back overlap primary value to take the first (pre-transition) occurrence (EDT, -14400), got #{resolved.inspect}")
   end
 end

@@ -109,21 +109,15 @@ module Duckling
   end
 
   # Walks the Single/Interval + Naive/Instant tagged shape. A primary value
-  # (single[:value], or an interval's from/to) is resolved strictly: a
-  # wall-clock the caller literally named that a DST gap skipped or a fall-back
-  # overlap made ambiguous has no honest answer and raises. Each `values`
-  # recurrence entry is instead an occurrence the parser *generated*, not a
-  # time the caller named — and every Single carries a populated `values`
-  # array, not just explicit recurrences — so one collateral bad occurrence
-  # must not destroy the whole result; those resolve deterministically
-  # (lenient: true — see local_time_in_zone).
+  # (single[:value], or an interval's from/to) and every `values` recurrence
+  # entry are resolved identically — see local_time_in_zone.
   def self.reinterpret_time_value!(value, zone)
     if (single = value && value[:Single])
       reinterpret_time_point!(single[:value], zone)
-      single[:values]&.each { |point| reinterpret_time_point!(point, zone, lenient: true) }
+      single[:values]&.each { |point| reinterpret_time_point!(point, zone) }
     elsif (interval = value && value[:Interval])
       reinterpret_interval_endpoints!(interval, zone)
-      interval[:values]&.each { |endpoints| reinterpret_interval_endpoints!(endpoints, zone, lenient: true) }
+      interval[:values]&.each { |endpoints| reinterpret_interval_endpoints!(endpoints, zone) }
     else
       raise ShapeError, "unrecognized :time value shape, expected a :Single or :Interval tag: #{value.inspect}"
     end
@@ -133,17 +127,17 @@ module Duckling
   # An Interval's from/to are Option<TimePoint> on the Rust side, and serde
   # emits Option::None as a present key holding nil — hence the nil tolerance
   # in reinterpret_time_point!, rather than a missing-key check here.
-  def self.reinterpret_interval_endpoints!(endpoints, zone, lenient: false)
-    reinterpret_time_point!(endpoints[:from], zone, lenient: lenient)
-    reinterpret_time_point!(endpoints[:to], zone, lenient: lenient)
+  def self.reinterpret_interval_endpoints!(endpoints, zone)
+    reinterpret_time_point!(endpoints[:from], zone)
+    reinterpret_time_point!(endpoints[:to], zone)
   end
   private_class_method :reinterpret_interval_endpoints!
 
-  def self.reinterpret_time_point!(point, zone, lenient: false)
+  def self.reinterpret_time_point!(point, zone)
     return if point.nil?
 
     if (naive = point[:Naive])
-      naive[:value] = local_time_in_zone(zone, naive[:value], lenient: lenient)
+      naive[:value] = local_time_in_zone(zone, naive[:value])
     elsif !point.key?(:Instant)
       raise ShapeError, "unrecognized TimePoint shape, expected a :Naive or :Instant tag: #{point.inspect}"
     end
@@ -156,14 +150,13 @@ module Duckling
   # per-date DST offset.
   #
   # A wall-clock that a spring-forward gap skipped, or that a fall-back overlap
-  # made ambiguous, has no single correct offset. For a primary value
-  # (lenient: false) — the caller's own named input — surface that as an
-  # ArgumentError rather than leaking a TZInfo internal. For a generated
-  # recurrence entry (lenient: true), resolve it deterministically instead,
-  # matching what ActiveSupport::TimeZone#parse/#local do with the same input:
-  # a gap shifts the wall clock forward by the transition's delta (02:30 on a
-  # US spring-forward day becomes 03:30 EDT), an overlap takes the first
-  # (pre-transition) occurrence.
+  # made ambiguous, has no single correct offset — but there's no benefit to
+  # raising over it either, whether the value is a primary one the caller
+  # literally named or a generated recurrence entry: both get the same
+  # deterministic resolution ActiveSupport::TimeZone#parse/#local use for the
+  # same input — a gap shifts the wall clock forward by the transition's delta
+  # (02:30 on a US spring-forward day becomes 03:30 EDT), an overlap takes the
+  # first (pre-transition) occurrence.
   #
   # Preserving the gap's original wall clock and merely stamping the
   # post-transition offset on it would produce a Time whose offset the zone
@@ -172,23 +165,13 @@ module Duckling
   # before the occurrence it stands for and on the wrong side of the
   # transition. Shifting forward keeps the instant and its rendered local
   # time in agreement.
-  def self.local_time_in_zone(zone, time, lenient: false)
+  def self.local_time_in_zone(zone, time)
     zone.local_time(time.year, time.month, time.day, time.hour, time.min, time.sec, time.subsec)
   rescue TZInfo::PeriodNotFound
-    unless lenient
-      raise ArgumentError,
-        "#{time.strftime("%Y-%m-%d %H:%M:%S")} does not exist in #{zone.identifier} " \
-        "(skipped by a daylight-saving spring-forward transition)"
-    end
     shifted = time + gap_delta(zone, time)
     zone.local_time(shifted.year, shifted.month, shifted.day, shifted.hour, shifted.min,
       shifted.sec, shifted.subsec)
   rescue TZInfo::AmbiguousTime
-    unless lenient
-      raise ArgumentError,
-        "#{time.strftime("%Y-%m-%d %H:%M:%S")} is ambiguous in #{zone.identifier} " \
-        "(it occurs twice around a daylight-saving fall-back transition)"
-    end
     zone.local_time(time.year, time.month, time.day, time.hour, time.min, time.sec, time.subsec, true)
   end
   private_class_method :local_time_in_zone
