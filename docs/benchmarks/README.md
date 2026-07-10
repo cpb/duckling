@@ -23,41 +23,41 @@ one file per environment per recorded version.
 
 ## Latest results by environment
 
-### github-actions (v0.3.0-rc2, 2026-07-09)
+### github-actions (v0.3.0-rc3, 2026-07-10)
 
 Ruby 3.3.6 (x86_64-linux), rustc 1.94.1 (e408947bf 2026-03-25), `release` profile.
 
 | Scenario | ips | µs/call | objects/call | minor GC | major GC |
 |---|---|---|---|---|---|
-| short | 1871.6 | 534.3 | 83.0 | 5 | 0 |
-| medium | 1564.7 | 639.1 | 149.0 | 10 | 0 |
-| long | 368.4 | 2714.6 | 149.0 | 10 | 0 |
-| no_match | 4117.3 | 242.9 | 3.0 | 0 | 0 |
-| empty | 11459.9 | 87.3 | 3.0 | 0 | 0 |
-| camping_trip_email | 2.3 | 441127.3 | 2133.8 | 1 | 0 |
+| short | 2035.5 | 491.3 | 59.0 | 3 | 0 |
+| medium | 1709.8 | 584.9 | 97.0 | 5 | 0 |
+| long | 393.8 | 2539.6 | 97.0 | 5 | 0 |
+| no_match | 4287.8 | 233.2 | 3.0 | 0 | 0 |
+| empty | 11181.6 | 89.4 | 3.0 | 0 | 0 |
+| camping_trip_email | 2.3 | 432951.9 | 1413.5 | 0 | 0 |
 
-10-thread throughput: 4237.7 ops/sec vs 2039.0 ops/sec single-threaded (2.08x, 20.8% of ideal linear scaling).
+10-thread throughput: 4649.0 ops/sec vs 2190.7 ops/sec single-threaded (2.12x, 21.2% of ideal linear scaling).
 
-#### Dispatch overhead: native vs thread-per-call (github-actions v0.3.0-rc2)
+#### Dispatch overhead: native vs thread-per-call (github-actions v0.3.0-rc3)
 
 Thread-per-call is `Duckling.parse` measured with a Fiber scheduler installed (the only condition under which it spawns a background `Thread`, so a calling Fiber can yield to its Async::Reactor while the native call runs); native is `Duckling::Native.parse` (no thread). Without a Fiber scheduler -- a plain Puma/Sidekiq thread pool -- `Duckling.parse` already takes the same fast path as native, paying none of this overhead. Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
 
 | Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |
 |---|---|---|---|---|---|
-| short | 2461.1 | 1871.6 | 406.3 | 534.3 | 31.5% |
-| medium | 1992.3 | 1564.7 | 501.9 | 639.1 | 27.3% |
-| long | 400.8 | 368.4 | 2494.7 | 2714.6 | 8.8% |
-| no_match | 7273.8 | 4117.3 | 137.5 | 242.9 | 76.7% |
-| empty | 72911.8 | 11459.9 | 13.7 | 87.3 | 536.2% |
-| camping_trip_email | 2.3 | 2.3 | 433260.5 | 441127.3 | 1.8% |
+| short | 2667.1 | 2035.5 | 374.9 | 491.3 | 31.0% |
+| medium | 2175.6 | 1709.8 | 459.6 | 584.9 | 27.2% |
+| long | 418.4 | 393.8 | 2390.2 | 2539.6 | 6.2% |
+| no_match | 7765.4 | 4287.8 | 128.8 | 233.2 | 81.1% |
+| empty | 74149.0 | 11181.6 | 13.5 | 89.4 | 563.1% |
+| camping_trip_email | 2.3 | 2.3 | 427787.0 | 432951.9 | 1.2% |
 
 ```mermaid
 xychart-beta
-    title "github-actions v0.3.0-rc2: native vs thread-per-call dispatch (ips)"
+    title "github-actions v0.3.0-rc3: native vs thread-per-call dispatch (ips)"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
-    bar "native" [2461.1, 1992.3, 400.8, 7273.8, 72911.8]
-    bar "thread-per-call" [1871.6, 1564.7, 368.4, 4117.3, 11459.9]
+    bar "native" [2667.1, 2175.6, 418.4, 7765.4, 74149.0]
+    bar "thread-per-call" [2035.5, 1709.8, 393.8, 4287.8, 11181.6]
 ```
 
 ### claude-code-web (v0.3.0-rc2, 2026-07-10)
@@ -213,7 +213,7 @@ xychart-beta
     title "Duckling.parse throughput (ips) -- latest run per environment"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
-    bar "github-actions" [1871.6, 1564.7, 368.4, 4117.3, 11459.9]
+    bar "github-actions" [2035.5, 1709.8, 393.8, 4287.8, 11181.6]
     bar "claude-code-web" [1436.5, 1263.2, 332.2, 3012.4, 7559.1]
     bar "local-3.3" [1030.7, 1057.5, 239.6, 2179.9, 4469.7]
     bar "local-3.4" [946.5, 927.0, 225.1, 1890.6, 3972.7]
@@ -225,5 +225,5 @@ xychart-beta
     title "10-thread concurrency scaling efficiency (%) -- latest run per environment"
     x-axis [github-actions, claude-code-web, local-3.3, local-3.4, local-4.0]
     y-axis "efficiency %"
-    bar "efficiency_pct" [20.8, 23.2, 71.1, 67.1, 54.9]
+    bar "efficiency_pct" [21.2, 23.2, 71.1, 67.1, 54.9]
 ```
