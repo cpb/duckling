@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+#
+# Record a complete benchmark set for the current Duckling::VERSION.
+#
+# There are three recording environments, and only two of them are scriptable:
+#
+#   local-<ruby-minor>  this script, via rbenv, one bucket per installed Ruby
+#   github-actions      this script, via `gh workflow run benchmark-branch.yml`
+#   claude-code-web     NOT scriptable — no CLI launches a Claude Code Web
+#                       session. Cloud sessions are spawned from inside a
+#                       Claude Code session (the Agent tool's remote isolation),
+#                       so that data point needs an agent to run
+#                       `bundle exec rake benchmark:record` for you. This script
+#                       prints the prompt to hand it; see also
+#                       docs/benchmarks/remote-agent-prompt.md.
+#
+# Usage:
+#   bin/record-all-benchmarks               # locals + dispatch CI + print prompt
+#   bin/record-all-benchmarks --local-only  # skip the CI dispatch
+#   bin/record-all-benchmarks --dry-run     # show what would run
+#
+# Refuses to run against a dirty tree: a benchmark recording is only meaningful
+# if you can name the commit it measured.
+
+set -euo pipefail
+
+DRY_RUN=false
+LOCAL_ONLY=false
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    --local-only) LOCAL_ONLY=true ;;
+    -h | --help)
+      sed -n '2,25p' "$0" | sed 's|^# \{0,1\}||'
+      exit 0
+      ;;
+    *)
+      echo "unknown argument: $arg" >&2
+      exit 1
+      ;;
+  esac
+done
+
+cd "$(dirname "$0")/.."
+
+run() {
+  if $DRY_RUN; then
+    echo "  [dry-run] $*"
+  else
+    "$@"
+  fi
+}
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+VERSION=$(ruby -r./lib/duckling/version -e 'print Duckling::VERSION')
+
+if [ -n "$(git status --porcelain)" ]; then
+  echo "error: working tree is dirty." >&2
+  echo "A recorded benchmark names a version, not a commit — an uncommitted change" >&2
+  echo "would be measured but never attributable. Commit or stash first." >&2
+  exit 1
+fi
+
+echo "Recording benchmarks for ${VERSION} on ${BRANCH} (commit $(git rev-parse --short HEAD))"
+echo
+
+# ---------------------------------------------------------------- local buckets
+#
+# One bucket per installed Ruby *minor* version — a dev machine's Ruby drifts
+# over a project's lifetime in a way CI runners' doesn't (see Report.detect_environment).
+# Pick the newest installed patch release of each minor that already has a
+# docs/benchmarks/local-<minor>/ directory, so we refresh exactly the buckets
+# that have history rather than inventing new ones.
+if ! command -v rbenv >/dev/null 2>&1; then
+  echo "warning: rbenv not found; skipping local buckets" >&2
+else
+  for dir in docs/benchmarks/local-*/; do
+    minor=$(basename "$dir" | sed 's/^local-//')
+    ruby_version=$(rbenv versions --bare 2>/dev/null | grep "^${minor}\." | sort -V | tail -1)
+    if [ -z "$ruby_version" ]; then
+      echo "warning: no installed Ruby for bucket local-${minor}; skipping" >&2
+      continue
+    fi
+
+    echo "── local-${minor}  (ruby ${ruby_version})"
+    run env RBENV_VERSION="$ruby_version" rbenv exec bundle install --quiet
+    # benchmark:record forces a release-profile build via :benchmark_env, so a
+    # local .env.local setting RB_SYS_CARGO_PROFILE=dev doesn't skew the numbers.
+    run env RBENV_VERSION="$ruby_version" rbenv exec bundle exec rake "benchmark:record"
+    echo
+  done
+
+  # Leave the working tree's compiled extension matching the default Ruby again,
+  # rather than whichever bucket happened to run last.
+  default_ruby=$(rbenv version-name)
+  echo "── restoring build for default ruby ${default_ruby}"
+  run env RBENV_VERSION="$default_ruby" rbenv exec bundle install --quiet
+  run env RBENV_VERSION="$default_ruby" rbenv exec bundle exec rake compile
+  echo
+fi
+
+# --------------------------------------------------------------- github-actions
+#
+# benchmark-branch.yml records the *branch's own* code and pushes the JSON back
+# to the branch. (benchmark.yml is the wrong workflow here: it always branches
+# off origin/main, so it cannot see code that only exists on this branch.)
+#
+# Its commit is pushed with GITHUB_TOKEN, which by design does not trigger
+# further workflow runs — so CI will not re-run on that commit.
+if $LOCAL_ONLY; then
+  echo "── github-actions: skipped (--local-only)"
+else
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "warning: gh not found; skipping github-actions dispatch" >&2
+  else
+    pr_number=$(gh pr view --json number -q .number 2>/dev/null || echo "")
+    echo "── github-actions  (dispatching benchmark-branch.yml on ${BRANCH})"
+    if [ -n "$pr_number" ]; then
+      run gh workflow run benchmark-branch.yml --ref "$BRANCH" -f pr_number="$pr_number"
+    else
+      run gh workflow run benchmark-branch.yml --ref "$BRANCH"
+    fi
+    echo "   watch:  gh run watch \$(gh run list --workflow=benchmark-branch.yml -L1 --json databaseId -q '.[0].databaseId')"
+    echo "   then:   git pull --ff-only"
+    echo
+  fi
+fi
+
+# -------------------------------------------------------------- claude-code-web
+cat <<EOF
+── claude-code-web  (not scriptable)
+
+No CLI launches a Claude Code Web session. Spawn a remote agent from a Claude Code
+session and hand it the prompt in:
+
+    docs/benchmarks/remote-agent-prompt.md
+
+Substitute VERSION=${VERSION} and BRANCH=${BRANCH} when you do.
+
+Once every environment has landed:
+
+    git pull --ff-only
+    ls docs/benchmarks/*/${VERSION}.json     # expect one per environment
+EOF
