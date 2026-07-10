@@ -23,41 +23,41 @@ one file per environment per recorded version.
 
 ## Latest results by environment
 
-### github-actions (v0.3.0-rc3, 2026-07-10)
+### github-actions (v0.3.0-rc2, 2026-07-09)
 
 Ruby 3.3.6 (x86_64-linux), rustc 1.94.1 (e408947bf 2026-03-25), `release` profile.
 
 | Scenario | ips | µs/call | objects/call | minor GC | major GC |
 |---|---|---|---|---|---|
-| short | 2035.5 | 491.3 | 59.0 | 3 | 0 |
-| medium | 1709.8 | 584.9 | 97.0 | 5 | 0 |
-| long | 393.8 | 2539.6 | 97.0 | 5 | 0 |
-| no_match | 4287.8 | 233.2 | 3.0 | 0 | 0 |
-| empty | 11181.6 | 89.4 | 3.0 | 0 | 0 |
-| camping_trip_email | 2.3 | 432951.9 | 1413.5 | 0 | 0 |
+| short | 1871.6 | 534.3 | 83.0 | 5 | 0 |
+| medium | 1564.7 | 639.1 | 149.0 | 10 | 0 |
+| long | 368.4 | 2714.6 | 149.0 | 10 | 0 |
+| no_match | 4117.3 | 242.9 | 3.0 | 0 | 0 |
+| empty | 11459.9 | 87.3 | 3.0 | 0 | 0 |
+| camping_trip_email | 2.3 | 441127.3 | 2133.8 | 1 | 0 |
 
-10-thread throughput: 4649.0 ops/sec vs 2190.7 ops/sec single-threaded (2.12x, 21.2% of ideal linear scaling).
+10-thread throughput: 4237.7 ops/sec vs 2039.0 ops/sec single-threaded (2.08x, 20.8% of ideal linear scaling).
 
-#### Dispatch overhead: native vs thread-per-call (github-actions v0.3.0-rc3)
+#### Dispatch overhead: native vs thread-per-call (github-actions v0.3.0-rc2)
 
 Thread-per-call is `Duckling.parse` measured with a Fiber scheduler installed (the only condition under which it spawns a background `Thread`, so a calling Fiber can yield to its Async::Reactor while the native call runs); native is `Duckling::Native.parse` (no thread). Without a Fiber scheduler -- a plain Puma/Sidekiq thread pool -- `Duckling.parse` already takes the same fast path as native, paying none of this overhead. Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
 
 | Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |
 |---|---|---|---|---|---|
-| short | 2667.1 | 2035.5 | 374.9 | 491.3 | 31.0% |
-| medium | 2175.6 | 1709.8 | 459.6 | 584.9 | 27.2% |
-| long | 418.4 | 393.8 | 2390.2 | 2539.6 | 6.2% |
-| no_match | 7765.4 | 4287.8 | 128.8 | 233.2 | 81.1% |
-| empty | 74149.0 | 11181.6 | 13.5 | 89.4 | 563.1% |
-| camping_trip_email | 2.3 | 2.3 | 427787.0 | 432951.9 | 1.2% |
+| short | 2461.1 | 1871.6 | 406.3 | 534.3 | 31.5% |
+| medium | 1992.3 | 1564.7 | 501.9 | 639.1 | 27.3% |
+| long | 400.8 | 368.4 | 2494.7 | 2714.6 | 8.8% |
+| no_match | 7273.8 | 4117.3 | 137.5 | 242.9 | 76.7% |
+| empty | 72911.8 | 11459.9 | 13.7 | 87.3 | 536.2% |
+| camping_trip_email | 2.3 | 2.3 | 433260.5 | 441127.3 | 1.8% |
 
 ```mermaid
 xychart-beta
-    title "github-actions v0.3.0-rc3: native vs thread-per-call dispatch (ips)"
+    title "github-actions v0.3.0-rc2: native vs thread-per-call dispatch (ips)"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
-    bar "native" [2667.1, 2175.6, 418.4, 7765.4, 74149.0]
-    bar "thread-per-call" [2035.5, 1709.8, 393.8, 4287.8, 11181.6]
+    bar "native" [2461.1, 1992.3, 400.8, 7273.8, 72911.8]
+    bar "thread-per-call" [1871.6, 1564.7, 368.4, 4117.3, 11459.9]
 ```
 
 ### claude-code-web (v0.3.0-rc2, 2026-07-10)
@@ -97,115 +97,115 @@ xychart-beta
     bar "thread-per-call" [1436.5, 1263.2, 332.2, 3012.4, 7559.1]
 ```
 
-### local-3.3 (v0.3.0-rc2, 2026-07-10)
+### local-3.3 (v0.3.0-rc3, 2026-07-10)
 
 Ruby 3.3.6 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` profile.
 
 | Scenario | ips | µs/call | objects/call | minor GC | major GC |
 |---|---|---|---|---|---|
-| short | 1107.0 | 903.3 | 83.0 | 5 | 0 |
-| medium | 1103.9 | 905.8 | 149.0 | 10 | 0 |
-| long | 262.2 | 3814.6 | 149.0 | 10 | 0 |
-| no_match | 2208.9 | 452.7 | 3.0 | 0 | 0 |
-| empty | 3909.5 | 255.8 | 3.0 | 0 | 0 |
-| camping_trip_email | 1.6 | 607167.8 | 2133.9 | 1 | 0 |
+| short | 1030.7 | 970.2 | 59.0 | 3 | 0 |
+| medium | 1057.5 | 945.7 | 97.0 | 5 | 0 |
+| long | 239.6 | 4173.6 | 97.0 | 5 | 0 |
+| no_match | 2179.9 | 458.7 | 3.0 | 0 | 0 |
+| empty | 4469.7 | 223.7 | 3.0 | 0 | 0 |
+| camping_trip_email | 1.6 | 626803.2 | 1413.5 | 0 | 0 |
 
-10-thread throughput: 9249.3 ops/sec vs 1520.0 ops/sec single-threaded (6.09x, 60.9% of ideal linear scaling).
+10-thread throughput: 9751.7 ops/sec vs 1371.7 ops/sec single-threaded (7.11x, 71.1% of ideal linear scaling).
 
-#### Dispatch overhead: native vs thread-per-call (local-3.3 v0.3.0-rc2)
+#### Dispatch overhead: native vs thread-per-call (local-3.3 v0.3.0-rc3)
 
 Thread-per-call is `Duckling.parse` measured with a Fiber scheduler installed (the only condition under which it spawns a background `Thread`, so a calling Fiber can yield to its Async::Reactor while the native call runs); native is `Duckling::Native.parse` (no thread). Without a Fiber scheduler -- a plain Puma/Sidekiq thread pool -- `Duckling.parse` already takes the same fast path as native, paying none of this overhead. Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
 
 | Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |
 |---|---|---|---|---|---|
-| short | 1645.1 | 1107.0 | 607.9 | 903.3 | 48.6% |
-| medium | 1516.9 | 1103.9 | 659.2 | 905.8 | 37.4% |
-| long | 290.7 | 262.2 | 3439.6 | 3814.6 | 10.9% |
-| no_match | 5135.9 | 2208.9 | 194.7 | 452.7 | 132.5% |
-| empty | 52528.1 | 3909.5 | 19.0 | 255.8 | 1243.6% |
-| camping_trip_email | 1.8 | 1.6 | 570563.0 | 607167.8 | 6.4% |
+| short | 1517.9 | 1030.7 | 658.8 | 970.2 | 47.3% |
+| medium | 1461.3 | 1057.5 | 684.3 | 945.7 | 38.2% |
+| long | 261.4 | 239.6 | 3826.2 | 4173.6 | 9.1% |
+| no_match | 5006.8 | 2179.9 | 199.7 | 458.7 | 129.7% |
+| empty | 48963.7 | 4469.7 | 20.4 | 223.7 | 995.5% |
+| camping_trip_email | 1.6 | 1.6 | 641627.2 | 626803.2 | -2.3% |
 
 ```mermaid
 xychart-beta
-    title "local-3.3 v0.3.0-rc2: native vs thread-per-call dispatch (ips)"
+    title "local-3.3 v0.3.0-rc3: native vs thread-per-call dispatch (ips)"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
-    bar "native" [1645.1, 1516.9, 290.7, 5135.9, 52528.1]
-    bar "thread-per-call" [1107.0, 1103.9, 262.2, 2208.9, 3909.5]
+    bar "native" [1517.9, 1461.3, 261.4, 5006.8, 48963.7]
+    bar "thread-per-call" [1030.7, 1057.5, 239.6, 2179.9, 4469.7]
 ```
 
-### local-3.4 (v0.3.0-rc2, 2026-07-09)
+### local-3.4 (v0.3.0-rc3, 2026-07-10)
 
 Ruby 3.4.5 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` profile.
 
 | Scenario | ips | µs/call | objects/call | minor GC | major GC |
 |---|---|---|---|---|---|
-| short | 793.1 | 1260.8 | 83.0 | 3 | 0 |
-| medium | 773.6 | 1292.7 | 149.0 | 6 | 0 |
-| long | 190.9 | 5237.4 | 149.0 | 6 | 0 |
-| no_match | 1677.7 | 596.1 | 3.0 | 0 | 0 |
-| empty | 3595.0 | 278.2 | 3.0 | 0 | 0 |
-| camping_trip_email | 1.3 | 783123.3 | 2133.6 | 0 | 0 |
+| short | 946.5 | 1056.5 | 59.0 | 2 | 0 |
+| medium | 927.0 | 1078.8 | 97.0 | 3 | 0 |
+| long | 225.1 | 4443.1 | 97.0 | 3 | 0 |
+| no_match | 1890.6 | 528.9 | 3.0 | 0 | 0 |
+| empty | 3972.7 | 251.7 | 3.0 | 0 | 0 |
+| camping_trip_email | 1.7 | 582012.8 | 1413.6 | 0 | 0 |
 
-10-thread throughput: 6791.7 ops/sec vs 1060.3 ops/sec single-threaded (6.41x, 64.1% of ideal linear scaling).
+10-thread throughput: 9387.7 ops/sec vs 1398.3 ops/sec single-threaded (6.71x, 67.1% of ideal linear scaling).
 
-#### Dispatch overhead: native vs thread-per-call (local-3.4 v0.3.0-rc2)
+#### Dispatch overhead: native vs thread-per-call (local-3.4 v0.3.0-rc3)
 
 Thread-per-call is `Duckling.parse` measured with a Fiber scheduler installed (the only condition under which it spawns a background `Thread`, so a calling Fiber can yield to its Async::Reactor while the native call runs); native is `Duckling::Native.parse` (no thread). Without a Fiber scheduler -- a plain Puma/Sidekiq thread pool -- `Duckling.parse` already takes the same fast path as native, paying none of this overhead. Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
 
 | Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |
 |---|---|---|---|---|---|
-| short | 1105.4 | 793.1 | 904.6 | 1260.8 | 39.4% |
-| medium | 1077.8 | 773.6 | 927.8 | 1292.7 | 39.3% |
-| long | 210.0 | 190.9 | 4761.0 | 5237.4 | 10.0% |
-| no_match | 3743.2 | 1677.7 | 267.2 | 596.1 | 123.1% |
-| empty | 39235.9 | 3595.0 | 25.5 | 278.2 | 991.4% |
-| camping_trip_email | 1.3 | 1.3 | 772353.7 | 783123.3 | 1.4% |
+| short | 1628.0 | 946.5 | 614.2 | 1056.5 | 72.0% |
+| medium | 1606.0 | 927.0 | 622.7 | 1078.8 | 73.3% |
+| long | 281.1 | 225.1 | 3556.8 | 4443.1 | 24.9% |
+| no_match | 4851.2 | 1890.6 | 206.1 | 528.9 | 156.6% |
+| empty | 53133.8 | 3972.7 | 18.8 | 251.7 | 1237.5% |
+| camping_trip_email | 1.7 | 1.7 | 600329.2 | 582012.8 | -3.1% |
 
 ```mermaid
 xychart-beta
-    title "local-3.4 v0.3.0-rc2: native vs thread-per-call dispatch (ips)"
+    title "local-3.4 v0.3.0-rc3: native vs thread-per-call dispatch (ips)"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
-    bar "native" [1105.4, 1077.8, 210.0, 3743.2, 39235.9]
-    bar "thread-per-call" [793.1, 773.6, 190.9, 1677.7, 3595.0]
+    bar "native" [1628.0, 1606.0, 281.1, 4851.2, 53133.8]
+    bar "thread-per-call" [946.5, 927.0, 225.1, 1890.6, 3972.7]
 ```
 
-### local-4.0 (v0.3.0-rc2, 2026-07-10)
+### local-4.0 (v0.3.0-rc3, 2026-07-10)
 
 Ruby 4.0.5 (x86_64-darwin24), rustc 1.85.0 (4d91de4e4 2025-02-17), `release` profile.
 
 | Scenario | ips | µs/call | objects/call | minor GC | major GC |
 |---|---|---|---|---|---|
-| short | 1072.0 | 932.8 | 83.0 | 3 | 0 |
-| medium | 1105.7 | 904.4 | 149.0 | 5 | 0 |
-| long | 265.7 | 3764.0 | 149.0 | 5 | 0 |
-| no_match | 2150.9 | 464.9 | 3.0 | 0 | 0 |
-| empty | 4254.3 | 235.1 | 3.0 | 0 | 0 |
-| camping_trip_email | 1.6 | 624416.8 | 2133.6 | 0 | 0 |
+| short | 967.4 | 1033.7 | 59.0 | 2 | 0 |
+| medium | 898.1 | 1113.5 | 97.0 | 3 | 0 |
+| long | 217.3 | 4602.4 | 97.0 | 3 | 0 |
+| no_match | 2080.4 | 480.7 | 3.0 | 0 | 0 |
+| empty | 4573.2 | 218.7 | 3.0 | 0 | 0 |
+| camping_trip_email | 1.5 | 678020.3 | 1413.6 | 0 | 0 |
 
-10-thread throughput: 9124.7 ops/sec vs 1563.3 ops/sec single-threaded (5.84x, 58.4% of ideal linear scaling).
+10-thread throughput: 8573.7 ops/sec vs 1562.3 ops/sec single-threaded (5.49x, 54.9% of ideal linear scaling).
 
-#### Dispatch overhead: native vs thread-per-call (local-4.0 v0.3.0-rc2)
+#### Dispatch overhead: native vs thread-per-call (local-4.0 v0.3.0-rc3)
 
 Thread-per-call is `Duckling.parse` measured with a Fiber scheduler installed (the only condition under which it spawns a background `Thread`, so a calling Fiber can yield to its Async::Reactor while the native call runs); native is `Duckling::Native.parse` (no thread). Without a Fiber scheduler -- a plain Puma/Sidekiq thread pool -- `Duckling.parse` already takes the same fast path as native, paying none of this overhead. Overhead is a fixed per-call cost, not a throughput loss -- negligible against slower scenarios, a real multiplier against the fastest ones.
 
 | Scenario | ips (native) | ips (thread-per-call) | µs/call (native) | µs/call (thread-per-call) | overhead |
 |---|---|---|---|---|---|
-| short | 1618.9 | 1072.0 | 617.7 | 932.8 | 51.0% |
-| medium | 1537.8 | 1105.7 | 650.3 | 904.4 | 39.1% |
-| long | 290.8 | 265.7 | 3439.0 | 3764.0 | 9.5% |
-| no_match | 5305.2 | 2150.9 | 188.5 | 464.9 | 146.7% |
-| empty | 54756.8 | 4254.3 | 18.3 | 235.1 | 1187.1% |
-| camping_trip_email | 1.8 | 1.6 | 569578.8 | 624416.8 | 9.6% |
+| short | 1317.5 | 967.4 | 759.0 | 1033.7 | 36.2% |
+| medium | 1313.8 | 898.1 | 761.1 | 1113.5 | 46.3% |
+| long | 239.5 | 217.3 | 4175.5 | 4602.4 | 10.2% |
+| no_match | 4435.7 | 2080.4 | 225.4 | 480.7 | 113.2% |
+| empty | 47107.0 | 4573.2 | 21.2 | 218.7 | 930.1% |
+| camping_trip_email | 1.4 | 1.5 | 724081.3 | 678020.3 | -6.4% |
 
 ```mermaid
 xychart-beta
-    title "local-4.0 v0.3.0-rc2: native vs thread-per-call dispatch (ips)"
+    title "local-4.0 v0.3.0-rc3: native vs thread-per-call dispatch (ips)"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
-    bar "native" [1618.9, 1537.8, 290.8, 5305.2, 54756.8]
-    bar "thread-per-call" [1072.0, 1105.7, 265.7, 2150.9, 4254.3]
+    bar "native" [1317.5, 1313.8, 239.5, 4435.7, 47107.0]
+    bar "thread-per-call" [967.4, 898.1, 217.3, 2080.4, 4573.2]
 ```
 
 ```mermaid
@@ -213,11 +213,11 @@ xychart-beta
     title "Duckling.parse throughput (ips) -- latest run per environment"
     x-axis [short, medium, long, no_match, empty]
     y-axis "ips"
-    bar "github-actions" [2035.5, 1709.8, 393.8, 4287.8, 11181.6]
+    bar "github-actions" [1871.6, 1564.7, 368.4, 4117.3, 11459.9]
     bar "claude-code-web" [1436.5, 1263.2, 332.2, 3012.4, 7559.1]
-    bar "local-3.3" [1107.0, 1103.9, 262.2, 2208.9, 3909.5]
-    bar "local-3.4" [793.1, 773.6, 190.9, 1677.7, 3595.0]
-    bar "local-4.0" [1072.0, 1105.7, 265.7, 2150.9, 4254.3]
+    bar "local-3.3" [1030.7, 1057.5, 239.6, 2179.9, 4469.7]
+    bar "local-3.4" [946.5, 927.0, 225.1, 1890.6, 3972.7]
+    bar "local-4.0" [967.4, 898.1, 217.3, 2080.4, 4573.2]
 ```
 
 ```mermaid
@@ -225,5 +225,5 @@ xychart-beta
     title "10-thread concurrency scaling efficiency (%) -- latest run per environment"
     x-axis [github-actions, claude-code-web, local-3.3, local-3.4, local-4.0]
     y-axis "efficiency %"
-    bar "efficiency_pct" [21.2, 23.2, 60.9, 64.1, 58.4]
+    bar "efficiency_pct" [20.8, 23.2, 71.1, 67.1, 54.9]
 ```
