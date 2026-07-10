@@ -7,4 +7,4 @@ the future `/hill-first` test-writing session.
 
 | Doc | Summary |
 |---|---|
-| [01-pool-design-recommendation.md](01-pool-design-recommendation.md) | Recommends a hand-rolled stdlib-only `Queue`-based pool over `concurrent-ruby`, since neither eliminates per-call thread spawning and hand-rolled's version of that ceiling is mechanically proven rather than hypothesized. Lays out steps tied to issue #71's acceptance criteria (configurable size, clean shutdown, GC-safety, benchmark comparison) and flags four open questions. |
+| [01-pool-design-recommendation.md](01-pool-design-recommendation.md) | Recommends a hand-rolled stdlib-only `Queue`-based pool over `concurrent-ruby`. A spike confirmed both designs reach **zero** per-call thread spawns (a bare `Queue#pop`/`Future#value` on the calling Fiber cooperates with `Fiber.scheduler`), so the choice rests on dependency footprint — hand-rolled adds none. Lays out steps tied to issue #71's acceptance criteria (configurable size, clean shutdown, GC-safety, benchmark comparison). |

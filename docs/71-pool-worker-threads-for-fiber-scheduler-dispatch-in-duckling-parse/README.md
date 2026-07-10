@@ -35,27 +35,21 @@ test code.
 
 ## Headline finding
 
-**Update: the finding below has been superseded by a follow-up spike — see
-the flag in [plans/01-pool-design-recommendation.md](plans/01-pool-design-recommendation.md#decision)
-and the empirical verification sections in
-[research/hand-rolled-pool](research/hand-rolled-pool/README.md#empirical-verification-bare-queuepopmutexlockconditionvariablewait-are-fiber-scheduler-hooked)
-and
-[research/concurrent-ruby-executors](research/concurrent-ruby-executors/README.md#empirical-verification-does-futurevalue-cooperate-with-fiberscheduler).
-Kept below for the historical reasoning trail; needs operator review before
-the plan's Decision is treated as final.**
+**A pool can drive per-call `Thread.new` down to zero.** A direct spike
+([hand-rolled-pool §3](research/hand-rolled-pool/README.md#3-the-fiber-cooperation-mechanism-empirically-verified))
+showed that a bare `Queue#pop` (and `Mutex#lock`, `ConditionVariable#wait`)
+called on the calling Fiber's own thread already cooperates with
+`Fiber.scheduler` — the reactor keeps running while the Fiber waits. So the
+calling Fiber can block directly on a per-call reply queue, with no per-call
+wait-wrapper thread. This is a strict improvement over today's
+`Thread.new { Native.parse(...) }.value`, which spawns one thread per call.
 
-The research surfaced a finding sharper than "which library to use": **no
-candidate — library or hand-rolled — is proven to eliminate per-call thread
-spawning**, since only `Thread#value`/`Thread#join`-shaped waits cooperate
-with `Fiber.scheduler`, not a bare `Queue#pop`. The
-[plan](plans/01-pool-design-recommendation.md) recommends a hand-rolled
-stdlib pool specifically because its version of that limit is mechanically
-proven, where `concurrent-ruby`'s equivalent (`Future#value`) is an
-unverified hypothesis.
-
-Both halves of that finding turned out to be wrong on closer inspection: a
-direct spike showed a bare `Queue#pop` on the calling Fiber's own thread
-*does* cooperate with `Fiber.scheduler` (no wrapper thread needed), and
-`concurrent-ruby`'s `Future#value` cooperates too (transitively, via
-`Mutex`/`ConditionVariable`). See the empirical verification sections
-linked above for the numbers.
+`concurrent-ruby`'s `Future#value` reaches the same zero-thread floor
+(it waits on `Mutex`+`ConditionVariable` underneath —
+[verified](research/concurrent-ruby-executors/README.md#empirical-verification-does-futurevalue-cooperate-with-fiberscheduler)),
+so Fiber-cooperation doesn't distinguish the two pool options. The
+[plan](plans/01-pool-design-recommendation.md) recommends the **hand-rolled
+stdlib pool** on the axis that does distinguish them: it adds no runtime
+dependency (this gem prizes its single-dependency posture), covering the
+pool/shutdown mechanics in under 100 lines, where `concurrent-ruby` would be
+a new dependency buying only that same mechanics.

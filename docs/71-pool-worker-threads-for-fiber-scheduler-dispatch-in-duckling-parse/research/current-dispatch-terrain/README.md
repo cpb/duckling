@@ -166,7 +166,13 @@ The mechanism, restated precisely from what's in-repo:
   notification. `Thread#value`'s block/unblock hooks (present since Ruby
   3.0, per the `lib/duckling.rb:12-13` comment) are what actually cause the
   scheduler notification, which is why the fix requires spawning a full
-  background `Thread`, not just releasing the GVL.
+  background `Thread`, not just releasing the GVL. (`Thread#value` is not the
+  *only* scheduler-cooperative wait — `Queue#pop`, `Mutex#lock`, and
+  `ConditionVariable#wait` are hooked too, which is what lets a worker pool
+  drop the per-call thread entirely; see
+  [hand-rolled-pool §3](../hand-rolled-pool/README.md#3-the-fiber-cooperation-mechanism-empirically-verified).
+  What a bare GVL release lacks is *any* of these Ruby-level block/unblock
+  hooks, not `Thread#value` specifically.)
 - This asymmetry is exactly what `lib/duckling.rb:17-22`'s comment states as
   the reason the `Thread.new` is conditional on `Fiber.scheduler` being
   present: a plain thread pool never needed the `Thread.new` — it already

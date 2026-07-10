@@ -200,23 +200,22 @@ near 100%. Tracing why: `Future#value`
 `ConditionVariable` under `Concurrent::Synchronization::LockableObject` —
 not a `Thread#join`/`Thread#value` at all. `Mutex#lock` and
 `ConditionVariable#wait` are themselves Fiber-scheduler-hooked (see
-[hand-rolled-pool's empirical verification section](../hand-rolled-pool/README.md#empirical-verification-bare-queuepopmutexlockconditionvariablewait-are-fiber-scheduler-hooked)
+[hand-rolled-pool §3](../hand-rolled-pool/README.md#3-the-fiber-cooperation-mechanism-empirically-verified)
 for the same finding applied to the hand-rolled side), so `Future#value`
 cooperates with `Fiber.scheduler` transitively through that wait, without
 needing a `Thread#value`-shaped primitive at all.
 
-**This closes the "unverified hypothesis" flagged in the headline finding
-of the top-level README and in the comparison table row above:
-`Future#value` does let the calling Fiber yield to the reactor for the
-work's duration** — confirmed empirically, not just claimed by API-shape
-analogy. It also means the "con" recorded against `concurrent-ruby`
-elsewhere in this repo's docs (that `IVar#value`/`Future#value` doesn't
-know about `Fiber.scheduler` any more than a hand-rolled `Queue` does) no
-longer holds: the hand-rolled side of that comparison turns out to already
-cooperate too (cross-linked above), which reopens rather than closes the
-hand-rolled-vs-`concurrent-ruby` comparison — see that doc's finding and
-[the plan's Open Questions](../../plans/01-pool-design-recommendation.md#open-questions)
-for what this changes.
+**`Future#value` lets the calling Fiber yield to the reactor for the work's
+duration** — confirmed empirically, not just claimed by API-shape analogy.
+Its wait is scheduler-hooked at the `Mutex`/`ConditionVariable` level, so a
+`concurrent-ruby`-backed pool reaches the same **zero per-call thread
+spawns** a hand-rolled `Queue` pool does (that side is verified in
+[hand-rolled-pool §3](../hand-rolled-pool/README.md#3-the-fiber-cooperation-mechanism-empirically-verified)).
+Fiber-cooperation is therefore *not* a point of difference between the two
+pool options. What actually separates them — dependency footprint versus
+owned code — is what the
+[plan's Decision](../../plans/01-pool-design-recommendation.md#decision)
+turns on.
 
 ### Net assessment (factual, not prescriptive)
 
