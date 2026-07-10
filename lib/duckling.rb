@@ -81,7 +81,7 @@ module Duckling
       Native.parse(text, **kwargs)
     end
 
-    apply_reference_zone(entities, reference_zone)
+    zone ? reinterpret_entities!(entities, zone) : entities
   end
 
   # Reinterprets every TimePoint::Naive (wall-clock) leaf of each :time entity
@@ -100,13 +100,21 @@ module Duckling
   def self.apply_reference_zone(entities, reference_zone)
     return entities unless reference_zone
 
-    zone = timezone_for(reference_zone)
+    reinterpret_entities!(entities, timezone_for(reference_zone))
+  end
+
+  # Zone-object core of apply_reference_zone. parse calls this directly with
+  # the TZInfo::Timezone it already resolved for offset validation, so the
+  # zone is looked up once per call rather than once for validation and again
+  # for reinterpretation.
+  def self.reinterpret_entities!(entities, zone)
     entities.each do |entity|
       next unless entity[:dim] == :time
       reinterpret_time_value!(entity[:value][:Time], zone)
     end
     entities
   end
+  private_class_method :reinterpret_entities!
 
   # Walks the Single/Interval + Naive/Instant tagged shape. A primary value
   # (single[:value], or an interval's from/to) and every `values` recurrence
@@ -153,10 +161,20 @@ module Duckling
   # made ambiguous, has no single correct offset — but there's no benefit to
   # raising over it either, whether the value is a primary one the caller
   # literally named or a generated recurrence entry: both get the same
-  # deterministic resolution ActiveSupport::TimeZone#parse/#local use for the
-  # same input — a gap shifts the wall clock forward by the transition's delta
-  # (02:30 on a US spring-forward day becomes 03:30 EDT), an overlap takes the
-  # first (pre-transition) occurrence.
+  # deterministic resolution — a gap shifts the wall clock forward by the
+  # transition's delta (02:30 on a US spring-forward day becomes 03:30 EDT),
+  # an overlap takes the first (pre-transition) occurrence.
+  #
+  # The first occurrence is selected via the block form (periods_for_local
+  # yields periods in chronological order), NOT tzinfo's dst flag: dst=true
+  # only means "first" where the pre-transition period observes DST, and
+  # negative-DST zones invert that — Europe/Dublin models winter GMT as its
+  # dst?==true period, so dst=true there would pick the second occurrence, an
+  # hour off as an instant. (ActiveSupport::TimeZone#local has exactly that
+  # Dublin behavior, via period_for_local's dst=true default — a deliberate
+  # departure here, like the Lord Howe one on gap_delta.) The explicit nil dst
+  # argument keeps a global Timezone.default_dst setting from pre-filtering
+  # the periods before the block sees them.
   #
   # Preserving the gap's original wall clock and merely stamping the
   # post-transition offset on it would produce a Time whose offset the zone
@@ -166,13 +184,14 @@ module Duckling
   # transition. Shifting forward keeps the instant and its rendered local
   # time in agreement.
   def self.local_time_in_zone(zone, time)
-    zone.local_time(time.year, time.month, time.day, time.hour, time.min, time.sec, time.subsec)
+    first_occurrence = lambda do |t|
+      zone.local_time(t.year, t.month, t.day, t.hour, t.min, t.sec, t.subsec, nil) do |periods|
+        periods.first
+      end
+    end
+    first_occurrence.call(time)
   rescue TZInfo::PeriodNotFound
-    shifted = time + gap_delta(zone, time)
-    zone.local_time(shifted.year, shifted.month, shifted.day, shifted.hour, shifted.min,
-      shifted.sec, shifted.subsec)
-  rescue TZInfo::AmbiguousTime
-    zone.local_time(time.year, time.month, time.day, time.hour, time.min, time.sec, time.subsec, true)
+    first_occurrence.call(time + gap_delta(zone, time))
   end
   private_class_method :local_time_in_zone
 
@@ -181,16 +200,24 @@ module Duckling
   # months apart, so the single offset-increasing transition within a day of
   # `time` is necessarily the one whose gap it landed in.
   #
-  # Read from the transition rather than assumed to be 3600. This is the one
-  # place the behavior deliberately departs from ActiveSupport, whose
-  # TimeWithZone#get_period_and_ensure_valid_local_time hardcodes `@time +=
-  # 1.hour` and retries: for Australia/Lord_Howe's 30-minute gap that lands
-  # half an hour past the gap's end (02:15 → 03:15 rather than 02:45). Every
-  # one-hour gap — i.e. every zone in current use but Lord Howe — resolves
-  # identically either way.
+  # The ±1-day scan window is centered on the skipped wall clock itself read
+  # as UTC — not on the UTC midnight of its date. The transition's UTC instant
+  # is the wall clock minus a zone offset, and offsets never reach a day, so
+  # this window always contains it; a midnight-anchored window does not. A
+  # gap late in the local day in a negative-offset zone (America/Nuuk springs
+  # forward at 23:00 local) has its transition instant past the *next* UTC
+  # midnight, outside a midnight-anchored window — `find` returned nil and
+  # this method crashed instead of resolving.
+  #
+  # Read from the transition rather than assumed to be 3600. ActiveSupport's
+  # TimeWithZone#get_period_and_ensure_valid_local_time instead hardcodes
+  # `@time += 1.hour` and retries: for Australia/Lord_Howe's 30-minute gap
+  # that lands half an hour past the gap's end (02:15 → 03:15 rather than
+  # 02:45). Every one-hour gap — i.e. every zone in current use but Lord Howe
+  # — resolves identically either way.
   def self.gap_delta(zone, time)
-    midnight = Time.utc(time.year, time.month, time.day)
-    transition = zone.transitions_up_to(midnight + 86400, midnight - 86400)
+    wall_clock = Time.utc(time.year, time.month, time.day, time.hour, time.min, time.sec)
+    transition = zone.transitions_up_to(wall_clock + 86400, wall_clock - 86400)
       .find { |t| t.offset.observed_utc_offset > t.previous_offset.observed_utc_offset }
     transition.offset.observed_utc_offset - transition.previous_offset.observed_utc_offset
   end

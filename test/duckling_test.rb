@@ -6,6 +6,14 @@ require "date"
 VALID_GRAINS = %i[second minute hour day week month quarter year].freeze
 
 class DucklingTest < Minitest::Test
+  # Anchor for the America/New_York DST tests: 2026-03-01 09:00 EST, ahead of
+  # the 2026-03-08 spring-forward. Its fixed -05:00 offset agrees with the
+  # zone's real offset at that instant, which the offset-mismatch check
+  # requires — every test that pairs a reference_time: with
+  # reference_zone: "America/New_York" must use an anchor like this or it
+  # trips that ArgumentError instead of exercising its own assertion.
+  EST_REFERENCE_TIME = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+
   def test_parse_returns_array
     assert_kind_of Array, Duckling.parse("tomorrow", locale: "en")
   end
@@ -105,7 +113,7 @@ class DucklingTest < Minitest::Test
     assert_equal(-7200, point[:value].utc_offset)
   end
 
-  # Issue #85 (re-implemented for #96): `reference_zone:` makes a `:Naive`
+  # `reference_zone:` makes a `:Naive`
   # (wall-clock) time result DST-aware by resolving its UTC offset against the
   # real IANA zone for *that result's own date*, instead of the single fixed
   # offset `reference_time:` provides today. US DST began 2026-03-08 02:00
@@ -119,7 +127,7 @@ class DucklingTest < Minitest::Test
     # the 03-08 spring-forward) is -18000 (EST) — matching the fixed offset
     # reference_time: carries, so this doesn't trip the offset-mismatch check
     # covered by test_reference_zone_mismatched_reference_time_offset_raises_argument_error.
-    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+    reference_time = EST_REFERENCE_TIME
     before_entity = entity_for("March 7th 2026 3:00am", :time,
       reference_time: reference_time, reference_zone: "America/New_York")
     after_entity = entity_for("March 9th 2026 3:00am", :time,
@@ -148,7 +156,7 @@ class DucklingTest < Minitest::Test
   # does (see test_reference_zone_resolves_recurrence_gap_entry_deterministically
   # and local_time_in_zone): shifted forward past the gap to 3:30 EDT.
   def test_reference_zone_resolves_primary_gap_deterministically
-    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+    reference_time = EST_REFERENCE_TIME
 
     entity = entity_for("March 8 2026 2:30am", :time,
       reference_time: reference_time, reference_zone: "America/New_York")
@@ -172,7 +180,7 @@ class DucklingTest < Minitest::Test
     # See test_reference_zone_resolves_naive_offset_per_date_across_dst_transition
     # for why reference_time: must itself agree with America/New_York's real
     # offset at this instant, rather than reusing REFERENCE_TIME's -02:00.
-    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+    reference_time = EST_REFERENCE_TIME
     without_zone = entity_for("in 3 hours", :time, reference_time: reference_time)
     with_zone = entity_for("in 3 hours", :time,
       reference_time: reference_time, reference_zone: "America/New_York")
@@ -214,7 +222,7 @@ class DucklingTest < Minitest::Test
     # See test_reference_zone_resolves_naive_offset_per_date_across_dst_transition
     # for why reference_time: must itself agree with America/New_York's real
     # offset at this instant, rather than reusing REFERENCE_TIME's -02:00.
-    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+    reference_time = EST_REFERENCE_TIME
     entity = entity_for("from March 7th 2026 3:00am to March 9th 2026 3:00am", :time,
       reference_time: reference_time, reference_zone: "America/New_York")
     from_point, to_point = interval_points(entity)
@@ -299,14 +307,14 @@ class DucklingTest < Minitest::Test
     end
   end
 
-  # Finding 2: a Single's `values` recurrence array — populated on essentially
+  # A Single's `values` recurrence array — populated on essentially
   # every parse, not only explicit recurrences — is reinterpreted per entry, so
   # each occurrence picks up its own date's DST offset. "every monday at 3am"
   # anchored 2026-03-01 yields two Mondays straddling the 03-08 transition: the
   # earlier must resolve to EST (-18000), the later to EDT (-14400), wall clock
   # preserved.
   def test_reference_zone_resolves_single_values_across_dst_transition
-    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+    reference_time = EST_REFERENCE_TIME
     entity = entity_for("every monday at 3am", :time,
       reference_time: reference_time, reference_zone: "America/New_York")
     resolved = entity[:value][:Time][:Single][:values].map { |p| time_point(p)[:value] }
@@ -321,13 +329,13 @@ class DucklingTest < Minitest::Test
       "expected the post-transition recurrence entry (March 9) to resolve to EDT (-14400), got #{after.inspect}")
   end
 
-  # Finding 2: an Interval's `values` endpoint pairs are reinterpreted the same
+  # An Interval's `values` endpoint pairs are reinterpreted the same
   # way, each leg independently. "from March 7th 3:00am to March 9th 3:00am"
   # anchored 2026-03-01 produces a values entry straddling the 03-08
   # transition: its `from` (March 7) must resolve to EST (-18000) and its `to`
   # (March 9) to EDT (-14400).
   def test_reference_zone_resolves_interval_values_endpoints_independently
-    reference_time = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
+    reference_time = EST_REFERENCE_TIME
     entity = entity_for("from March 7th 2026 3:00am to March 9th 2026 3:00am", :time,
       reference_time: reference_time, reference_zone: "America/New_York")
     endpoints = entity[:value][:Time][:Interval][:values].first
@@ -340,7 +348,7 @@ class DucklingTest < Minitest::Test
       "expected the values entry `to` leg (March 9, post-transition) to resolve to EDT (-14400), got #{to.inspect}")
   end
 
-  # Finding 1: a DST gap in a *generated* recurrence entry resolves the same
+  # A DST gap in a *generated* recurrence entry resolves the same
   # deterministic way a primary value does
   # (test_reference_zone_resolves_primary_gap_deterministically) — no
   # ArgumentError either way, so one collateral bad occurrence can't destroy
@@ -395,7 +403,47 @@ class DucklingTest < Minitest::Test
       "expected the resolved Time to carry the offset Lord Howe observes at its own instant"
   end
 
-  # Finding 1, fall-back side: an ambiguous recurrence entry resolves to its
+  # A gap late in the local day has a transition instant past the *next* UTC
+  # midnight when the zone's offset is negative — America/Nuuk springs forward
+  # at 23:00 local while at UTC-2, putting the transition at 01:00 UTC the
+  # following day. gap_delta's scan window must therefore center on the
+  # skipped wall clock itself; anchoring it to the UTC midnight of the wall
+  # clock's date excluded such transitions, and the resulting nil made
+  # gap_delta crash with NoMethodError instead of resolving the gap.
+  def test_reference_zone_resolves_gap_late_in_local_day
+    reference_time = Time.new(2026, 3, 28, 12, 0, 0, "-02:00")
+    entity = entity_for("March 28 2026 11:30pm", :time,
+      reference_time: reference_time, reference_zone: "America/Nuuk")
+    resolved = single_point(entity)[:value]
+
+    assert_equal 0, resolved.hour,
+      "expected the skipped 23:30 wall clock to shift forward past the gap to 00:30, got #{resolved.inspect}"
+    assert_equal 30, resolved.min
+    assert_equal 29, resolved.day, "expected the shift to land on the next day, got #{resolved.inspect}"
+    assert_equal(-3600, resolved.utc_offset,
+      "expected the post-transition offset (UTC-1, -3600), got #{resolved.inspect}")
+  end
+
+  # The fall-back "first occurrence" is selected by position (periods.first in
+  # local_time_in_zone), not by tzinfo's dst flag: dst=true only means
+  # pre-transition where the earlier period observes DST, and negative-DST
+  # zones invert that — tzinfo models Europe/Dublin's winter GMT as its
+  # dst?==true period, so flag-based resolution there returns the
+  # post-transition occurrence, an hour off as an instant. Dublin's 2026-10-25
+  # fall-back makes 01:30 ambiguous; the first occurrence is IST (+3600).
+  def test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+    reference_time = Time.new(2026, 9, 1, 12, 0, 0, "+01:00")
+    entity = entity_for("October 25 2026 1:30am", :time,
+      reference_time: reference_time, reference_zone: "Europe/Dublin")
+    resolved = single_point(entity)[:value]
+
+    assert_equal 1, resolved.hour, "expected the 1:30 wall clock preserved through the overlap, got #{resolved.inspect}"
+    assert_equal 30, resolved.min
+    assert_equal 3600, resolved.utc_offset,
+      "expected the first (pre-transition) occurrence (IST, +3600), got #{resolved.inspect}"
+  end
+
+  # Fall-back side: an ambiguous recurrence entry resolves to its
   # first (pre-transition) occurrence rather than raising. "every sunday at
   # 1:30am" anchored 2026-10-22 generates 2026-11-01 01:30, which the fall-back
   # overlap makes ambiguous; it resolves to the first occurrence (EDT, -14400).
