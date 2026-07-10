@@ -1,5 +1,5 @@
 use magnus::r_hash::ForEach;
-use magnus::{Error, RArray, RHash, Ruby, TryConvert, Value};
+use magnus::{Error, RArray, RHash, RString, Ruby, Value};
 
 /// Recursively rewrites every `Hash` reachable from `value` (including
 /// through `Array` elements, at any depth) so its keys are `Symbol`s instead
@@ -33,17 +33,27 @@ pub fn symbolize_keys_in_place(ruby: &Ruby, value: Value) -> Result<(), Error> {
 
         for i in 0..keys.len() as isize {
             let k: Value = keys.entry(i)?;
-            match String::try_convert(k) {
-                // Only a String key needs the hash structure itself touched
-                // (delete under the old key, reinsert under the new Symbol);
-                // serde_magnus already emits Symbol keys for struct fields,
-                // so most entries just need their value recursed into.
-                Ok(s) => {
+            // Only a String key needs the hash structure itself touched
+            // (delete under the old key, reinsert under the new Symbol);
+            // serde_magnus already emits Symbol keys for struct fields,
+            // so most entries just need their value recursed into.
+            //
+            // Tested with `RString::from_value` (an Option-returning type
+            // check) rather than `String::try_convert` (a Result-returning
+            // conversion): the latter builds a full TypeError — exception
+            // object plus its formatted message String plus the class-name
+            // String — for every already-Symbol key it rejects, which is most
+            // of them. That is three throwaway allocations per key on the
+            // hot path, purely to answer a question `from_value` answers for
+            // free.
+            match RString::from_value(k) {
+                Some(s) => {
+                    let name = unsafe { s.as_str()? }.to_owned();
                     let v: Value = hash.delete(k)?;
                     symbolize_keys_in_place(ruby, v)?;
-                    hash.aset(ruby.to_symbol(s.as_str()), v)?;
+                    hash.aset(ruby.to_symbol(name.as_str()), v)?;
                 }
-                Err(_) => {
+                None => {
                     let v: Value = hash.aref(k)?;
                     symbolize_keys_in_place(ruby, v)?;
                 }
