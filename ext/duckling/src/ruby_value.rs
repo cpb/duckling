@@ -1,5 +1,6 @@
 use magnus::r_hash::ForEach;
-use magnus::{Error, RArray, RHash, RString, Ruby, Value};
+use magnus::value::ReprValue;
+use magnus::{Error, RArray, RHash, RString, Ruby, Symbol, Value};
 
 /// Recursively rewrites every `Hash` reachable from `value` (including
 /// through `Array` elements, at any depth) so its keys are `Symbol`s instead
@@ -48,10 +49,19 @@ pub fn symbolize_keys_in_place(ruby: &Ruby, value: Value) -> Result<(), Error> {
             // free.
             match RString::from_value(k) {
                 Some(s) => {
-                    let name = unsafe { s.as_str()? }.to_owned();
                     let v: Value = hash.delete(k)?;
                     symbolize_keys_in_place(ruby, v)?;
-                    hash.aset(ruby.to_symbol(name.as_str()), v)?;
+                    // Interned via String#to_sym on the key's own VALUE
+                    // rather than round-tripping through Rust: `as_str` +
+                    // `to_owned` + `ruby.to_symbol` costs a Rust String copy
+                    // plus a fresh Ruby String (magnus 0.8.2's
+                    // `&str.into_symbol_with` is `rb_to_symbol(str_new(..))`)
+                    // per key, where `to_sym` interns the existing String
+                    // directly. `s` stays GC-reachable across the recursion
+                    // above through the `keys` array (see the note on this
+                    // function), so the deferred use is safe.
+                    let sym: Symbol = s.funcall("to_sym", ())?;
+                    hash.aset(sym, v)?;
                 }
                 None => {
                     let v: Value = hash.aref(k)?;
