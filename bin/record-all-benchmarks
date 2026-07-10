@@ -79,6 +79,16 @@ echo
 if ! command -v rbenv >/dev/null 2>&1; then
   echo "warning: rbenv not found; skipping local buckets" >&2
 else
+  # Capture the installed-Ruby list once, up front, rather than piping
+  # `rbenv versions --bare` into `grep -q` per bucket. Under `set -o pipefail`,
+  # `grep -q` exits the moment it matches and SIGPIPEs the still-writing rbenv
+  # process, and pipefail promotes that 141 into the pipeline's exit status —
+  # so a *present* Ruby reads as "pipeline failed" i.e. "not installed", and the
+  # bucket is silently skipped. Matching against a shell variable with a
+  # here-string has no producer process to SIGPIPE. (The set doesn't change
+  # during the run, so capturing once is also just correct.)
+  installed_rubies=$(rbenv versions --bare 2>/dev/null || true)
+
   for dir in docs/benchmarks/local-*/; do
     minor=$(basename "$dir" | sed 's/^local-//')
 
@@ -89,14 +99,14 @@ else
       print JSON.parse(File.read(newest))["ruby_version"]
     ' "$dir" 2>/dev/null || true)
 
-    if [ -n "$ruby_version" ] && ! rbenv versions --bare 2>/dev/null | grep -qx "$ruby_version"; then
+    if [ -n "$ruby_version" ] && ! grep -qxF "$ruby_version" <<<"$installed_rubies"; then
       echo "warning: bucket local-${minor} was recorded under ruby ${ruby_version}, which is not installed." >&2
       echo "         Install it (rbenv install ${ruby_version}) or the new point won't be comparable. Skipping." >&2
       continue
     fi
 
     if [ -z "$ruby_version" ]; then
-      ruby_version=$(rbenv versions --bare 2>/dev/null | grep "^${minor}\." | sort -V | tail -1)
+      ruby_version=$(grep "^${minor}\." <<<"$installed_rubies" | sort -V | tail -1 || true)
     fi
 
     if [ -z "$ruby_version" ]; then
