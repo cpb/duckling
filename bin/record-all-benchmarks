@@ -68,15 +68,37 @@ echo
 #
 # One bucket per installed Ruby *minor* version — a dev machine's Ruby drifts
 # over a project's lifetime in a way CI runners' doesn't (see Report.detect_environment).
-# Pick the newest installed patch release of each minor that already has a
-# docs/benchmarks/local-<minor>/ directory, so we refresh exactly the buckets
-# that have history rather than inventing new ones.
+# Refresh exactly the buckets that already have history rather than inventing new ones.
+#
+# Within a bucket, reuse the exact patch release its existing data points were
+# recorded under, read out of the newest JSON there. Taking the newest *installed*
+# patch instead would silently compare (say) a 3.4.10 recording against a bucket's
+# 3.4.5 history, mixing a Ruby upgrade into what is supposed to be a measurement of
+# this repo's own change. Falls back to the newest installed patch only when the
+# bucket is empty.
 if ! command -v rbenv >/dev/null 2>&1; then
   echo "warning: rbenv not found; skipping local buckets" >&2
 else
   for dir in docs/benchmarks/local-*/; do
     minor=$(basename "$dir" | sed 's/^local-//')
-    ruby_version=$(rbenv versions --bare 2>/dev/null | grep "^${minor}\." | sort -V | tail -1)
+
+    ruby_version=$(ruby -rjson -e '
+      files = Dir.glob("#{ARGV[0]}/*.json")
+      exit if files.empty?
+      newest = files.max_by { |f| Gem::Version.new(File.basename(f, ".json")) }
+      print JSON.parse(File.read(newest))["ruby_version"]
+    ' "$dir" 2>/dev/null || true)
+
+    if [ -n "$ruby_version" ] && ! rbenv versions --bare 2>/dev/null | grep -qx "$ruby_version"; then
+      echo "warning: bucket local-${minor} was recorded under ruby ${ruby_version}, which is not installed." >&2
+      echo "         Install it (rbenv install ${ruby_version}) or the new point won't be comparable. Skipping." >&2
+      continue
+    fi
+
+    if [ -z "$ruby_version" ]; then
+      ruby_version=$(rbenv versions --bare 2>/dev/null | grep "^${minor}\." | sort -V | tail -1)
+    fi
+
     if [ -z "$ruby_version" ]; then
       echo "warning: no installed Ruby for bucket local-${minor}; skipping" >&2
       continue
