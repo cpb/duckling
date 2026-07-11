@@ -43,6 +43,17 @@ Gem::Specification.new do |spec|
   # close to whatever's actually locked in Gemfile.lock.
   spec.add_dependency "rb_sys", "~> 0.9.128"
 
+  # Resolves reference_zone:'s per-date IANA offsets (lib/duckling.rb). The
+  # wrapped Rust crate only knows a single FixedOffset, so DST-aware
+  # resolution needs a real tz database on the Ruby side.
+  spec.add_dependency "tzinfo", "~> 2.0"
+
+  # tzinfo falls back to the host's zoneinfo files, which are absent from slim
+  # container images and unpatchable at runtime when they are present. Bundling
+  # the IANA data keeps reference_zone: working everywhere, and lets a consumer
+  # pick up a tz-database revision by bumping this gem alone.
+  spec.add_dependency "tzinfo-data", "~> 1.2024"
+
   # only needed when developing or packaging your gem
   spec.add_development_dependency "rake-compiler", "~> 1.3.1"
   spec.add_development_dependency "benchmark-ips"
