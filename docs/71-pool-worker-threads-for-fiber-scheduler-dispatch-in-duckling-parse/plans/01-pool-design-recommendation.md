@@ -170,6 +170,92 @@ tied to issue #71's acceptance criteria:
    subject to the ~20–30% environment-noise swing `docs/benchmarks/README.md`
    already documents as normal.
 
+## Injectable dispatch backend (extension point)
+
+**Recommendation: add a minimal injection seam; do not build a formal
+interface module, ship adapter classes, or take `concurrent-ruby` as a dev
+dependency to test it.** Raised as a follow-up question after the Decision
+above: since a host application may already run its own `concurrent-ruby`
+`FixedThreadPool` for unrelated work, should `Duckling::Pool`'s dispatch
+mechanism be swappable rather than hardcoded to the in-repo hand-rolled
+implementation?
+
+**Why the seam is now cheap.** The zero-per-call-thread design above
+(`Pool.submit(*args, **kwargs).pop`, per the crux and
+[hand-rolled-pool §3](../research/hand-rolled-pool/README.md#3-the-fiber-cooperation-mechanism-empirically-verified))
+already reduces the dispatch contract to its simplest possible shape:
+something callable with a job that blocks the calling Fiber cooperatively
+and returns the job's result (or raises its exception). There's no
+wrapper-thread semantics left to preserve — that was the part of the old
+design that would have made a pluggable interface fiddly to specify.
+Concretely, an injected dispatcher just needs to expose one method:
+`call(job) -> result`, where `job` is a zero-arg callable (e.g.
+`-> { Native.parse(*args, **kwargs) }`) and the dispatcher's own internals
+decide how to run it off-thread and how to wait. That's small enough that
+injectability costs a config attribute and a documented contract, not a
+subsystem. A `concurrent-ruby`-backed adapter is one lambda:
+`->(job) { Concurrent::Promises.future_on(pool, &job).value! }` (`.value!`,
+not `.value` — see the re-raise-semantics pin below).
+
+**Why it's worth doing even if nobody ever injects one.** The seam gives
+[benchmark-methodology "New territory" Option A](../research/benchmark-methodology/README.md#option-a--third-dispatch-mode-variant-alongside-the-existing-two)
+for free — the legacy `Thread.new`-per-call dispatcher and the new pool can
+be measured side by side in one recording as two implementations of the
+same seam, without keeping the old dispatcher reachable as dead code
+outside the benchmark harness — and it gives
+`test/falcon_fiber_blocking_test.rb` a natural way to run as a regression
+gate against more than one implementation.
+
+**What "minimal" means here, concretely:**
+- In scope: a single injection point (e.g.
+  `Duckling.configure { |c| c.dispatcher = my_dispatcher }` or a
+  constructor kwarg on whatever holds the pool), a default value that is
+  the in-repo hand-rolled pool from the Decision above, and a short
+  documented contract (see below). No new public class hierarchy.
+- Out of scope: a formal `Duckling::PoolInterface` module or duck-type
+  registry, adapter classes shipped in-repo for `concurrent-ruby` or anyone
+  else, and adding `concurrent-ruby` as a dependency (dev or runtime) purely
+  to exercise the seam in this gem's own test suite — that would reintroduce
+  the "new dependency" cost the Rationale above rejected `concurrent-ruby`
+  on, just relocated into the test suite. A host application that wants a
+  `concurrent-ruby`-backed dispatcher writes its own one-line adapter
+  against the documented contract; this gem doesn't need to prove that
+  adapter works.
+
+**Three things the contract must pin, or injectability becomes a bug
+funnel for callers writing adapters:**
+1. **Re-raise semantics.** `Concurrent::Future#value` returns `nil` on
+   failure and parks the exception on `#reason` — only `#value!` re-raises
+   (verified directly against `concurrent-ruby` 1.3.7:
+   `Future.execute { raise "boom" }.value` → `nil`,
+   `.value!` → raises). A dispatcher contract that doesn't explicitly state
+   "`call` must raise the job's exception to the caller, not swallow or
+   park it" will silently produce a `concurrent-ruby`-backed adapter that
+   returns `nil` on every native-parse error instead of raising — exactly
+   the kind of mistake a happy-path adapter test wouldn't catch. (The
+   in-repo pool's own `Pool.submit(...).pop` sketch already gets this
+   right — `status, value = reply.pop; raise value if status == :error` —
+   the contract just needs to require every implementation to match it.)
+2. **Shutdown ownership.** If the injected dispatcher wraps a pool the host
+   application already manages the lifecycle of (the whole motivating case
+   for injecting one), `Duckling::Pool`'s own `shutdown!` must not assume it
+   owns that pool's threads — the contract needs to state whether
+   `shutdown!` is expected to call through to an injected dispatcher's own
+   shutdown, or only apply to the default in-repo pool.
+3. **Fork-safety.** An injected dispatcher inherits whatever fork-safety
+   properties this gem's own default pool needs (threads don't survive
+   `fork`; a pool started pre-fork leaves a child process with dead workers
+   and a populated job queue). Neither research doc resolves this for the
+   default pool itself yet, so the contract can't promise it for injected
+   dispatchers either — flag as a shared open question, not something the
+   seam design solves on its own.
+
+None of the three above changes step 2's "configurable pool size" design —
+dispatcher injection and pool-size configuration are the same class of
+runtime config surface and can share one resolution mechanism (env var
+default, override point), just with a dispatcher object instead of an
+integer as the value being configured.
+
 ## Open questions
 
 Two questions this plan previously left open are now **resolved** by a
