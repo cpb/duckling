@@ -475,4 +475,30 @@ class DucklingTest < Minitest::Test
     assert_equal(-14400, resolved.utc_offset,
       "expected the fall-back overlap primary value to take the first (pre-transition) occurrence (EDT, -14400), got #{resolved.inspect}")
   end
+
+  # reference_zone: given WITHOUT reference_time: still reinterprets Naive
+  # result offsets against the zone — it is not a no-op when the anchor is
+  # absent. An absolute date expression ("March 7th 2026 3:00am") is used so
+  # the result's wall-clock value doesn't depend on any anchor: the native
+  # crate resolves it the same way regardless of reference_time:. Without
+  # reference_zone: the offset defaults to +00:00 (the native crate's
+  # FixedOffset when no reference_time: is given); with reference_zone: it
+  # must be the zone's real offset for that date (EST, -18000).
+  #
+  # This does NOT test the "does not anchor the parse" edge: a relative
+  # expression like "tomorrow" anchors on the machine-local clock, not on
+  # "now in that zone", so Duckling.parse("tomorrow", reference_zone:
+  # "Asia/Tokyo") on a US host can land on the wrong calendar day. That
+  # behavior is documented in the comment block above Duckling.parse and in
+  # AGENTS.md, but can't be pinned by a test without controlling the host
+  # timezone — the offset reinterpretation below is the testable part.
+  def test_reference_zone_without_reference_time_reinterprets_offsets
+    entity = entity_for("March 7th 2026 3:00am", :time, reference_zone: "America/New_York")
+    resolved = single_point(entity)[:value]
+
+    assert_equal 3, resolved.hour, "expected the 3am wall clock preserved, got #{resolved.inspect}"
+    assert_equal(-18000, resolved.utc_offset,
+      "expected reference_zone: to resolve the Naive offset against America/New_York " \
+      "(EST, -18000) even without reference_time:, got #{resolved.inspect}")
+  end
 end
