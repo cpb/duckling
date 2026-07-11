@@ -1,0 +1,57 @@
+# Manually dispatches the wiki_promoter composite Action to flatten/relink a
+# docs/<issue>-slug research tree, push it to the repository's wiki, update
+# Home.md, repoint the roadmap, and remove the source tree from this branch.
+#
+# The action performs its OWN checkout and Ruby setup (see cpb/wiki_promoter's
+# action/action.yml header comment) -- do not add a checkout step here, it
+# would just get reset by the action's own checkout@v4 step.
+#
+# Manually dispatched only -- run via:
+#   gh workflow run promote-wiki.yml --ref <branch> -f docs_path=docs/<issue>-slug [-f pr_number=<n>] [-f entry_page_name=<name>] [-f ref=<branch>] [-f force=true]
+# Note: like any workflow_dispatch workflow, this must already exist on the
+# default branch before GitHub will let you dispatch it against another ref.
+name: promote-wiki
+
+on:
+  workflow_dispatch:
+    inputs:
+      docs_path:
+        description: "Path to the docs/<issue>-<slug> research tree to migrate (required)"
+        required: true
+        type: string
+      pr_number:
+        description: "PR number this branch belongs to; posts a summary comment linking the migrated wiki page (optional)"
+        required: false
+        type: string
+      entry_page_name:
+        description: "Override for the auto-derived wiki entry page name (optional)"
+        required: false
+        type: string
+      ref:
+        description: "Branch to check out and push the cleanup commit to (defaults to the workflow's ref)"
+        required: false
+        type: string
+      force:
+        description: "Overwrite existing wiki pages (default false)"
+        required: false
+        type: string
+        default: "false"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    name: Migrate docs tree to wiki
+    runs-on: ubuntu-latest
+    steps:
+      - name: Migrate docs to wiki
+        uses: cpb/wiki_promoter/action@445bdcdb659690b12e8d80903e3e2ed217f2e314 # v0.1.1
+        with:
+          docs_path: ${{ inputs.docs_path }}
+          wiki_deploy_token: ${{ secrets.WIKI_DEPLOY_TOKEN }}
+          entry_page_name: ${{ inputs.entry_page_name }}
+          pr_number: ${{ inputs.pr_number }}
+          ref: ${{ inputs.ref }}
+          force: ${{ inputs.force }}
