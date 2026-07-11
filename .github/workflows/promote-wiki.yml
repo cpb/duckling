@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Migrate docs to wiki
-        uses: cpb/wiki_promoter/action@1fee24f831b6e46fca99be0fcb9cd402dfe65dad # v0.1.0
+        uses: cpb/wiki_promoter/action@445bdcdb659690b12e8d80903e3e2ed217f2e314 # v0.1.1
         with:
           docs_path: ${{ inputs.docs_path }}
           wiki_deploy_token: ${{ secrets.WIKI_DEPLOY_TOKEN }}
