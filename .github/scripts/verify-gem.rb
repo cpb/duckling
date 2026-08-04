@@ -35,6 +35,16 @@ unless spec.platform.to_s == expected_platform
   failures << "platform is #{spec.platform}, expected #{expected_platform}"
 end
 
+# duckling.gemspec builds its file list from `git ls-files`, which fails when
+# the build runs against a git worktree — a worktree's .git is a file pointing
+# somewhere the build container never mounted. The gem that comes out holds the
+# compiled binaries and no Ruby at all, and every other check here passes on it.
+unless spec.files.include?("lib/duckling.rb")
+  failures << "carries no lib/duckling.rb, so nothing can require it — " \
+    "duckling.gemspec's `git ls-files` came back empty. Build from a plain " \
+    "clone rather than a worktree."
+end
+
 # required_ruby_version decides which Rubies RubyGems offers this gem to. It
 # has to be wrong in one of two directions to do harm, so the checks below test
 # those directions rather than compare against a fixed string.
