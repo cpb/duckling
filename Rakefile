@@ -95,6 +95,14 @@ if (ruby_target = ENV["RUBY_TARGET"]) && ruby_target != RUBY_PLATFORM
   # baked into the container's $CARGO_HOME/config.toml, which is the
   # cross-compile target again. So a host triple that cannot be read is a
   # hard error, not something to skip past.
+  #
+  # Both variables belong to the whole rake process, and the cross build
+  # reads them too. This is safe only because rake generates the cross
+  # Makefile, which bakes its own --target in, before packaging reaches
+  # the local pass. Nothing in rake states that order. If it ever
+  # inverted, the cross build would compile for the host and produce a
+  # correctly *named* binary for the wrong architecture — which is what
+  # `file(1)` on every binary in .github/scripts/verify-gem.rb catches.
   task :fix_local_pass_cargo_target do
     rustc_version_info = begin
       `rustc -vV`
