@@ -11,7 +11,17 @@ NER/entity-extraction engine via [Magnus](https://github.com/matsadler/magnus)
 and `rb-sys`, so Ruby code can extract entities (times, numbers, money,
 emails, etc.) without running a separate HTTP service.
 
-**Current state:** the Ruby API surface (`lib/duckling.rb`), gemspec, Rakefile, and native extension are all built and live. Precompiled binary gems for `x86_64-linux`/`x86_64-darwin`/`arm64-darwin`/`aarch64-linux` are now published alongside the source gem — see "Build model" under "Rust/Magnus wiring" and "Gem release conventions" below. If you notice this file describing a not-yet-built piece as current, or vice versa, fix it in the same PR (see "Keeping this file current").
+**Current state:** the Ruby API surface (`lib/duckling.rb`), gemspec, Rakefile, and native extension are all built and live. The release pipeline cross-compiles, verifies, and smoke-tests precompiled binary gems for `x86_64-linux`/`x86_64-darwin`/`arm64-darwin`/`aarch64-linux` — see "Build model" under "Rust/Magnus wiring" and "Gem release conventions" below.
+
+Building those gems is not publishing them. They reach consumers only once a `vX.Y.Z` tag drives `release.yml` all the way through `gem push`, and this file cannot tell you whether that has happened for any given version. Ask RubyGems instead:
+
+```
+gem list -r --all --exact duckling
+```
+
+Each version lists the platforms published under it. A version showing no platforms beyond `ruby` ships no precompiled gem, whatever this file says. Trusting a prose claim here over that command is what let four releases go out source-only without anyone noticing.
+
+If you notice this file describing a not-yet-built piece as current, or vice versa, fix it in the same PR (see "Keeping this file current").
 
 ## Directory layout
 
