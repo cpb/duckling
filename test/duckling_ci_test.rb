@@ -43,6 +43,24 @@ class DucklingCiTest < Minitest::Test
       "an ABI missing here ships in every gem without ever being loaded"
   end
 
+  # Adding a platform takes four edits to cross-gem.yml: the build matrix, its
+  # expected_arch pair, the smoke matrix, and a runner that can execute that
+  # architecture. The build matrix alone is the edit that looks sufficient.
+  def test_every_cross_compiled_platform_is_verified_and_smoke_tested
+    built = job("cross_gems").fetch("strategy").fetch("matrix").fetch("platform").sort
+
+    assert_equal built, job("smoke").fetch("strategy").fetch("matrix").fetch("platform").sort,
+      "the smoke job covers different platforms than the cross-compile job — " \
+      "a platform missing here ships without ever running on its own hardware"
+
+    assert_equal built, include_map("cross_gems", "expected_arch").keys.sort,
+      "every built platform needs an expected_arch, or `file(1)` verifies nothing for it"
+
+    assert_equal built, include_map("smoke", "runner").keys.sort,
+      "every smoke-tested platform needs a runner label; GitHub leaves a job " \
+      "asking for a runner that does not exist queued rather than failing it"
+  end
+
   private
 
   def workflow
@@ -63,6 +81,13 @@ class DucklingCiTest < Minitest::Test
     step = job("cross_gems").fetch("steps").find { |s| s["env"]&.key?("EXPECTED_ABIS") }
     refute_nil step, "cross-gem.yml needs a step passing EXPECTED_ABIS to verify-gem.rb"
     step
+  end
+
+  # A matrix `include:` entry pairs a platform with one extra field.
+  def include_map(job_name, field)
+    job(job_name).fetch("strategy").fetch("matrix").fetch("include")
+      .select { |entry| entry.key?(field) }
+      .to_h { |entry| [entry.fetch("platform"), entry.fetch(field)] }
   end
 
   # The Rakefile requires rb_sys and defines tasks against a compiled
