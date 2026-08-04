@@ -17,8 +17,19 @@ require_relative "duckling/version"
 # running Ruby, so it needs no version directory.
 begin
   require_relative "duckling/#{RUBY_VERSION[/\d+\.\d+/]}/duckling"
-rescue LoadError
-  require_relative "duckling/duckling"
+rescue LoadError => abi_load_error
+  begin
+    require_relative "duckling/duckling"
+  rescue LoadError
+    # The ABI directory is missing, and so is the plain path. Raise the first
+    # error, not the second.
+    #
+    # A binary that exists but refuses to load fails here too, and its error
+    # says why. An Alpine install does this: RubyGems matches an unversioned
+    # -linux gem against a musl runtime, so the binary is present and asks for
+    # glibc. Reporting a missing file there would hide the real reason.
+    raise abi_load_error
+  end
 end
 
 module Duckling
