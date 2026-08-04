@@ -16,12 +16,14 @@ GEMSPEC = Gem::Specification.load("duckling.gemspec")
 # Ruby ABIs each precompiled gem carries a binary for.
 #
 # rb-sys reads Ruby's internal object layout through the headers it compiles
-# against, so a binary only understands the Ruby that built it. One binary per
-# platform is not enough. See the loader in lib/duckling.rb.
+# against. A binary understands only the Ruby that built it. See the loader in
+# lib/duckling.rb.
 #
-# Keep this list in step with `ruby-versions` in
-# .github/workflows/cross-gem.yml, which builds the gems that ship. The
-# rbsys/<platform> images carry the toolchains for these ABIs; check
+# This list must agree with three fields in .github/workflows/cross-gem.yml,
+# which builds the gems that ship: `ruby-versions`, `EXPECTED_ABIS`, and the
+# smoke job's `ruby` matrix.
+#
+# The rbsys/<platform> images carry the toolchains for these ABIs. Check
 # /usr/local/rake-compiler/config.yml in the image before adding one.
 CROSS_RUBY_ABIS = %w[3.2 3.3 3.4 4.0].freeze
 
@@ -91,8 +93,8 @@ if (ruby_target = ENV["RUBY_TARGET"]) && ruby_target != RUBY_PLATFORM
   # CARGO_BUILD_TARGET must hold a real triple before RUST_TARGET goes
   # away. Clearing RUST_TARGET alone lets rb_sys fall back to the target
   # baked into the container's $CARGO_HOME/config.toml, which is the
-  # cross-compile target again. So a host triple we cannot read is a hard
-  # error, not something to skip past.
+  # cross-compile target again. So a host triple that cannot be read is a
+  # hard error, not something to skip past.
   task :fix_local_pass_cargo_target do
     rustc_version_info = begin
       `rustc -vV`

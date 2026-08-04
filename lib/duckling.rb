@@ -5,12 +5,11 @@ require "tzinfo"
 require_relative "duckling/version"
 
 # A precompiled gem carries one binary per Ruby ABI, each in its own
-# lib/duckling/<major.minor>/ directory.
+# lib/duckling/<major.minor>/ directory. Load the one for the running Ruby.
 #
-# One binary cannot serve every Ruby. rb-sys reads Ruby's internal object
-# layout through headers it compiles against, so each binary only understands
-# the layout of the Ruby that built it. A binary built against 3.2 misreads a
-# 3.3 object, and magnus then rejects a genuine Time as not a Time.
+# rb-sys reads Ruby's internal object layout through the headers it compiles
+# against, so a binary understands only the Ruby that built it. Load the wrong
+# one and it misreads objects: magnus rejects a genuine Time as not a Time.
 #
 # A source-gem build, and a plain `rake compile` in a checkout, write one
 # binary straight to lib/duckling/ instead. That build always matches the

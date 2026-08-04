@@ -46,15 +46,17 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
           # One binary per Ruby ABI. rb-sys reads Ruby's internal object layout
-          # through the headers it compiles against, so a binary only
-          # understands the Ruby that built it — a 3.2 binary misreads a 3.3
-          # object, and magnus then rejects a genuine Time as not a Time.
+          # through the headers it compiles against, so a binary understands
+          # only the Ruby that built it. Load the wrong one and it misreads
+          # objects: magnus rejects a genuine Time as not a Time.
           #
-          # Keep this list, CROSS_RUBY_ABIS in the Rakefile, and the smoke job's
-          # `ruby` matrix below in step. The rbsys/<platform> images carry the
-          # toolchains for these ABIs; check /usr/local/rake-compiler/config.yml
-          # in the image before adding one. A Ruby newer than every ABI here
-          # takes the source gem instead, which compiles its own binary.
+          # This list must agree with three others: CROSS_RUBY_ABIS in the
+          # Rakefile, EXPECTED_ABIS below, and the smoke job's `ruby` matrix.
+          #
+          # The rbsys/<platform> images carry the toolchains for these ABIs.
+          # Check /usr/local/rake-compiler/config.yml in the image before
+          # adding one. A Ruby newer than every ABI here takes the source gem
+          # instead, which compiles its own binary.
           ruby-versions: "3.2,3.3,3.4,4.0"
 
       - name: Verify gem metadata and architecture
@@ -77,12 +79,13 @@ jobs:
             end
 
             # required_ruby_version decides which Rubies RubyGems offers this
-            # gem to. State the two ways it goes wrong, rather than pinning the
-            # string the Rakefile happens to build.
+            # gem to. It has to be wrong in one of two directions to do harm,
+            # so the checks below test those directions rather than compare
+            # against a fixed string.
             #
-            # Too narrow, which rake-compiler does on its own: RubyGems skips
-            # the gem and silently takes the source gem, so the install machine
-            # needs a Rust toolchain after all.
+            # Too narrow, which rake-compiler produces on its own: RubyGems
+            # skips the gem and silently takes the source gem, so the install
+            # machine needs a Rust toolchain after all.
             #
             # Too wide: RubyGems offers the gem to a Ruby it carries no binary
             # for, and the gem raises LoadError on require.
@@ -160,11 +163,14 @@ jobs:
             runner: ubuntu-latest
           - platform: aarch64-linux
             runner: ubuntu-24.04-arm
-          # Intel macOS. GitHub retired macos-13 in December 2025, and a
-          # retired label does not fail — the job queues forever. GitHub drops
-          # x86_64 macOS entirely once macos-15 retires, currently announced
-          # for fall 2027; move to macos-26-intel before then, and reconsider
-          # shipping an x86_64-darwin gem at all once no runner can test it.
+          # Intel macOS. This label must name a live runner image: GitHub does
+          # not fail a job that asks for a retired one, it leaves the job
+          # queued forever, so the run never reports at all.
+          #
+          # GitHub drops x86_64 macOS entirely once macos-15 retires,
+          # announced for fall 2027. Move to macos-26-intel before then. Once
+          # no runner can execute an x86_64-darwin gem, reconsider shipping
+          # one.
           - platform: x86_64-darwin
             runner: macos-15-intel
           - platform: arm64-darwin
