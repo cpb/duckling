@@ -160,8 +160,13 @@ jobs:
             runner: ubuntu-latest
           - platform: aarch64-linux
             runner: ubuntu-24.04-arm
+          # Intel macOS. GitHub retired macos-13 in December 2025, and a
+          # retired label does not fail — the job queues forever. GitHub drops
+          # x86_64 macOS entirely once macos-15 retires, currently announced
+          # for fall 2027; move to macos-26-intel before then, and reconsider
+          # shipping an x86_64-darwin gem at all once no runner can test it.
           - platform: x86_64-darwin
-            runner: macos-13
+            runner: macos-15-intel
           - platform: arm64-darwin
             runner: macos-latest
 
