@@ -16,7 +16,7 @@ GEMSPEC = Gem::Specification.load("duckling.gemspec")
 RbSys::ExtensionTask.new("duckling", GEMSPEC) do |ext|
   ext.lib_dir = "lib/duckling"
   ext.cross_compile = true
-  ext.cross_platform = ["x86_64-linux", "x86_64-darwin"]
+  ext.cross_platform = ["x86_64-linux", "x86_64-darwin", "arm64-darwin", "aarch64-linux"]
 end
 
 task :dev do

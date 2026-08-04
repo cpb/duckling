@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [x86_64-linux, x86_64-darwin]
+        platform: [x86_64-linux, x86_64-darwin, arm64-darwin, aarch64-linux]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
