@@ -43,19 +43,21 @@ end
 # `cargo build` target that image's platform. Every process in the
 # container inherits them, including the local build.
 #
-# On x86_64-linux, x86_64-darwin, and arm64-darwin, this causes no
-# problem:
-# - The local build's target is already correct, or
-# - The local build makes a file (duckling.bundle) that nothing else
-#   needs.
+# The Ruby that drives rake in each container is an x86_64 Linux Ruby.
+# So the local build always makes a file named duckling.so.
 #
-# On aarch64-linux, the local build compiles code for aarch64, but
-# links the code with the host's plain gcc. rake-compiler picked this
-# gcc for a different platform. The link step then fails.
+# On x86_64-linux, this causes no problem. The local build's target is
+# already correct.
 #
-# The local build's output file is named duckling.so. The real
-# aarch64-linux build needs a file with the same name. So the
-# packaging step uses the broken file from the local build.
+# On x86_64-darwin and arm64-darwin, this causes no problem either.
+# Those gems need duckling.bundle. They do not list duckling.so, so the
+# local build is not a prerequisite and never runs.
+#
+# On aarch64-linux, the two names collide. The gem needs duckling.so,
+# which is the name the local build makes. So the packaging step waits
+# for the local build. That build compiles code for aarch64, but links
+# the code with the host's plain gcc. rake-compiler picked this gcc for
+# the host platform. The link step then fails, and stops the build.
 #
 # extconf.rb runs in its own subprocess. ENV changes made there do not
 # reach the parent process, and the parent process runs `make`.
