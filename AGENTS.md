@@ -115,8 +115,8 @@ The test suite covers several distinct concerns:
   2. Cross-compile `x86_64-linux`, `x86_64-darwin`, `arm64-darwin`, and `aarch64-linux` binary gems via Docker containers.
   3. Verify the pushed tag matches `Duckling::VERSION` exactly; fail the build on mismatch.
   4. Build the `ruby` source gem.
-  5. Push all three gems to RubyGems via `gem push`.
-  6. Create a GitHub release with all three gems attached.
+  5. Push every built gem — the source gem plus one per cross-compiled platform — to RubyGems via `gem push` (the workflow globs `pkg/*.gem`, so this needs no update when the platform matrix changes).
+  6. Create a GitHub release with all of those gems attached.
   7. Open and auto-merge a PR to update `CHANGELOG.md` (post-release documentation).
   8. In parallel with the release publish path after CI, record benchmark data for this release under `docs/benchmarks/github-actions/` and open/auto-merge that PR.
 - **Tag protection**: `v*.*.*` tags can only be created/updated by repo admins. Configured via `.github/scripts/apply-tag-ruleset.sh`.
