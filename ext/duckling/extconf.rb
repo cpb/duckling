@@ -1,6 +1,3 @@
-require "mkmf"
-require "rb_sys/mkmf"
-
 # rbsys/<platform> cross-compile Docker images bake RUST_TARGET/
 # CARGO_BUILD_TARGET into the environment *and* a matching `target = ...`
 # into $CARGO_HOME/config.toml, so a bare `cargo build` targets that image's
@@ -15,8 +12,9 @@ require "rb_sys/mkmf"
 # working directory encodes the platform rake-compiler thinks it's building
 # (tmp/<platform>/...), so only when it disagrees with RUBY_TARGET do we
 # override Cargo's target with the genuine host triple (`rustc -vV`'s
-# `host:` line), which beats config.toml's file-based default in rb_sys's
-# own target lookup order (env vars, then config.toml).
+# `host:` line). This must run before `require "rb_sys/mkmf"` -- rb_sys
+# reads the target env vars as soon as it's loaded, not lazily inside
+# create_rust_makefile, so mutating them afterward is too late.
 ruby_target = ENV["RUBY_TARGET"]
 mismatched = ruby_target && !Dir.pwd.include?("/#{ruby_target}/")
 host_target = `rustc -vV`[/^host: (\S+)$/, 1]
@@ -28,5 +26,8 @@ if mismatched
   ENV.delete("RUST_TARGET")
 end
 warn "[duckling extconf debug] RUST_TARGET_after=#{ENV["RUST_TARGET"].inspect} CARGO_BUILD_TARGET_after=#{ENV["CARGO_BUILD_TARGET"].inspect}"
+
+require "mkmf"
+require "rb_sys/mkmf"
 
 create_rust_makefile("duckling/duckling")
