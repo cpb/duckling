@@ -65,73 +65,7 @@ jobs:
           EXPECTED_PLATFORM: ${{ matrix.platform }}
           EXPECTED_ARCH: ${{ matrix.expected_arch }}
           EXPECTED_ABIS: "3.2,3.3,3.4,4.0"
-        run: |
-          ruby -e '
-            require "rubygems/package"
-            require "tmpdir"
-
-            spec = Gem::Package.new(ENV.fetch("BUILT_GEM")).spec
-            abis = ENV.fetch("EXPECTED_ABIS").split(",")
-            failures = []
-
-            unless spec.platform.to_s == ENV.fetch("EXPECTED_PLATFORM")
-              failures << "platform is #{spec.platform}, expected #{ENV["EXPECTED_PLATFORM"]}"
-            end
-
-            # required_ruby_version decides which Rubies RubyGems offers this
-            # gem to. It has to be wrong in one of two directions to do harm,
-            # so the checks below test those directions rather than compare
-            # against a fixed string.
-            #
-            # Too narrow, which rake-compiler produces on its own: RubyGems
-            # skips the gem and silently takes the source gem, so the install
-            # machine needs a Rust toolchain after all.
-            #
-            # Too wide: RubyGems offers the gem to a Ruby it carries no binary
-            # for, and the gem raises LoadError on require.
-            gemspec_floor = Gem::Specification.load("duckling.gemspec").required_ruby_version
-            abis.each do |abi|
-              unless spec.required_ruby_version.satisfied_by?(Gem::Version.new("#{abi}.0"))
-                failures << "required_ruby_version #{spec.required_ruby_version} excludes Ruby #{abi}, which this gem carries a binary for"
-              end
-            end
-
-            highest = abis.max_by { |abi| Gem::Version.new(abi) }
-            major, minor = highest.split(".").map(&:to_i)
-            beyond = "#{major}.#{minor + 1}.0"
-            if spec.required_ruby_version.satisfied_by?(Gem::Version.new(beyond))
-              failures << "required_ruby_version #{spec.required_ruby_version} admits Ruby #{beyond}, which this gem carries no binary for"
-            end
-
-            below = gemspec_floor.requirements.map(&:last).min
-            unless spec.required_ruby_version.satisfied_by?(below)
-              failures << "required_ruby_version #{spec.required_ruby_version} excludes the gemspec floor #{below}"
-            end
-
-            Dir.mktmpdir do |dir|
-              Gem::Package.new(ENV.fetch("BUILT_GEM")).extract_files(dir)
-
-              # A fat gem keeps each ABI its own directory. A binary sitting
-              # directly in lib/duckling/ means only one got built.
-              found = Dir[File.join(dir, "lib/duckling/*/duckling.{so,bundle}")]
-              built_abis = found.map { |path| File.basename(File.dirname(path)) }.sort
-
-              if built_abis != abis.sort
-                failures << "carries binaries for #{built_abis.inspect}, expected #{abis.sort.inspect}"
-              end
-
-              found.each do |binary|
-                described = IO.popen(["file", "-b", binary], &:read).strip
-                unless described.include?(ENV.fetch("EXPECTED_ARCH"))
-                  failures << "#{File.basename(File.dirname(binary))}/#{File.basename(binary)} is #{described}, expected #{ENV["EXPECTED_ARCH"]}"
-                end
-                puts "#{File.basename(File.dirname(binary))}/#{File.basename(binary)}: #{described}"
-              end
-            end
-
-            abort("Gem verification failed:\n- #{failures.join("\n- ")}") if failures.any?
-            puts "#{spec.full_name} verified (#{spec.required_ruby_version})"
-          '
+        run: ruby .github/scripts/verify-gem.rb
 
       - name: Upload native gem artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -154,8 +88,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Keep in step with `ruby-versions` above. A Ruby missing here leaves
-        # an ABI shipped untested; a Ruby here that is not built fails loudly.
+        # Must agree with `ruby-versions` and `EXPECTED_ABIS` above, and with
+        # CROSS_RUBY_ABIS in the Rakefile. A Ruby missing here ships an ABI
+        # that nothing tests. A Ruby here that is not built fails loudly.
         ruby: ['3.2', '3.3', '3.4', '4.0']
         platform: [x86_64-linux, x86_64-darwin, arm64-darwin, aarch64-linux]
         include:
