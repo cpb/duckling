@@ -15,17 +15,39 @@ GEMSPEC = Gem::Specification.load("duckling.gemspec")
 
 RbSys::ExtensionTask.new("duckling", GEMSPEC) do |ext|
   ext.lib_dir = "lib/duckling"
-  # rake-compiler's define_native_tasks(nil, ...) call (unconditional, runs
-  # regardless of cross_compile) always registers lib/duckling/duckling.so
-  # against RUBY_PLATFORM -- the *host* Ruby driving this rake process, which
-  # inside every rb-sys-dock Linux container is an x86_64 system Ruby even
-  # when cross-compiling for aarch64-linux. That registration is a plain,
-  # non-platform-namespaced Rake file task guarded by `unless
-  # task_defined?`, so it silently wins the shared .so path over the correct
-  # aarch64-linux cross-compile registration that runs afterward. Skip it
-  # during a RUBY_TARGET-driven cross build so only the correctly-scoped
-  # cross task ever claims that path.
-  ext.no_native = true if ENV.key?("RUBY_TARGET")
+end
+
+# Rake::ExtensionTask *always* also compiles one unconditional "local"
+# (non-cross) pass using the container's own host Ruby -- BaseExtensionTask's
+# ungated define_compile_tasks(nil, ...) call, keyed to RUBY_PLATFORM, not
+# gated by cross_compile at all -- and Gem::PackageTask (RubyGems stdlib)
+# always lists the compiled artifact's bare gem-relative path as a literal
+# prerequisite of the final packaged .gem. Every rbsys/<platform> Docker
+# image bakes RUST_TARGET/CARGO_BUILD_TARGET into its environment so a bare
+# `cargo build` targets that image's platform by default -- inherited by
+# every subprocess in the container, including this unwanted local pass. On
+# x86_64-linux/x86_64-darwin/arm64-darwin that's harmless (either it's the
+# real target, or it produces a differently-named duckling.bundle nothing
+# depends on), but on aarch64-linux this local pass ends up compiling for
+# aarch64 while linking with the plain host gcc rake-compiler picked for
+# "x86_64-linux" -- a mismatch that fails to link, and since duckling.so is
+# the same filename the real aarch64-linux task also needs, packaging pulls
+# in the broken result. Env vars set inside extconf.rb's own subprocess
+# don't propagate back to this parent process (which is what actually runs
+# `make`), so the fix has to mutate ENV here, as a prerequisite of the local
+# pass's own Makefile task, restoring a genuine host target before its
+# Makefile gets generated and before `make` (run later, same process) reads
+# whatever's left in ENV.
+if (ruby_target = ENV["RUBY_TARGET"]) && ruby_target != RUBY_PLATFORM
+  local_makefile = "tmp/#{RUBY_PLATFORM}/duckling/#{RUBY_VERSION}/Makefile"
+
+  task :fix_local_pass_cargo_target do
+    host_target = `rustc -vV`[/^host: (\S+)$/, 1]
+    ENV["CARGO_BUILD_TARGET"] = host_target if host_target
+    ENV.delete("RUST_TARGET")
+  end
+
+  Rake::Task[local_makefile].enhance([:fix_local_pass_cargo_target]) if Rake::Task.task_defined?(local_makefile)
 end
 
 task :dev do
