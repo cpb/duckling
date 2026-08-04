@@ -17,27 +17,40 @@ RbSys::ExtensionTask.new("duckling", GEMSPEC) do |ext|
   ext.lib_dir = "lib/duckling"
 end
 
-# Rake::ExtensionTask *always* also compiles one unconditional "local"
-# (non-cross) pass using the container's own host Ruby -- BaseExtensionTask's
-# ungated define_compile_tasks(nil, ...) call, keyed to RUBY_PLATFORM, not
-# gated by cross_compile at all -- and Gem::PackageTask (RubyGems stdlib)
-# always lists the compiled artifact's bare gem-relative path as a literal
-# prerequisite of the final packaged .gem. Every rbsys/<platform> Docker
-# image bakes RUST_TARGET/CARGO_BUILD_TARGET into its environment so a bare
-# `cargo build` targets that image's platform by default -- inherited by
-# every subprocess in the container, including this unwanted local pass. On
-# x86_64-linux/x86_64-darwin/arm64-darwin that's harmless (either it's the
-# real target, or it produces a differently-named duckling.bundle nothing
-# depends on), but on aarch64-linux this local pass ends up compiling for
-# aarch64 while linking with the plain host gcc rake-compiler picked for
-# "x86_64-linux" -- a mismatch that fails to link, and since duckling.so is
-# the same filename the real aarch64-linux task also needs, packaging pulls
-# in the broken result. Env vars set inside extconf.rb's own subprocess
-# don't propagate back to this parent process (which is what actually runs
-# `make`), so the fix has to mutate ENV here, as a prerequisite of the local
-# pass's own Makefile task, restoring a genuine host target before its
-# Makefile gets generated and before `make` (run later, same process) reads
-# whatever's left in ENV.
+# rake-compiler always builds two things for this extension:
+# - The real cross build for RUBY_TARGET.
+# - An extra "local" build for the host Ruby. rake-compiler runs this
+#   local build even when cross_compile is off.
+#
+# Gem::PackageTask lists the local build's plain output path as a
+# prerequisite of the final .gem file.
+#
+# Each rbsys/<platform> Docker image sets RUST_TARGET and
+# CARGO_BUILD_TARGET in its environment. These variables make a plain
+# `cargo build` target that image's platform. Every process in the
+# container inherits them, including the local build.
+#
+# On x86_64-linux, x86_64-darwin, and arm64-darwin, this causes no
+# problem:
+# - The local build's target is already correct, or
+# - The local build makes a file (duckling.bundle) that nothing else
+#   needs.
+#
+# On aarch64-linux, the local build compiles code for aarch64, but
+# links the code with the host's plain gcc. rake-compiler picked this
+# gcc for a different platform. The link step then fails.
+#
+# The local build's output file is named duckling.so. The real
+# aarch64-linux build needs a file with the same name. So the
+# packaging step uses the broken file from the local build.
+#
+# extconf.rb runs in its own subprocess. ENV changes made there do not
+# reach the parent process, and the parent process runs `make`.
+#
+# So this fix changes ENV here, in the Rakefile, not in extconf.rb.
+# The fix adds a prerequisite task to the local build's Makefile task.
+# This prerequisite task sets the correct host target. It runs before
+# the Makefile task, and before `make` runs later.
 if (ruby_target = ENV["RUBY_TARGET"]) && ruby_target != RUBY_PLATFORM
   local_makefile = "tmp/#{RUBY_PLATFORM}/duckling/#{RUBY_VERSION}/Makefile"
 
