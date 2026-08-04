@@ -73,7 +73,17 @@ if (ruby_target = ENV["RUBY_TARGET"]) && ruby_target != RUBY_PLATFORM
     ENV.delete("RUST_TARGET")
   end
 
-  Rake::Task[local_makefile].enhance([:fix_local_pass_cargo_target]) if Rake::Task.task_defined?(local_makefile)
+  # local_makefile reconstructs a path rake-compiler builds from its own
+  # internals (tmp_dir, extension name, the local pass's Ruby version).
+  # A gem upgrade can change any of them. Say so here, because the
+  # alternative is a silent no-op and a link failure deep in a container.
+  unless Rake::Task.task_defined?(local_makefile)
+    raise "Expected rake-compiler to define a Makefile task at #{local_makefile}. " \
+      "The local-pass Cargo target override needs that exact task name — check " \
+      "define_compile_tasks in rake-compiler's extensiontask.rb for the current path."
+  end
+
+  Rake::Task[local_makefile].enhance([:fix_local_pass_cargo_target])
 end
 
 task :dev do
