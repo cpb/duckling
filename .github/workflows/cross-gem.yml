@@ -132,8 +132,11 @@ jobs:
           EXPECTED_PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
-          # No Rust toolchain is set up in this job. If RubyGems rejects the
-          # precompiled gem and reaches for the source gem, the build of the
-          # extension fails here rather than passing quietly.
+          # `gem install <file>` installs that file, and only this platform's
+          # gem file is on disk, so nothing here can quietly fall back to the
+          # source gem. An absent Rust toolchain would not prove that: these
+          # runner images ship one, so a source-gem fallback would compile and
+          # pass. What states which gem this run means to test is the
+          # EXPECTED_PLATFORM check in smoke-gem.rb.
           gem install --no-document pkg/duckling-*-${{ matrix.platform }}.gem
           ruby .github/scripts/smoke-gem.rb
