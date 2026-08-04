@@ -15,6 +15,19 @@ GEMSPEC = Gem::Specification.load("duckling.gemspec")
 
 RbSys::ExtensionTask.new("duckling", GEMSPEC) do |ext|
   ext.lib_dir = "lib/duckling"
+
+  # rake-compiler derives a native gem's required_ruby_version from the
+  # Ruby versions it cross-compiled against. One version (3.2) gives
+  # ">= 3.2, < 3.3.dev", which makes RubyGems refuse the precompiled gem
+  # on every later Ruby and quietly fall back to the source gem — the
+  # exact outcome precompiled gems exist to prevent.
+  #
+  # rb-sys's stable-api-compiled-fallback feature targets Ruby's
+  # ABI-stable C API, so one binary built against the 3.2 floor runs on
+  # every Ruby the gemspec allows. Restore the gemspec's own constraint.
+  ext.cross_compiling do |spec|
+    spec.required_ruby_version = GEMSPEC.required_ruby_version
+  end
 end
 
 # rake-compiler always builds two things for this extension:
