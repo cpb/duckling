@@ -15,6 +15,19 @@ jobs:
       fail-fast: false
       matrix:
         platform: [x86_64-linux, x86_64-darwin, arm64-darwin, aarch64-linux]
+        # Architecture `file(1)` must report for that platform's compiled
+        # binary. A cross-compile that silently targets the build host
+        # still exits 0 and still produces a correctly *named* artifact,
+        # so the platform name alone proves nothing.
+        include:
+          - platform: x86_64-linux
+            expected_arch: x86-64
+          - platform: x86_64-darwin
+            expected_arch: x86_64
+          - platform: arm64-darwin
+            expected_arch: arm64
+          - platform: aarch64-linux
+            expected_arch: aarch64
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,6 +50,50 @@ jobs:
           # single binary compiled against the 3.2 floor runs unmodified on
           # every later Ruby minor version (no per-Ruby-version fat gem needed).
           ruby-versions: "3.2"
+
+      - name: Verify gem metadata and architecture
+        env:
+          BUILT_GEM: ${{ steps.cross-gem.outputs.gem-path }}
+          EXPECTED_PLATFORM: ${{ matrix.platform }}
+          EXPECTED_ARCH: ${{ matrix.expected_arch }}
+        run: |
+          ruby -e '
+            require "rubygems/package"
+            require "tmpdir"
+
+            spec = Gem::Package.new(ENV.fetch("BUILT_GEM")).spec
+            failures = []
+
+            unless spec.platform.to_s == ENV.fetch("EXPECTED_PLATFORM")
+              failures << "platform is #{spec.platform}, expected #{ENV["EXPECTED_PLATFORM"]}"
+            end
+
+            # rake-compiler narrows this to the single Ruby it cross-compiled
+            # against unless the Rakefile restores it, which would make
+            # RubyGems skip this gem on every later Ruby.
+            wanted = Gem::Specification.load("duckling.gemspec").required_ruby_version
+            unless spec.required_ruby_version == wanted
+              failures << "required_ruby_version is #{spec.required_ruby_version}, expected #{wanted}"
+            end
+
+            Dir.mktmpdir do |dir|
+              Gem::Package.new(ENV.fetch("BUILT_GEM")).extract_files(dir)
+              binary = Dir[File.join(dir, "lib/duckling/duckling.{so,bundle}")].first
+
+              if binary.nil?
+                failures << "no compiled binary under lib/duckling/"
+              else
+                described = IO.popen(["file", "-b", binary], &:read).strip
+                unless described.include?(ENV.fetch("EXPECTED_ARCH"))
+                  failures << "#{File.basename(binary)} is #{described}, expected #{ENV["EXPECTED_ARCH"]}"
+                end
+                puts "#{File.basename(binary)}: #{described}"
+              end
+            end
+
+            abort("Gem verification failed:\n- #{failures.join("\n- ")}") if failures.any?
+            puts "#{spec.full_name} verified (#{spec.required_ruby_version})"
+          '
 
       - name: Upload native gem artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
