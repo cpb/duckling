@@ -17,10 +17,16 @@ require "rb_sys/mkmf"
 # override Cargo's target with the genuine host triple (`rustc -vV`'s
 # `host:` line), which beats config.toml's file-based default in rb_sys's
 # own target lookup order (env vars, then config.toml).
-if (ruby_target = ENV["RUBY_TARGET"]) && !Dir.pwd.include?("/#{ruby_target}/")
-  host_target = `rustc -vV`[/^host: (\S+)$/, 1]
+ruby_target = ENV["RUBY_TARGET"]
+mismatched = ruby_target && !Dir.pwd.include?("/#{ruby_target}/")
+host_target = `rustc -vV`[/^host: (\S+)$/, 1]
+warn "[duckling extconf debug] pwd=#{Dir.pwd} RUBY_TARGET=#{ruby_target.inspect} " \
+  "mismatched=#{mismatched} host_target=#{host_target.inspect} " \
+  "RUST_TARGET_before=#{ENV["RUST_TARGET"].inspect} CARGO_BUILD_TARGET_before=#{ENV["CARGO_BUILD_TARGET"].inspect}"
+if mismatched
   ENV["CARGO_BUILD_TARGET"] = host_target if host_target
   ENV.delete("RUST_TARGET")
 end
+warn "[duckling extconf debug] RUST_TARGET_after=#{ENV["RUST_TARGET"].inspect} CARGO_BUILD_TARGET_after=#{ENV["CARGO_BUILD_TARGET"].inspect}"
 
 create_rust_makefile("duckling/duckling")
