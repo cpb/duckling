@@ -45,49 +45,84 @@ jobs:
         id: cross-gem
         with:
           platform: ${{ matrix.platform }}
-          # duckling.gemspec requires Ruby >= 3.2.0, and ext/duckling/Cargo.toml
-          # builds against rb-sys's stable-api-compiled-fallback feature, so a
-          # single binary compiled against the 3.2 floor runs unmodified on
-          # every later Ruby minor version (no per-Ruby-version fat gem needed).
-          ruby-versions: "3.2"
+          # One binary per Ruby ABI. rb-sys reads Ruby's internal object layout
+          # through the headers it compiles against, so a binary only
+          # understands the Ruby that built it — a 3.2 binary misreads a 3.3
+          # object, and magnus then rejects a genuine Time as not a Time.
+          #
+          # Keep this list, CROSS_RUBY_ABIS in the Rakefile, and the smoke job's
+          # `ruby` matrix below in step. The rbsys/<platform> images carry the
+          # toolchains for these ABIs; check /usr/local/rake-compiler/config.yml
+          # in the image before adding one. A Ruby newer than every ABI here
+          # takes the source gem instead, which compiles its own binary.
+          ruby-versions: "3.2,3.3,3.4"
 
       - name: Verify gem metadata and architecture
         env:
           BUILT_GEM: ${{ steps.cross-gem.outputs.gem-path }}
           EXPECTED_PLATFORM: ${{ matrix.platform }}
           EXPECTED_ARCH: ${{ matrix.expected_arch }}
+          EXPECTED_ABIS: "3.2,3.3,3.4"
         run: |
           ruby -e '
             require "rubygems/package"
             require "tmpdir"
 
             spec = Gem::Package.new(ENV.fetch("BUILT_GEM")).spec
+            abis = ENV.fetch("EXPECTED_ABIS").split(",")
             failures = []
 
             unless spec.platform.to_s == ENV.fetch("EXPECTED_PLATFORM")
               failures << "platform is #{spec.platform}, expected #{ENV["EXPECTED_PLATFORM"]}"
             end
 
-            # rake-compiler narrows this to the single Ruby it cross-compiled
-            # against unless the Rakefile restores it, which would make
-            # RubyGems skip this gem on every later Ruby.
-            wanted = Gem::Specification.load("duckling.gemspec").required_ruby_version
-            unless spec.required_ruby_version == wanted
-              failures << "required_ruby_version is #{spec.required_ruby_version}, expected #{wanted}"
+            # required_ruby_version decides which Rubies RubyGems offers this
+            # gem to. State the two ways it goes wrong, rather than pinning the
+            # string the Rakefile happens to build.
+            #
+            # Too narrow, which rake-compiler does on its own: RubyGems skips
+            # the gem and silently takes the source gem, so the install machine
+            # needs a Rust toolchain after all.
+            #
+            # Too wide: RubyGems offers the gem to a Ruby it carries no binary
+            # for, and the gem raises LoadError on require.
+            gemspec_floor = Gem::Specification.load("duckling.gemspec").required_ruby_version
+            abis.each do |abi|
+              unless spec.required_ruby_version.satisfied_by?(Gem::Version.new("#{abi}.0"))
+                failures << "required_ruby_version #{spec.required_ruby_version} excludes Ruby #{abi}, which this gem carries a binary for"
+              end
+            end
+
+            highest = abis.max_by { |abi| Gem::Version.new(abi) }
+            major, minor = highest.split(".").map(&:to_i)
+            beyond = "#{major}.#{minor + 1}.0"
+            if spec.required_ruby_version.satisfied_by?(Gem::Version.new(beyond))
+              failures << "required_ruby_version #{spec.required_ruby_version} admits Ruby #{beyond}, which this gem carries no binary for"
+            end
+
+            below = gemspec_floor.requirements.map(&:last).min
+            unless spec.required_ruby_version.satisfied_by?(below)
+              failures << "required_ruby_version #{spec.required_ruby_version} excludes the gemspec floor #{below}"
             end
 
             Dir.mktmpdir do |dir|
               Gem::Package.new(ENV.fetch("BUILT_GEM")).extract_files(dir)
-              binary = Dir[File.join(dir, "lib/duckling/duckling.{so,bundle}")].first
 
-              if binary.nil?
-                failures << "no compiled binary under lib/duckling/"
-              else
+              # A fat gem keeps each ABI its own directory. A binary sitting
+              # directly in lib/duckling/ means only one got built.
+              found = Dir[File.join(dir, "lib/duckling/*/duckling.{so,bundle}")]
+              built_abis = found.map { |path| File.basename(File.dirname(path)) }.sort
+
+              if built_abis != abis.sort
+                failures << "carries binaries for #{built_abis.inspect}, expected #{abis.sort.inspect}"
+              end
+
+              found.each do |binary|
                 described = IO.popen(["file", "-b", binary], &:read).strip
                 unless described.include?(ENV.fetch("EXPECTED_ARCH"))
-                  failures << "#{File.basename(binary)} is #{described}, expected #{ENV["EXPECTED_ARCH"]}"
+                  failures << "#{File.basename(File.dirname(binary))}/#{File.basename(binary)} is #{described}, expected #{ENV["EXPECTED_ARCH"]}"
                 end
-                puts "#{File.basename(binary)}: #{described}"
+                puts "#{File.basename(File.dirname(binary))}/#{File.basename(binary)}: #{described}"
               end
             end
 
@@ -101,3 +136,58 @@ jobs:
           name: native-gem-${{ matrix.platform }}
           path: ${{ steps.cross-gem.outputs.gem-path }}
           if-no-files-found: error
+
+  # Installs each gem on real hardware and calls it.
+  #
+  # The job above reads gem files. It never loads one. A gem can hold a
+  # correctly named binary, for the right architecture, and still fail on the
+  # first call — an ABI mismatch is invisible until a Ruby object crosses into
+  # Rust. These runners are also the only place the darwin and aarch64 gems run
+  # at all, since the cross-compile containers cannot execute what they build.
+  smoke:
+    name: Smoke-test ${{ matrix.platform }} on Ruby ${{ matrix.ruby }}
+    needs: cross_gems
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep in step with `ruby-versions` above. A Ruby missing here leaves
+        # an ABI shipped untested; a Ruby here that is not built fails loudly.
+        ruby: ['3.2', '3.3', '3.4']
+        platform: [x86_64-linux, x86_64-darwin, arm64-darwin, aarch64-linux]
+        include:
+          - platform: x86_64-linux
+            runner: ubuntu-latest
+          - platform: aarch64-linux
+            runner: ubuntu-24.04-arm
+          - platform: x86_64-darwin
+            runner: macos-13
+          - platform: arm64-darwin
+            runner: macos-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: ${{ matrix.ruby }}
+
+      - name: Download native gem
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: native-gem-${{ matrix.platform }}
+          path: pkg
+
+      - name: Install and exercise the gem
+        env:
+          EXPECTED_PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          # No Rust toolchain is set up in this job. If RubyGems rejects the
+          # precompiled gem and reaches for the source gem, the build of the
+          # extension fails here rather than passing quietly.
+          gem install --no-document pkg/duckling-*-${{ matrix.platform }}.gem
+          ruby .github/scripts/smoke-gem.rb
