@@ -15,6 +15,17 @@ GEMSPEC = Gem::Specification.load("duckling.gemspec")
 
 RbSys::ExtensionTask.new("duckling", GEMSPEC) do |ext|
   ext.lib_dir = "lib/duckling"
+  # rake-compiler's define_native_tasks(nil, ...) call (unconditional, runs
+  # regardless of cross_compile) always registers lib/duckling/duckling.so
+  # against RUBY_PLATFORM -- the *host* Ruby driving this rake process, which
+  # inside every rb-sys-dock Linux container is an x86_64 system Ruby even
+  # when cross-compiling for aarch64-linux. That registration is a plain,
+  # non-platform-namespaced Rake file task guarded by `unless
+  # task_defined?`, so it silently wins the shared .so path over the correct
+  # aarch64-linux cross-compile registration that runs afterward. Skip it
+  # during a RUBY_TARGET-driven cross build so only the correctly-scoped
+  # cross task ever claims that path.
+  ext.no_native = true if ENV.key?("RUBY_TARGET")
 end
 
 task :dev do
