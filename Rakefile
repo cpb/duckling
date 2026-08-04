@@ -13,20 +13,39 @@ Dotenv.load(".env.local")
 
 GEMSPEC = Gem::Specification.load("duckling.gemspec")
 
+# Ruby ABIs each precompiled gem carries a binary for.
+#
+# rb-sys reads Ruby's internal object layout through the headers it compiles
+# against, so a binary only understands the Ruby that built it. One binary per
+# platform is not enough. See the loader in lib/duckling.rb.
+#
+# Keep this list in step with `ruby-versions` in
+# .github/workflows/cross-gem.yml, which builds the gems that ship. The
+# rbsys/<platform> images carry the toolchains for these ABIs; check
+# /usr/local/rake-compiler/config.yml in the image before adding one.
+CROSS_RUBY_ABIS = %w[3.2 3.3 3.4].freeze
+
+# The first Ruby the precompiled gems do not carry a binary for.
+#
+# RubyGems must skip a precompiled gem on such a Ruby and take the source gem,
+# which compiles a matching binary at install time. Without this cap RubyGems
+# installs a gem with no usable binary, and the gem raises LoadError on
+# require.
+CROSS_RUBY_ABI_CEILING = begin
+  major, minor = CROSS_RUBY_ABIS.max_by { |abi| Gem::Version.new(abi) }.split(".").map(&:to_i)
+  "#{major}.#{minor + 1}.dev"
+end
+
 RbSys::ExtensionTask.new("duckling", GEMSPEC) do |ext|
   ext.lib_dir = "lib/duckling"
 
-  # rake-compiler derives a native gem's required_ruby_version from the
-  # Ruby versions it cross-compiled against. One version (3.2) gives
-  # ">= 3.2, < 3.3.dev", which makes RubyGems refuse the precompiled gem
-  # on every later Ruby and quietly fall back to the source gem — the
-  # exact outcome precompiled gems exist to prevent.
-  #
-  # rb-sys's stable-api-compiled-fallback feature targets Ruby's
-  # ABI-stable C API, so one binary built against the 3.2 floor runs on
-  # every Ruby the gemspec allows. Restore the gemspec's own constraint.
+  # rake-compiler derives a native gem's required_ruby_version from the ABIs
+  # it cross-compiled against, and writes its own floor over the gemspec's.
+  # The gemspec's floor can be stricter, so state both bounds here: the
+  # gemspec's own requirement, plus the ceiling above.
   ext.cross_compiling do |spec|
-    spec.required_ruby_version = GEMSPEC.required_ruby_version
+    spec.required_ruby_version =
+      GEMSPEC.required_ruby_version.as_list + ["< #{CROSS_RUBY_ABI_CEILING}"]
   end
 end
 
@@ -107,7 +126,8 @@ end
 
 desc "Cross-compile the native extension for a given platform via rb-sys-dock (e.g. `rake 'native_gem[x86_64-linux]'`)"
 task :native_gem, [:platform] do |_t, platform:|
-  sh "bundle", "exec", "rb-sys-dock", "--platform", platform, "--ruby-versions", "3.2", "--build"
+  sh "bundle", "exec", "rb-sys-dock", "--platform", platform,
+    "--ruby-versions", CROSS_RUBY_ABIS.join(","), "--build"
 end
 
 task :benchmark_env do
