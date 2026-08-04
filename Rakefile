@@ -67,9 +67,22 @@ end
 if (ruby_target = ENV["RUBY_TARGET"]) && ruby_target != RUBY_PLATFORM
   local_makefile = "tmp/#{RUBY_PLATFORM}/duckling/#{RUBY_VERSION}/Makefile"
 
+  # CARGO_BUILD_TARGET must hold a real triple before RUST_TARGET goes
+  # away. Clearing RUST_TARGET alone lets rb_sys fall back to the target
+  # baked into the container's $CARGO_HOME/config.toml, which is the
+  # cross-compile target again. So a host triple we cannot read is a hard
+  # error, not something to skip past.
   task :fix_local_pass_cargo_target do
-    host_target = `rustc -vV`[/^host: (\S+)$/, 1]
-    ENV["CARGO_BUILD_TARGET"] = host_target if host_target
+    rustc_version_info = begin
+      `rustc -vV`
+    rescue Errno::ENOENT
+      raise "Cannot run `rustc -vV` to find the host target triple. rustc must be on PATH."
+    end
+
+    host_target = rustc_version_info[/^host: (\S+)$/, 1]
+    raise "`rustc -vV` printed no `host:` line:\n#{rustc_version_info}" unless host_target
+
+    ENV["CARGO_BUILD_TARGET"] = host_target
     ENV.delete("RUST_TARGET")
   end
 
