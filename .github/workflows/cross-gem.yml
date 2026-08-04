@@ -55,14 +55,14 @@ jobs:
           # toolchains for these ABIs; check /usr/local/rake-compiler/config.yml
           # in the image before adding one. A Ruby newer than every ABI here
           # takes the source gem instead, which compiles its own binary.
-          ruby-versions: "3.2,3.3,3.4"
+          ruby-versions: "3.2,3.3,3.4,4.0"
 
       - name: Verify gem metadata and architecture
         env:
           BUILT_GEM: ${{ steps.cross-gem.outputs.gem-path }}
           EXPECTED_PLATFORM: ${{ matrix.platform }}
           EXPECTED_ARCH: ${{ matrix.expected_arch }}
-          EXPECTED_ABIS: "3.2,3.3,3.4"
+          EXPECTED_ABIS: "3.2,3.3,3.4,4.0"
         run: |
           ruby -e '
             require "rubygems/package"
@@ -153,7 +153,7 @@ jobs:
       matrix:
         # Keep in step with `ruby-versions` above. A Ruby missing here leaves
         # an ABI shipped untested; a Ruby here that is not built fails loudly.
-        ruby: ['3.2', '3.3', '3.4']
+        ruby: ['3.2', '3.3', '3.4', '4.0']
         platform: [x86_64-linux, x86_64-darwin, arm64-darwin, aarch64-linux]
         include:
           - platform: x86_64-linux

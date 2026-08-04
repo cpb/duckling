@@ -23,7 +23,7 @@ GEMSPEC = Gem::Specification.load("duckling.gemspec")
 # .github/workflows/cross-gem.yml, which builds the gems that ship. The
 # rbsys/<platform> images carry the toolchains for these ABIs; check
 # /usr/local/rake-compiler/config.yml in the image before adding one.
-CROSS_RUBY_ABIS = %w[3.2 3.3 3.4].freeze
+CROSS_RUBY_ABIS = %w[3.2 3.3 3.4 4.0].freeze
 
 # The first Ruby the precompiled gems do not carry a binary for.
 #
