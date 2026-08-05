@@ -180,11 +180,14 @@ class PackagedGemTest < Minitest::Test
 
   private
 
-  # duckling.gemspec builds its file list from `git ls-files`, which fails when
-  # the build runs somewhere git cannot read the repository — a git worktree,
-  # whose .git is a file naming a path the build container never mounted. The
-  # gem that comes out holds the compiled binaries and no Ruby at all, and every
-  # other test here passes on it.
+  # A gem holding the binaries and no Ruby passes every other test in this file:
+  # its platform, ABI set, architectures and version bounds are all correct.
+  # This assertion is the only one that notices.
+  #
+  # duckling.gemspec builds its file list by running `git ls-files` wherever the
+  # gem is packaged, which is inside the cross-compile container — and RubyGems
+  # answers an empty list rather than raising when that fails. `rake native_gem`
+  # clones out of a worktree to keep git working there; nothing else does.
   def assert_carries_the_ruby_library(platform)
     assert_includes spec_for(platform).files, "lib/duckling.rb",
       "#{platform} carries no lib/duckling.rb, so nothing can require it — " \
