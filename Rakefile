@@ -143,6 +143,10 @@ task :native_gem, [:platform] do |_t, platform:|
   head = `git rev-parse HEAD`.strip
   raise "Could not read HEAD to pin the build clone." if head.empty?
 
+  unless `git status --porcelain`.empty?
+    warn "native_gem: building #{head[0, 7]} from a clone — uncommitted changes are not in this gem."
+  end
+
   rm_rf CLONE_DIR
   begin
     sh "git", "clone", "--local", "--no-checkout", Dir.pwd, CLONE_DIR
