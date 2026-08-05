@@ -2,10 +2,10 @@
 
 require "test_helper"
 require "yaml"
+require_relative "../cross_targets"
 
 class DucklingCiTest < Minitest::Test
   CROSS_GEM_WORKFLOW = File.expand_path("../.github/workflows/cross-gem.yml", __dir__)
-  RAKEFILE = File.expand_path("../Rakefile", __dir__)
 
   def test_native_extension_infrastructure
     ext_dir = File.join(__dir__, "../ext/duckling")
@@ -18,47 +18,49 @@ class DucklingCiTest < Minitest::Test
     assert_match(/crate-type.*cdylib/, cargo, "Cargo.toml must set crate-type = [\"cdylib\"]")
   end
 
-  # A Ruby ABI needs a binary built for it, a metadata check that expects that
-  # binary, and a smoke test that loads it on a real Ruby of that version. Those
-  # three live in .github/workflows/cross-gem.yml, and CROSS_RUBY_ABIS in the
-  # Rakefile derives the required_ruby_version ceiling from a fourth copy.
+  # cross_targets.rb states which platforms and Ruby ABIs the gems are built
+  # for, and everything that can read Ruby reads it there. cross-gem.yml cannot
+  # — YAML has no way to require a file — so it restates the same matrix, and
+  # these tests are the only thing holding the copy to the original.
   #
-  # Three of the four ways these drift apart already fail loudly, in
-  # .github/scripts/verify-gem.rb. The smoke matrix is the exception: drop an
-  # ABI from it and the gem still builds, still verifies, and still publishes,
-  # with nothing having loaded that binary. An ABI mismatch is invisible to
-  # every check that only reads a gem file, so losing the smoke test for an ABI
-  # loses the only coverage it has.
-  def test_every_cross_compiled_ruby_abi_is_verified_and_smoke_tested
-    abis = normalize(rakefile_cross_ruby_abis)
+  # A Ruby ABI needs a binary built for it and a smoke test that loads it on a
+  # real Ruby of that version. Drop an ABI from the smoke matrix and the gem
+  # still builds, still verifies, and still publishes, with nothing having
+  # loaded that binary — and an ABI mismatch is invisible to every check that
+  # only reads a gem file.
+  def test_every_cross_compiled_ruby_abi_is_built_and_smoke_tested
+    abis = normalize(CrossTargets::RUBY_ABIS)
 
     assert_equal abis, normalize(cross_gem_step.fetch("with").fetch("ruby-versions").split(",")),
-      "`ruby-versions` builds a different ABI set than CROSS_RUBY_ABIS in the Rakefile"
-
-    assert_equal abis, normalize(verify_step.fetch("env").fetch("EXPECTED_ABIS").split(",")),
-      "EXPECTED_ABIS checks a different ABI set than CROSS_RUBY_ABIS in the Rakefile"
+      "`ruby-versions` builds a different ABI set than CrossTargets::RUBY_ABIS"
 
     assert_equal abis, normalize(job("smoke").fetch("strategy").fetch("matrix").fetch("ruby")),
-      "the smoke job runs a different ABI set than CROSS_RUBY_ABIS in the Rakefile — " \
+      "the smoke job runs a different ABI set than CrossTargets::RUBY_ABIS — " \
       "an ABI missing here ships in every gem without ever being loaded"
   end
 
-  # Adding a platform takes four edits to cross-gem.yml: the build matrix, its
-  # expected_arch pair, the smoke matrix, and a runner that can execute that
-  # architecture. The build matrix alone is the edit that looks sufficient.
-  def test_every_cross_compiled_platform_is_verified_and_smoke_tested
-    built = job("cross_gems").fetch("strategy").fetch("matrix").fetch("platform").sort
+  # Adding a platform takes three edits: cross_targets.rb, cross-gem.yml's build
+  # matrix, and cross-gem.yml's smoke matrix. The build matrix alone is the edit
+  # that looks sufficient.
+  def test_every_cross_compiled_platform_is_built_and_smoke_tested
+    platforms = CrossTargets::PLATFORMS.keys.sort
 
-    assert_equal built, job("smoke").fetch("strategy").fetch("matrix").fetch("platform").sort,
-      "the smoke job covers different platforms than the cross-compile job — " \
+    assert_equal platforms, job("cross_gems").fetch("strategy").fetch("matrix").fetch("platform").sort,
+      "the cross-compile job builds different platforms than CrossTargets::PLATFORMS"
+
+    assert_equal platforms, job("smoke").fetch("strategy").fetch("matrix").fetch("platform").sort,
+      "the smoke job covers different platforms than CrossTargets::PLATFORMS — " \
       "a platform missing here ships without ever running on its own hardware"
+  end
 
-    assert_equal built, include_map("cross_gems", "expected_arch").keys.sort,
-      "every built platform needs an expected_arch, or `file(1)` verifies nothing for it"
+  # GitHub leaves a job asking for a runner label that does not exist queued
+  # rather than failing it, so the run never reports at all. The label has to
+  # come from somewhere a human reviews, which is cross_targets.rb.
+  def test_every_smoke_tested_platform_runs_on_its_declared_runner
+    expected = CrossTargets::PLATFORMS.transform_values { |target| target.fetch(:runner) }
 
-    assert_equal built, include_map("smoke", "runner").keys.sort,
-      "every smoke-tested platform needs a runner label; GitHub leaves a job " \
-      "asking for a runner that does not exist queued rather than failing it"
+    assert_equal expected, include_map("smoke", "runner"),
+      "the smoke job's runner labels disagree with CrossTargets::PLATFORMS"
   end
 
   private
@@ -77,25 +79,11 @@ class DucklingCiTest < Minitest::Test
     step
   end
 
-  def verify_step
-    step = job("cross_gems").fetch("steps").find { |s| s["env"]&.key?("EXPECTED_ABIS") }
-    refute_nil step, "cross-gem.yml needs a step passing EXPECTED_ABIS to verify-gem.rb"
-    step
-  end
-
   # A matrix `include:` entry pairs a platform with one extra field.
   def include_map(job_name, field)
     job(job_name).fetch("strategy").fetch("matrix").fetch("include")
       .select { |entry| entry.key?(field) }
       .to_h { |entry| [entry.fetch("platform"), entry.fetch(field)] }
-  end
-
-  # The Rakefile requires rb_sys and defines tasks against a compiled
-  # extension, so read the constant out of its source rather than loading it.
-  def rakefile_cross_ruby_abis
-    list = File.read(RAKEFILE)[/^CROSS_RUBY_ABIS = %w\[([^\]]+)\]/, 1]
-    refute_nil list, "Rakefile must keep CROSS_RUBY_ABIS as a %w[] literal for this test to read"
-    list.split
   end
 
   # YAML turns an unquoted 4.0 into a Float, and the order of the ABIs is a

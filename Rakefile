@@ -5,6 +5,8 @@ require "dotenv"
 require "minitest/test_task"
 require "rb_sys/extensiontask"
 
+require_relative "cross_targets"
+
 # Loads RB_SYS_CARGO_PROFILE=dev from .env.local when present (seeded by
 # bin/setup from .env.local.example), so local compiles default to the dev
 # profile without needing the :dev task below. .env.local is gitignored and
@@ -13,41 +15,16 @@ Dotenv.load(".env.local")
 
 GEMSPEC = Gem::Specification.load("duckling.gemspec")
 
-# Ruby ABIs each precompiled gem carries a binary for.
-#
-# rb-sys reads Ruby's internal object layout through the headers it compiles
-# against. A binary understands only the Ruby that built it. See the loader in
-# lib/duckling.rb.
-#
-# This list must agree with three fields in .github/workflows/cross-gem.yml,
-# which builds the gems that ship: `ruby-versions`, `EXPECTED_ABIS`, and the
-# smoke job's `ruby` matrix.
-#
-# The rbsys/<platform> images carry the toolchains for these ABIs. Check
-# /usr/local/rake-compiler/config.yml in the image before adding one.
-CROSS_RUBY_ABIS = %w[3.2 3.3 3.4 4.0].freeze
-
-# The first Ruby the precompiled gems do not carry a binary for.
-#
-# RubyGems must skip a precompiled gem on such a Ruby and take the source gem,
-# which compiles a matching binary at install time. Without this cap RubyGems
-# installs a gem with no usable binary, and the gem raises LoadError on
-# require.
-CROSS_RUBY_ABI_CEILING = begin
-  major, minor = CROSS_RUBY_ABIS.max_by { |abi| Gem::Version.new(abi) }.split(".").map(&:to_i)
-  "#{major}.#{minor + 1}.dev"
-end
-
 RbSys::ExtensionTask.new("duckling", GEMSPEC) do |ext|
   ext.lib_dir = "lib/duckling"
 
   # rake-compiler derives a native gem's required_ruby_version from the ABIs
   # it cross-compiled against, and writes its own floor over the gemspec's.
   # The gemspec's floor can be stricter, so state both bounds here: the
-  # gemspec's own requirement, plus the ceiling above.
+  # gemspec's own requirement, plus the ceiling from cross_targets.rb.
   ext.cross_compiling do |spec|
     spec.required_ruby_version =
-      GEMSPEC.required_ruby_version.as_list + ["< #{CROSS_RUBY_ABI_CEILING}"]
+      GEMSPEC.required_ruby_version.as_list + ["< #{CrossTargets::ABI_CEILING}"]
   end
 end
 
@@ -102,7 +79,7 @@ if (ruby_target = ENV["RUBY_TARGET"]) && ruby_target != RUBY_PLATFORM
   # the local pass. Nothing in rake states that order. If it ever
   # inverted, the cross build would compile for the host and produce a
   # correctly *named* binary for the wrong architecture — which is what
-  # `file(1)` on every binary in .github/scripts/verify-gem.rb catches.
+  # `file(1)` on every binary in test/gem/packaged_gem_test.rb catches.
   task :fix_local_pass_cargo_target do
     rustc_version_info = begin
       `rustc -vV`
@@ -134,10 +111,50 @@ task :dev do
   ENV["RB_SYS_CARGO_PROFILE"] = "dev"
 end
 
+# rb-sys-dock mounts the working directory into the build container with
+# `-v $(pwd):$(pwd)` and nothing else. In a git worktree — which is how
+# bin/worktree sets up every branch here — .git is a *file* naming a path under
+# the main checkout's .git/worktrees/, which that mount does not cover. Every
+# git command inside the container then fails, including the `git ls-files` in
+# duckling.gemspec, whose file list comes back empty. The gem that comes out
+# holds the compiled binaries and no Ruby at all.
+#
+# So build from a throwaway plain clone instead, whose .git is a real
+# directory under the mount. Two consequences: the gem carries *committed*
+# state, not the working tree, and the clone gets its own Cargo target
+# directory rather than reusing this checkout's.
+CLONE_DIR = "tmp/native_gem_clone"
+
+def build_native_gem(platform)
+  # bundler exports BUNDLE_GEMFILE pointing at this checkout, and rb-sys-dock
+  # mounts $(pwd) — the two have to move together or the container gets one
+  # directory's Gemfile and another's source.
+  Bundler.with_unbundled_env do
+    sh "bundle", "install"
+    sh "bundle", "exec", "rb-sys-dock", "--platform", platform,
+      "--ruby-versions", CrossTargets::RUBY_ABIS.join(","), "--build"
+  end
+end
+
 desc "Cross-compile the native extension for a given platform via rb-sys-dock (e.g. `rake 'native_gem[x86_64-linux]'`)"
 task :native_gem, [:platform] do |_t, platform:|
-  sh "bundle", "exec", "rb-sys-dock", "--platform", platform,
-    "--ruby-versions", CROSS_RUBY_ABIS.join(","), "--build"
+  next build_native_gem(platform) unless File.file?(".git")
+
+  head = `git rev-parse HEAD`.strip
+  raise "Could not read HEAD to pin the build clone." if head.empty?
+
+  rm_rf CLONE_DIR
+  begin
+    sh "git", "clone", "--local", "--no-checkout", Dir.pwd, CLONE_DIR
+    sh "git", "-C", CLONE_DIR, "checkout", "--detach", head
+
+    Dir.chdir(CLONE_DIR) { build_native_gem(platform) }
+
+    mkdir_p "pkg"
+    cp FileList["#{CLONE_DIR}/pkg/*.gem"], "pkg"
+  ensure
+    rm_rf CLONE_DIR
+  end
 end
 
 task :benchmark_env do
@@ -192,7 +209,14 @@ namespace :benchmark do
   end
 end
 
-Minitest::TestTask.create
+# The default suite exercises the extension compiled in this checkout.
+# test/gem/ exercises a *built* or *installed* gem instead — it needs one
+# handed to it, and the installed suite must not see this checkout's lib/ at
+# all — so both run on their own, as plain `ruby test/gem/<file>`. See each
+# file's header.
+Minitest::TestTask.create do |t|
+  t.test_globs = FileList["test/**/*_test.rb"].exclude("test/gem/**/*")
+end
 
 # Minitest::TestTask has no built-in way to declare a task dependency, and
 # `task default: %i[standard compile test]`'s array ordering only protects

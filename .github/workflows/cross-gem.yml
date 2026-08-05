@@ -14,20 +14,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # YAML cannot require Ruby, so this restates cross_targets.rb.
+        # test/duckling_ci_test.rb fails when the two disagree.
         platform: [x86_64-linux, x86_64-darwin, arm64-darwin, aarch64-linux]
-        # Architecture `file(1)` must report for that platform's compiled
-        # binary. A cross-compile that silently targets the build host
-        # still exits 0 and still produces a correctly *named* artifact,
-        # so the platform name alone proves nothing.
-        include:
-          - platform: x86_64-linux
-            expected_arch: x86-64
-          - platform: x86_64-darwin
-            expected_arch: x86_64
-          - platform: arm64-darwin
-            expected_arch: arm64
-          - platform: aarch64-linux
-            expected_arch: aarch64
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,27 +34,18 @@ jobs:
         id: cross-gem
         with:
           platform: ${{ matrix.platform }}
-          # One binary per Ruby ABI. rb-sys reads Ruby's internal object layout
-          # through the headers it compiles against, so a binary understands
-          # only the Ruby that built it. Load the wrong one and it misreads
-          # objects: magnus rejects a genuine Time as not a Time.
-          #
-          # This list must agree with three others: CROSS_RUBY_ABIS in the
-          # Rakefile, EXPECTED_ABIS below, and the smoke job's `ruby` matrix.
-          #
-          # The rbsys/<platform> images carry the toolchains for these ABIs.
-          # Check /usr/local/rake-compiler/config.yml in the image before
-          # adding one. A Ruby newer than every ABI here takes the source gem
-          # instead, which compiles its own binary.
+          # One binary per Ruby ABI. YAML cannot require Ruby, so this restates
+          # CrossTargets::RUBY_ABIS from cross_targets.rb, which holds the why.
+          # test/duckling_ci_test.rb fails when the two disagree.
           ruby-versions: "3.2,3.3,3.4,4.0"
 
+      # Reads the built gem. Nothing here loads it, so an ABI mismatch passes
+      # every check in this job — that is what `smoke` below is for.
+      #
+      # Plain `ruby`, on the minitest every CRuby bundles. Installing minitest
+      # would pull in prism, which is a native extension.
       - name: Verify gem metadata and architecture
-        env:
-          BUILT_GEM: ${{ steps.cross-gem.outputs.gem-path }}
-          EXPECTED_PLATFORM: ${{ matrix.platform }}
-          EXPECTED_ARCH: ${{ matrix.expected_arch }}
-          EXPECTED_ABIS: "3.2,3.3,3.4,4.0"
-        run: ruby .github/scripts/verify-gem.rb
+        run: ruby test/gem/packaged_gem_test.rb
 
       - name: Upload native gem artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -88,9 +68,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Must agree with `ruby-versions` and `EXPECTED_ABIS` above, and with
-        # CROSS_RUBY_ABIS in the Rakefile. A Ruby missing here ships an ABI
-        # that nothing tests. A Ruby here that is not built fails loudly.
+        # Restates cross_targets.rb, which holds the why for every value here,
+        # including the runner labels. test/duckling_ci_test.rb fails when the
+        # two disagree — an ABI missing here ships in every gem without ever
+        # being loaded.
         ruby: ['3.2', '3.3', '3.4', '4.0']
         platform: [x86_64-linux, x86_64-darwin, arm64-darwin, aarch64-linux]
         include:
@@ -98,14 +79,6 @@ jobs:
             runner: ubuntu-latest
           - platform: aarch64-linux
             runner: ubuntu-24.04-arm
-          # Intel macOS. This label must name a live runner image: GitHub does
-          # not fail a job that asks for a retired one, it leaves the job
-          # queued forever, so the run never reports at all.
-          #
-          # GitHub drops x86_64 macOS entirely once macos-15 retires,
-          # announced for fall 2027. Move to macos-26-intel before then. Once
-          # no runner can execute an x86_64-darwin gem, reconsider shipping
-          # one.
           - platform: x86_64-darwin
             runner: macos-15-intel
           - platform: arm64-darwin
@@ -128,15 +101,16 @@ jobs:
           path: pkg
 
       - name: Install and exercise the gem
-        env:
-          EXPECTED_PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
           # `gem install <file>` installs that file, and only this platform's
           # gem file is on disk, so nothing here can quietly fall back to the
           # source gem. An absent Rust toolchain would not prove that: these
           # runner images ship one, so a source-gem fallback would compile and
-          # pass. What states which gem this run means to test is the
-          # EXPECTED_PLATFORM check in smoke-gem.rb.
+          # pass. What rules that out is installed_gem_test.rb's own check that
+          # the gem it resolved is precompiled and matches this machine.
+          #
+          # Plain `ruby`, on the minitest every CRuby bundles. Installing
+          # minitest would pull in prism, which is a native extension.
           gem install --no-document pkg/duckling-*-${{ matrix.platform }}.gem
-          ruby .github/scripts/smoke-gem.rb
+          ruby test/gem/installed_gem_test.rb
