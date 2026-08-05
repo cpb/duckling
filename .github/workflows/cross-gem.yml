@@ -14,7 +14,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [x86_64-linux, x86_64-darwin]
+        # YAML cannot require Ruby, so this restates cross_targets.rb.
+        # test/duckling_ci_test.rb fails when the two disagree.
+        platform: [x86_64-linux, x86_64-darwin, arm64-darwin, aarch64-linux]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,11 +34,18 @@ jobs:
         id: cross-gem
         with:
           platform: ${{ matrix.platform }}
-          # duckling.gemspec requires Ruby >= 3.2.0, and ext/duckling/Cargo.toml
-          # builds against rb-sys's stable-api-compiled-fallback feature, so a
-          # single binary compiled against the 3.2 floor runs unmodified on
-          # every later Ruby minor version (no per-Ruby-version fat gem needed).
-          ruby-versions: "3.2"
+          # One binary per Ruby ABI. YAML cannot require Ruby, so this restates
+          # CrossTargets::RUBY_ABIS from cross_targets.rb, which holds the why.
+          # test/duckling_ci_test.rb fails when the two disagree.
+          ruby-versions: "3.2,3.3,3.4,4.0"
+
+      # Reads the built gem. Nothing here loads it, so an ABI mismatch passes
+      # every check in this job — that is what `smoke` below is for.
+      #
+      # Plain `ruby`, on the minitest every CRuby bundles. Installing minitest
+      # would pull in prism, which is a native extension.
+      - name: Verify gem metadata and architecture
+        run: ruby test/gem/packaged_gem_test.rb
 
       - name: Upload native gem artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -44,3 +53,64 @@ jobs:
           name: native-gem-${{ matrix.platform }}
           path: ${{ steps.cross-gem.outputs.gem-path }}
           if-no-files-found: error
+
+  # Installs each gem on real hardware and calls it.
+  #
+  # The job above reads gem files. It never loads one. A gem can hold a
+  # correctly named binary, for the right architecture, and still fail on the
+  # first call — an ABI mismatch is invisible until a Ruby object crosses into
+  # Rust. These runners are also the only place the darwin and aarch64 gems run
+  # at all, since the cross-compile containers cannot execute what they build.
+  smoke:
+    name: Smoke-test ${{ matrix.platform }} on Ruby ${{ matrix.ruby }}
+    needs: cross_gems
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Restates cross_targets.rb, which holds the why for every value here,
+        # including the runner labels. test/duckling_ci_test.rb fails when the
+        # two disagree — an ABI missing here ships in every gem without ever
+        # being loaded.
+        ruby: ['3.2', '3.3', '3.4', '4.0']
+        platform: [x86_64-linux, x86_64-darwin, arm64-darwin, aarch64-linux]
+        include:
+          - platform: x86_64-linux
+            runner: ubuntu-latest
+          - platform: aarch64-linux
+            runner: ubuntu-24.04-arm
+          - platform: x86_64-darwin
+            runner: macos-15-intel
+          - platform: arm64-darwin
+            runner: macos-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: ${{ matrix.ruby }}
+
+      - name: Download native gem
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: native-gem-${{ matrix.platform }}
+          path: pkg
+
+      - name: Install and exercise the gem
+        run: |
+          set -euo pipefail
+          # `gem install <file>` installs that file, and only this platform's
+          # gem file is on disk, so nothing here can quietly fall back to the
+          # source gem. An absent Rust toolchain would not prove that: these
+          # runner images ship one, so a source-gem fallback would compile and
+          # pass. What rules that out is installed_gem_test.rb's own check that
+          # the gem it resolved is precompiled and matches this machine.
+          #
+          # Plain `ruby`, on the minitest every CRuby bundles. Installing
+          # minitest would pull in prism, which is a native extension.
+          gem install --no-document pkg/duckling-*-${{ matrix.platform }}.gem
+          ruby test/gem/installed_gem_test.rb

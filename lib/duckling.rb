@@ -3,7 +3,33 @@
 require "tzinfo"
 
 require_relative "duckling/version"
-require_relative "duckling/duckling"
+
+# A precompiled gem carries one binary per Ruby ABI, each in its own
+# lib/duckling/<major.minor>/ directory. Load the one for the running Ruby.
+#
+# rb-sys reads Ruby's internal object layout through the headers it compiles
+# against, so a binary understands only the Ruby that built it. Load the wrong
+# one and it misreads objects: magnus rejects a genuine Time as not a Time.
+#
+# A source-gem build, and a plain `rake compile` in a checkout, write one
+# binary straight to lib/duckling/ instead. That build always matches the
+# running Ruby, so it needs no version directory.
+begin
+  require_relative "duckling/#{RUBY_VERSION[/\d+\.\d+/]}/duckling"
+rescue LoadError => abi_load_error
+  begin
+    require_relative "duckling/duckling"
+  rescue LoadError
+    # The ABI directory is missing, and so is the plain path. Raise the first
+    # error, not the second.
+    #
+    # A binary that exists but refuses to load fails here too, and its error
+    # says why. An Alpine install does this: RubyGems matches an unversioned
+    # -linux gem against a musl runtime, so the binary is present and asks for
+    # glibc. Reporting a missing file there would hide the real reason.
+    raise abi_load_error
+  end
+end
 
 module Duckling
   # Raised when the serialized :time :value shape drifts from the typed walk in
