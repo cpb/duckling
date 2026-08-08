@@ -68,18 +68,26 @@ jobs:
       # make any later step that inspects the tree misleading, and the same
       # command is what a contributor runs locally.
       #
-      # BUNDLE_DEPLOYMENT must be turned back off. `bundler-cache: true`
-      # above configures deployment mode, which requires the lockfile to be
-      # committed — and this leg's lockfile is generated here and gitignored
-      # by design. Resolving a different bundle is the entire point of the
-      # step, so deployment mode is the wrong setting for it specifically.
+      # Deployment mode has to be turned back off. `bundler-cache: true`
+      # above writes `deployment: true` into .bundle/config, and deployment
+      # requires a committed lockfile — while this leg's lockfile is
+      # generated here and gitignored by design. Resolving a different bundle
+      # is the entire point of the step, so deployment is the wrong setting
+      # for it specifically.
+      #
+      # It has to be unset in the *local config*, not overridden with
+      # BUNDLE_DEPLOYMENT. Bundler resolves settings local-config-first and
+      # environment-second (`Bundler::Settings#configs`), which is the
+      # opposite of the usual convention: an env var cannot override anything
+      # `bundle config --local` has written.
       - name: Run the suite against the host's zoneinfo (no tzinfo-data)
         env:
           DUCKLING_TZ_LEG: system-zoneinfo
           DUCKLING_TZINFO_DATA: none
           BUNDLE_LOCKFILE: Gemfile.system-zoneinfo.lock
-          BUNDLE_DEPLOYMENT: "false"
         run: |
+          bundle config unset --local deployment
+          bundle config unset --local frozen
           bundle install --jobs 4
           bundle exec rake test
 
