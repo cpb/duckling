@@ -32,6 +32,13 @@ jobs:
   #   below purely so it gates a merge; it needs no Ruby or Rust setup of its
   #   own, only a re-resolve of the bundle.
   #
+  #   Note this runner is not a stock Ubuntu as far as tz data goes: it
+  #   resolves the backward-compat links (US/Eastern) even though
+  #   tzdata-legacy is not in its package list, where a plain ubuntu:24.04
+  #   container of an earlier tzdata point release does not. So this leg
+  #   proves the zoneinfo fallback and rearguard modelling, and the manifest
+  #   treats the links as a capability rather than as a fact about the leg.
+  #
   # The remaining legs are diagnostics for databases no consumer is on by
   # default, and live in `timezones` where a red result informs rather than
   # blocks.

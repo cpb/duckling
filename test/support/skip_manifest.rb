@@ -70,16 +70,64 @@ module SkipManifest
     skipped << id if test.failures.any?(Minitest::Skip)
   end
 
-  def expected
-    @expected ||= begin
-      manifest = YAML.safe_load_file(PATH)
+  # A declared expectation. `capability` is nil for a plain entry, or the name
+  # of a tz capability for a conditional one — see CONDITIONAL_NOTE.
+  Entry = Struct.new(:id, :capability)
+
+  # Why an entry may be conditional.
+  #
+  # A leg fixes which *datasource* answers, and for most properties that
+  # settles what it can do: every Debian/Ubuntu host compiles rearguard
+  # tzdata, so "no negative DST" follows from "host zoneinfo". The
+  # backward-compat links do not follow. They moved to a separate
+  # `tzdata-legacy` package, and whether a given image ends up with them is a
+  # property of that image, not of the leg — two Ubuntu 24.04 systems
+  # disagree: this repo's dev container (tzdata 2025b) resolves 497
+  # identifiers and no `US/Eastern`, while a GitHub `ubuntu-latest` runner
+  # (tzdata 2026b, no tzdata-legacy) resolves it fine.
+  #
+  # Declaring such a test as an unconditional skip asserts a fact about the
+  # machine that the leg does not control, and the run fails wherever the
+  # guess is wrong. `unless:` states the real relationship instead: expected
+  # to skip when the capability is absent, expected to *run* when it is
+  # present. Still a two-way check — and the "must run when present"
+  # direction is the valuable one, since a tz test that runs to completion
+  # without the capability it depends on is a vacuous pass.
+  CONDITIONAL_NOTE = "unless:"
+
+  def manifest
+    @manifest ||= YAML.safe_load_file(PATH)
+  end
+
+  def entries
+    @entries ||= begin
       legs = manifest.keys - [ALWAYS_KEY]
       unless manifest.key?(LEG)
         raise "DUCKLING_TZ_LEG=#{LEG.inspect} is not declared in #{PATH} (declared legs: #{legs.inspect})"
       end
 
-      Array(manifest[ALWAYS_KEY]) | Array(manifest[LEG])
+      (Array(manifest[ALWAYS_KEY]) + Array(manifest[LEG])).map do |entry|
+        next Entry.new(entry, nil) unless entry.is_a?(Hash)
+
+        Entry.new(entry.fetch("test"), entry.fetch("unless"))
+      end
     end
+  end
+
+  # Every declared test id, conditional or not. What the stale check judges:
+  # an entry naming nothing is wrong regardless of any capability.
+  def expected
+    entries.map(&:id)
+  end
+
+  # Declared ids whose capability really is absent here, so they must skip.
+  def expected_to_skip
+    entries.reject { |entry| entry.capability && TZCapabilities.supports?(entry.capability) }.map(&:id)
+  end
+
+  # Declared ids whose capability is present here, so they must NOT skip.
+  def expected_to_run
+    (entries.map(&:id) - expected_to_skip)
   end
 
   # Every "Class#method" minitest knows about, from the test classes loaded
@@ -111,14 +159,20 @@ module SkipManifest
   # discrepancy, in the order a reader would want to act on them.
   def problems
     undeclared = skipped - expected
-    declared_but_ran = (expected & executed) - skipped
+    skipped_despite_capability = skipped & expected_to_run
+    declared_but_ran = (expected_to_skip & executed) - skipped
 
     undeclared.map { |id|
       "#{id} skipped, but the #{LEG.inspect} leg does not declare it. " \
         "Add it to #{ALWAYS_KEY}: or #{LEG}: in #{PATH} if the lost coverage is intended."
+    } + skipped_despite_capability.map { |id|
+      "#{id} skipped, but the capability it is conditional on is present on " \
+        "#{TZCapabilities.datasource_description}. It should have run — something " \
+        "other than a missing capability made it skip."
     } + declared_but_ran.map { |id|
       "#{id} ran to completion, but the #{LEG.inspect} leg declares it as an expected skip. " \
-        "Remove it from #{PATH} — the capability it waits for is present now."
+        "Either the capability it waits for is present now — in which case give the entry " \
+        "an `#{CONDITIONAL_NOTE}` condition or drop it — or the test stopped depending on it."
     } + stale.map { |id|
       "#{id} is declared in #{PATH} but no such test exists. " \
         "It was renamed or removed; update the entry, or drop it."

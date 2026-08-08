@@ -11,6 +11,19 @@
 # A leg is selected with DUCKLING_TZ_LEG; see .github/workflows/main.yml for
 # how each is configured, and test/support/tz_capabilities.rb for the probes
 # that decide whether a tz skip is legitimate.
+#
+# An entry is normally a bare test id: this leg always loses that test. An
+# entry written as
+#
+#   - test: SomeTest#some_test
+#     unless: capability_name
+#
+# loses it only where that capability is absent, and requires it to RUN where
+# the capability is present. Use the conditional form only where the leg does
+# not actually determine the capability — see CONDITIONAL_NOTE in
+# test/support/skip_manifest.rb. Rearguard modelling follows from "host
+# zoneinfo" on every Debian/Ubuntu image, so negative_dst stays unconditional;
+# the backward-compat links do not, so it does not.
 
 # Leg-independent skips: known upstream limitations characterized by the tests
 # themselves, unrelated to tz data.
@@ -34,7 +47,8 @@ tzinfo-data: []
 # deliberately does not try to.
 system-zoneinfo:
   - DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
-  - DucklingTest#test_reference_zone_resolves_backward_compat_identifier
+  - test: DucklingTest#test_reference_zone_resolves_backward_compat_identifier
+    unless: backward_compat_links
 
 # Leg 3 — tzinfo-data pinned to 1.2022.7. A stale-but-present database, which
 # is the harder failure mode: America/Nuuk resolves fine and answers with
@@ -48,5 +62,6 @@ tzinfo-data-1.2022.7:
 # unpatched stock host is actually in.
 stale-system-zoneinfo:
   - DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
-  - DucklingTest#test_reference_zone_resolves_backward_compat_identifier
+  - test: DucklingTest#test_reference_zone_resolves_backward_compat_identifier
+    unless: backward_compat_links
   - DucklingTest#test_reference_zone_resolves_gap_late_in_local_day

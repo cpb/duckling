@@ -37,6 +37,18 @@ end
 
 Minitest.after_run { SkipManifest.enforce! }
 
+# One line naming the tz database this run actually got, and what it turned
+# out to be able to do. Two Ubuntu 24.04 images disagree about the
+# backward-compat links, so "which leg" does not by itself tell you which
+# capabilities were present — without this, reconciling a surprising skip
+# count against a CI log means guessing at the runner's tzdata packaging.
+begin
+  probes = TZCapabilities::CAPABILITIES.keys.map { |name| "#{name}=#{TZCapabilities.supports?(name)}" }
+  warn "tz leg #{SkipManifest::LEG}: #{TZCapabilities.datasource_description}; #{probes.join(" ")}"
+rescue TZInfo::DataSourceNotFound => error
+  warn "tz leg #{SkipManifest::LEG}: no tz datasource (#{error.message.lines.first.to_s.strip})"
+end
+
 # Runs the block unguarded — its assertions are the real ones, not a weakened
 # variant — and converts a failure into a *named* skip only when TZCapabilities
 # confirms the tz database in use genuinely cannot answer `capability`.
