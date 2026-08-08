@@ -41,7 +41,7 @@ when ""
   gem "tzinfo-data"
 when "none"
   # tzinfo falls back to the host's zoneinfo files.
-when /\A\d+\.\d+/
+when /\A\d+(\.\d+)+\z/
   gem "tzinfo-data", tzinfo_data
 else
   raise "DUCKLING_TZINFO_DATA=#{tzinfo_data.inspect} is not understood. " \

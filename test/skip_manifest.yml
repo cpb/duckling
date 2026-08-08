@@ -50,14 +50,29 @@ system-zoneinfo:
   - test: DucklingTest#test_reference_zone_resolves_backward_compat_identifier
     unless: backward_compat_links
 
-# Leg 3 — tzinfo-data pinned to 1.2022.7. A stale-but-present database, which
+# Leg 3 — host zoneinfo with the backward-compat links stripped
+# (bin/build-linkless-zoneinfo). The configuration the release notes are about:
+# US/Eastern and ~100 other valid IANA names stop resolving.
+#
+# No runner is in this state on its own — ubuntu-latest resolves those names
+# and so does macOS — so without this leg the headline behavior of v0.4.0 has
+# no coverage anywhere, and the only assertions on the error message's remedy
+# text never execute. Both entries are unconditional on purpose: the leg
+# *guarantees* the capability is absent, so `unless:` would let a silently
+# broken strip go green again, and `declared_but_ran` is what proves the
+# fixture worked.
+linkless-zoneinfo:
+  - DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+  - DucklingTest#test_reference_zone_resolves_backward_compat_identifier
+
+# Leg 4 — tzinfo-data pinned to 1.2022.7. A stale-but-present database, which
 # is the harder failure mode: America/Nuuk resolves fine and answers with
 # Greenland's pre-2023a rules, so the test fails on assertions rather than on
 # lookup. Fixture/LateGap covers the gap-late-in-the-local-day edge this loses.
 tzinfo-data-1.2022.7:
   - DucklingTest#test_reference_zone_resolves_gap_late_in_local_day
 
-# Leg 4 — host zoneinfo, with America/Nuuk overwritten by its pre-2023a rules
+# Leg 5 — host zoneinfo, with America/Nuuk overwritten by its pre-2023a rules
 # (bin/build-stale-zoneinfo). Both axes at once, which is the state an
 # unpatched stock host is actually in.
 stale-system-zoneinfo:

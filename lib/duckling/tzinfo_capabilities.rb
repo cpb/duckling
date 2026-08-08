@@ -56,13 +56,24 @@ module Duckling
 
     # Human-readable name for the database in use, for error messages.
     #
-    # Detected by capability (`respond_to?(:zoneinfo_dir)`) rather than by
-    # class: a caller is free to install their own `TZInfo::DataSource`
-    # subclass, and the directory is the useful part of the answer anyway.
+    # Every branch has to be a question about the datasource that actually
+    # answered. The zoneinfo case asks by capability (`respond_to?`), since a
+    # caller may install their own subclass and the directory is the useful
+    # part of the answer anyway. The gem case has to ask by class: whether
+    # `tzinfo-data` is *loaded* says nothing about whether it *answered* — a
+    # custom datasource in a bundle that also carries the gem would be
+    # described as tzinfo-data, with an identifier count from the source that
+    # really replied. A message whose whole job is to be trustworthy about
+    # provenance cannot name the wrong database, so anything unrecognized
+    # falls through to its own class name rather than to a guess.
     def datasource_description
       source = TZInfo::DataSource.get
       return "system zoneinfo at #{source.zoneinfo_dir}" if source.respond_to?(:zoneinfo_dir)
-      return "the tzinfo-data gem (tzdata #{TZInfo::Data::Version::TZDATA})" if defined?(TZInfo::Data::Version::TZDATA)
+
+      if defined?(TZInfo::DataSources::RubyDataSource) && source.is_a?(TZInfo::DataSources::RubyDataSource)
+        version = " (tzdata #{TZInfo::Data::Version::TZDATA})" if defined?(TZInfo::Data::Version::TZDATA)
+        return "the tzinfo-data gem#{version}"
+      end
 
       "the #{source.class} tz datasource"
     end

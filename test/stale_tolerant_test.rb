@@ -13,14 +13,7 @@ require "test_helper"
 # every leg, so these assertions exercise the permissive branch — the
 # dangerous one — no matter which database the run is using.
 class StaleTolerantTest < Minitest::Test
-  def setup
-    @previous_datasource = TZInfo::DataSource.get
-    TZInfo::DataSource.set(:zoneinfo, TZFixtures.zoneinfo_dir)
-  end
-
-  def teardown
-    TZInfo::DataSource.set(@previous_datasource)
-  end
+  include TZFixtures::Datasource
 
   # The premise the rest of the file depends on. Asserted rather than assumed,
   # because if a probe ever answered true here every test below would pass by

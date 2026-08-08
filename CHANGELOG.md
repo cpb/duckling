@@ -27,14 +27,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   container — needs the gem for `reference_zone:` to work at all.
 
   The error message names the tz database that answered, how many identifiers
-  it has, and both remedies, so this is distinguishable from a typo:
+  it has, and both remedies, so this is distinguishable from a typo. The
+  datasource and the count describe whichever database answered on your host,
+  so both differ from the example below:
 
   ```
   invalid reference_zone: "US/Eastern" (resolved against system zoneinfo at
-  /usr/share/zoneinfo, which provides 497 identifiers; backward-compat names
-  such as this one need either the tzinfo-data gem or the tzdata-legacy
-  system package)
+  /usr/share/zoneinfo, which provides 497 identifiers; this database has no
+  backward-compat names (US/Eastern and ~100 others), so if that is what this
+  is, it needs either the tzinfo-data gem or the tzdata-legacy system package)
   ```
+
+  The remedy is worded as a condition rather than a claim about the name you
+  passed: whether a given identifier is one of the ~100 in IANA's `backward`
+  file isn't knowable without shipping that list, and asserting it would tell
+  every typo on such a host that `tzdata-legacy` will supply it.
 
   A second, quieter difference comes with the same change: Debian and Ubuntu
   compile tzdata in *rearguard* format, which strips negative DST. On such a

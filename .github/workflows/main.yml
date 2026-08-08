@@ -97,6 +97,24 @@ jobs:
           bundle config unset --local frozen
           bundle install --jobs 4
           bundle exec rake test
+      # The configuration v0.4.0's release notes are actually about: a host
+      # where the backward-compat names stop resolving. It has to be built,
+      # because no runner is in that state — this one resolves US/Eastern from
+      # its own tzdata, and so does macOS. Without this leg the headline
+      # behavior has no coverage, and the only assertions on the error
+      # message's remedy text never execute.
+      #
+      # Gates a merge for the same reason the step above does. Reuses that
+      # step's bundle (same DUCKLING_TZINFO_DATA, same lockfile), so it costs
+      # a directory copy and a suite run, not a re-resolve.
+      - name: Run the suite with the backward-compat links removed
+        env:
+          DUCKLING_TZ_LEG: linkless-zoneinfo
+          DUCKLING_TZINFO_DATA: none
+          BUNDLE_LOCKFILE: Gemfile.system-zoneinfo.lock
+        run: |
+          bin/build-linkless-zoneinfo "$RUNNER_TEMP/linkless-zoneinfo"
+          DUCKLING_ZONEINFO_DIR="$RUNNER_TEMP/linkless-zoneinfo" bundle exec rake test
 
   # The tz-database axis. This gem does not depend on tzinfo-data, so
   # reference_zone: resolves against whichever database tzinfo found, and the

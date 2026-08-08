@@ -16,9 +16,36 @@ require "tzinfo"
 # leak into a test that uses it.
 #
 # TZInfo::DataSource.set clears the timezone cache and is fully reversible
-# in-process, so this needs no separate process or rake task — see
-# `with_fixture_datasource`.
+# in-process, so this needs no separate process or rake task. Include
+# TZFixtures::Datasource in a test class to swap to the fixture zones for the
+# duration of each of its tests.
 module TZFixtures
+  # The swap itself, as setup/teardown rather than a block: TZInfo::DataSource
+  # is process-global and minitest gives no block around a test, so a
+  # block-form helper could not be called from where the swap has to happen.
+  #
+  # Process-global is not a choice — reference_zone: reaches the datasource
+  # through TZInfo::Timezone.get deep inside Duckling.parse, not through
+  # anything a test could inject. That is also why these are fixture *zones*
+  # rather than Ruby doubles: a double can only reach local_time_in_zone
+  # directly, which stops short of the outside-in path through Duckling.parse.
+  #
+  # The restore is mandatory, not hygiene. Leave the fixture datasource
+  # installed and every later test in the process resolves against three zones
+  # and nothing else.
+  module Datasource
+    def setup
+      super
+      @previous_datasource = TZInfo::DataSource.get
+      TZInfo::DataSource.set(:zoneinfo, TZFixtures.zoneinfo_dir)
+    end
+
+    def teardown
+      TZInfo::DataSource.set(@previous_datasource)
+      super
+    end
+  end
+
   SOURCE_DIR = File.expand_path("../fixtures/tz", __dir__)
   BUILD_DIR = File.expand_path("../../tmp/tz-fixtures", __dir__)
 
@@ -31,21 +58,6 @@ module TZFixtures
   # Path to the compiled fixture zoneinfo directory, built once per process.
   def zoneinfo_dir
     @zoneinfo_dir ||= build!
-  end
-
-  # Runs the block with the fixture zones as the process-wide tz datasource,
-  # restoring the previous one afterwards. Process-wide is the only option:
-  # TZInfo::DataSource is a global, and reference_zone: reaches it through
-  # TZInfo::Timezone.get deep inside Duckling.parse rather than through
-  # anything a test could inject. That is also why these are fixture *zones*
-  # rather than Ruby doubles — a double can only reach local_time_in_zone
-  # directly, which stops short of the outside-in path through Duckling.parse.
-  def with_fixture_datasource
-    previous = TZInfo::DataSource.get
-    TZInfo::DataSource.set(:zoneinfo, zoneinfo_dir)
-    yield
-  ensure
-    TZInfo::DataSource.set(previous)
   end
 
   def build!

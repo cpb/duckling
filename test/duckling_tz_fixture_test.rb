@@ -29,18 +29,7 @@ require "test_helper"
 # builds the zone internally from TZInfo::Timezone.get, so nothing injectable
 # reaches it from a test.
 class DucklingTZFixtureTest < Minitest::Test
-  def setup
-    @previous_datasource = TZInfo::DataSource.get
-    TZInfo::DataSource.set(:zoneinfo, TZFixtures.zoneinfo_dir)
-  end
-
-  # TZInfo::DataSource is process-global, so the fixture directory has to come
-  # back off again or every later test resolves against three zones and
-  # nothing else. DataSource.set clears the timezone cache, so the restore is
-  # complete rather than leaving stale zone objects behind.
-  def teardown
-    TZInfo::DataSource.set(@previous_datasource)
-  end
+  include TZFixtures::Datasource
 
   # The fixture directory must expose its own zones and nothing else — if the
   # host's zoneinfo leaked in, the tests below would silently go back to being

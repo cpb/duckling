@@ -225,11 +225,37 @@ class DucklingTest < Minitest::Test
   # as a declared skip, not as a mystery.
   def test_reference_zone_resolves_backward_compat_identifier
     stale_tolerant :backward_compat_links do
+      # The parse goes first deliberately. On a links-less host this is what
+      # raises — as an ArgumentError out of timezone_for, the shape
+      # stale_tolerant converts into the declared skip. Reaching for
+      # TZInfo::Timezone.get before it would raise InvalidTimezoneIdentifier
+      # instead, which nothing rescues, and the leg would error rather than
+      # skip.
       entity = entity_for("March 7th 2026 3:00am", :time, reference_zone: "US/Eastern")
       resolved = single_point(entity)[:value]
 
       assert_equal(-18000, resolved.utc_offset,
         "expected US/Eastern to resolve like America/New_York (EST, -18000), got #{resolved.inspect}")
+
+      # Where the link points, not just that it resolves: -18000 alone is
+      # satisfied by any zone on EST that day, so it would pass against a link
+      # aimed anywhere plausible.
+      #
+      # Compared behaviorally rather than via canonical_identifier, which
+      # answers differently per datasource and would make this test fail on
+      # exactly the hosts it is meant to pass on. tzinfo-data models links, so
+      # US/Eastern reports America/New_York; compiled TZif carries no link
+      # metadata, so a ZoneinfoDataSource reports US/Eastern as its own
+      # canonical zone. Resolving both and comparing is true on either.
+      canonical = single_point(
+        entity_for("March 7th 2026 3:00am", :time, reference_zone: "America/New_York")
+      )[:value]
+
+      assert_equal canonical, resolved,
+        "expected US/Eastern to resolve to the same instant as America/New_York"
+      assert_equal canonical.utc_offset, resolved.utc_offset,
+        "expected US/Eastern to carry the same offset as America/New_York — Time#== compares " \
+        "only the instant, so the offset needs its own assertion"
     end
   end
 
@@ -307,6 +333,16 @@ class DucklingTest < Minitest::Test
   #
   # Stubbed rather than reproduced: removing the datasource for real means
   # having no zoneinfo directory on the machine running the suite.
+  #
+  # Note the limit, since it is the one premise in this file that is assumed
+  # rather than asserted. This pins that timezone_for converts the error, not
+  # that tzinfo raises it *there* — TZInfo::Timezone.get raising
+  # DataSourceNotFound on a datasource-less host is taken on faith. If a
+  # tzinfo upgrade moved the raise (to require time, or to a different call in
+  # the path) this test stays green while a real distroless container gets the
+  # raw tzinfo error again. Falsifying it needs a subprocess with no zoneinfo
+  # directory reachable at all, which costs more than the risk is worth; what
+  # is cheap is saying so here.
   def test_reference_zone_without_any_tz_database_raises_a_diagnosable_error
     error = without_any_tz_datasource do
       assert_raises(Duckling::TZDataUnavailable) do

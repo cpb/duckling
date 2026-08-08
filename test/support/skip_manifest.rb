@@ -32,7 +32,10 @@ require "yaml"
 # running a single file or a single test — `bin/test path/to/file.rb:42` —
 # does not trip it for everything the run left out.
 module SkipManifest
-  PATH = File.expand_path("../skip_manifest.yml", __dir__)
+  # Overridable so skip_manifest_test.rb can run a throwaway suite against a
+  # deliberately wrong manifest in a subprocess, which is the only way to
+  # exercise enforce!'s `exit 1` — it ends the process it runs in.
+  PATH = ENV.fetch("DUCKLING_SKIP_MANIFEST") { File.expand_path("../skip_manifest.yml", __dir__) }
 
   # Which leg's expectations to enforce. Defaults to the configuration a
   # plain `bundle exec rake` produces: the Gemfile installs current
