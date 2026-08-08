@@ -1,11 +1,16 @@
 # Which tests each CI leg expects to skip, enforced by
-# test/support/tz_skip_manifest.rb. A skip that is not declared here fails the
-# build, and so does a declared entry that runs to completion instead — so the
-# coverage a leg gives up shows up in a diff rather than in a passing log.
+# test/support/skip_manifest.rb.
+#
+# This governs EVERY skip in the default suite, not only tz-capability ones —
+# a new unconditional `skip` anywhere has to be declared under `always:`
+# before a plain `bundle exec rake` passes. Three ways to fail: a skip nobody
+# declared, a declared entry that runs to completion, and a declared entry
+# naming a test that no longer exists. So the coverage a leg gives up shows up
+# in a diff rather than in a passing log, and the declarations can't rot.
 #
 # A leg is selected with DUCKLING_TZ_LEG; see .github/workflows/main.yml for
-# how each is configured, and lib/duckling/tzinfo_capabilities.rb for the
-# probes that decide whether a skip is legitimate.
+# how each is configured, and test/support/tz_capabilities.rb for the probes
+# that decide whether a tz skip is legitimate.
 
 # Leg-independent skips: known upstream limitations characterized by the tests
 # themselves, unrelated to tz data.

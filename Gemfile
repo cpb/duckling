@@ -26,10 +26,24 @@ gem "standard"
 #              what a consumer who does nothing now gets
 #   "1.2022.7" that exact vintage, reproducing a stale-but-present database
 #
-# See test/tz_skip_manifest.yml for what each leg is expected to cover.
-tzinfo_data = ENV["DUCKLING_TZINFO_DATA"].to_s
-if tzinfo_data.empty?
+# See test/skip_manifest.yml for what each leg is expected to cover.
+#
+# Set BUNDLE_LOCKFILE alongside this for anything but the default, or the leg's
+# resolution overwrites the committed Gemfile.lock and leaves a dirty tree —
+# which then blocks `rake release` and `rake benchmark:record_pr`, both guarded
+# by release:guard_clean, with an error that looks unrelated.
+#
+# An unrecognized value is rejected here rather than passed through as a
+# version requirement, which would fail deep in the resolver with a message
+# about an unsatisfiable constraint instead of at the typo.
+case (tzinfo_data = ENV["DUCKLING_TZINFO_DATA"].to_s)
+when ""
   gem "tzinfo-data"
-elsif tzinfo_data != "none"
+when "none"
+  # tzinfo falls back to the host's zoneinfo files.
+when /\A\d+\.\d+/
   gem "tzinfo-data", tzinfo_data
+else
+  raise "DUCKLING_TZINFO_DATA=#{tzinfo_data.inspect} is not understood. " \
+    "Use \"none\", an exact version such as \"1.2022.7\", or leave it unset."
 end

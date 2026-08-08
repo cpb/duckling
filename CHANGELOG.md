@@ -84,6 +84,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   entirely — check `interval[:to].nil?` rather than `interval.key?(:to)`
   to detect an unbounded endpoint.
 
+### Added
+
+- `Duckling::TZDataUnavailable`, raised when `reference_zone:` is given on a
+  host with no tz database at all — no zoneinfo files and no `tzinfo-data`
+  gem, as in a scratch or distroless container. Newly reachable because of the
+  dependency change above; previously a database always existed. It names both
+  fixes, where the underlying tzinfo error mentioned neither this gem nor
+  `reference_zone:`. Deliberately not an `ArgumentError`: it reports the
+  deployment's state, not a bad argument, so code rescuing `ArgumentError`
+  around caller-supplied zone names does not swallow it. Every other keyword
+  works without a tz database.
+
 ## [0.2.0] - 2026-07-01
 
 ## What's Changed

@@ -65,7 +65,10 @@ Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_lat
   zone data" below.
 
 There is no `Duckling::Error` class — invalid `locale:`/`dims:` values raise
-plain `ArgumentError`.
+plain `ArgumentError`, as do an unknown `reference_zone:` and a
+`reference_time:` whose offset disagrees with it. The one named error a caller
+is likely to meet is `Duckling::TZDataUnavailable`, for a host with no tz
+database at all — see "Time zone data" below.
 
 ### Time zone data
 
@@ -83,9 +86,11 @@ Two cases where it is not:
   `apt install tzdata-legacy` restores them. The error message names whichever
   database answered and how many identifiers it has, so you can tell this
   apart from a typo.
-- **No zoneinfo files at all**, as in a scratch or distroless container. Add
-  `gem "tzinfo-data"` to bundle the data with your app, where you can also
-  patch its vintage by bumping one gem.
+- **No zoneinfo files at all**, as in a scratch or distroless container.
+  `reference_zone:` raises `Duckling::TZDataUnavailable` there, naming both
+  fixes. Add `gem "tzinfo-data"` to bundle the data with your app, where you
+  can also patch its vintage by bumping one gem, or install the system
+  `tzdata` package. Every other keyword works without a tz database.
 
 `reference_zone:` reinterprets result offsets; it does not anchor the parse.
 Given without `reference_time:`, a relative expression like `"tomorrow"` still

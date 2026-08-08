@@ -21,9 +21,20 @@ jobs:
   # `informational` job can `needs:` it and get skipped automatically by
   # GitHub Actions when this fails (see #98).
   #
-  # Doubles as the first tz leg: with no DUCKLING_* variables set the Gemfile
-  # installs current tzinfo-data, which is what test/tz_skip_manifest.yml
-  # enforces under "tzinfo-data". See the `timezones` job for the rest.
+  # Carries the two tz legs that must not regress unnoticed, because being the
+  # required check is the only thing that makes a leg blocking:
+  #
+  # - "tzinfo-data", implicitly — with no DUCKLING_* variables set the Gemfile
+  #   installs current tzinfo-data. What this repo develops against.
+  # - "system-zoneinfo", as a second step — what every consumer who does not
+  #   add `gem "tzinfo-data"` now gets, and so the configuration least
+  #   affordable to break. It runs here rather than in the `timezones` matrix
+  #   below purely so it gates a merge; it needs no Ruby or Rust setup of its
+  #   own, only a re-resolve of the bundle.
+  #
+  # The remaining legs are diagnostics for databases no consumer is on by
+  # default, and live in `timezones` where a red result informs rather than
+  # blocks.
   baseline:
     runs-on: ubuntu-latest
     name: "Ruby 3.3.6"
@@ -52,6 +63,18 @@ jobs:
         run: cargo clippy --manifest-path ext/duckling/Cargo.toml -- -D warnings
       - name: Run the default task
         run: bundle exec rake
+      # BUNDLE_LOCKFILE keeps this re-resolve out of the committed
+      # Gemfile.lock. The checkout is disposable, but leaving it dirty would
+      # make any later step that inspects the tree misleading, and the same
+      # command is what a contributor runs locally.
+      - name: Run the suite against the host's zoneinfo (no tzinfo-data)
+        env:
+          DUCKLING_TZ_LEG: system-zoneinfo
+          DUCKLING_TZINFO_DATA: none
+          BUNDLE_LOCKFILE: Gemfile.system-zoneinfo.lock
+        run: |
+          bundle install --jobs 4
+          bundle exec rake test
 
   # The tz-database axis. This gem does not depend on tzinfo-data, so
   # reference_zone: resolves against whichever database tzinfo found, and the
@@ -59,18 +82,23 @@ jobs:
   # links) and vintage. A suite run against one of them cannot observe which
   # one it ran against, so each configuration gets its own leg.
   #
-  # `baseline` above already covers the fourth: with no DUCKLING_* variables
-  # set the Gemfile installs current tzinfo-data, which is the "tzinfo-data"
-  # leg and the default in test/tz_skip_manifest.yml. The three here are the
-  # ones a plain checkout never reaches.
+  # `baseline` above runs the two legs a consumer is actually on — current
+  # tzinfo-data, and the host's zoneinfo — so that they gate a merge. These
+  # two are stale databases: worth knowing about, but a red result here means
+  # "this vintage answers differently", not "the gem is broken for anyone
+  # today". Note they are *not* required checks, so a merge can proceed over
+  # them; they do gate a release, since release.yml's `needs: ci` waits on
+  # this whole workflow rather than on the required check alone.
   #
-  # Every leg declares in that manifest exactly which tests it expects to
-  # skip, and the run fails if a test skips undeclared *or* if a declared one
-  # runs to completion — so what a leg costs in coverage shows up in a diff
-  # rather than in a passing log.
+  # Every leg declares in test/skip_manifest.yml exactly which tests it
+  # expects to skip, and the run fails if a test skips undeclared, if a
+  # declared one runs to completion, or if a declared entry names no existing
+  # test — so what a leg costs in coverage shows up in a diff rather than in a
+  # passing log.
   #
   # bundler-cache is off deliberately: these legs resolve a different bundle
   # than the committed lockfile, and the cache is keyed on that lockfile.
+  # BUNDLE_LOCKFILE keeps that resolution out of the committed file.
   timezones:
     needs: baseline
     runs-on: ubuntu-latest
@@ -79,13 +107,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # No tzinfo-data: the host's zoneinfo files. What a consumer who
-          # adds nothing to their Gemfile gets. ubuntu-latest ships rearguard
-          # tzdata without tzdata-legacy, which is exactly the shape under
-          # test — no special runner setup needed.
-          - name: "tz: system zoneinfo"
-            leg: system-zoneinfo
-            tzinfo_data: none
           # A stale-but-present database. Chosen over an older vintage that
           # lacks America/Nuuk entirely, because this one resolves the zone
           # and answers with Greenland's pre-2023a rules — a wrong answer is
@@ -104,6 +125,7 @@ jobs:
     env:
       DUCKLING_TZ_LEG: ${{ matrix.leg }}
       DUCKLING_TZINFO_DATA: ${{ matrix.tzinfo_data }}
+      BUNDLE_LOCKFILE: Gemfile.${{ matrix.leg }}.lock
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

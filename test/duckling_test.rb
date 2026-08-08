@@ -235,24 +235,55 @@ class DucklingTest < Minitest::Test
 
   # An unknown identifier is more often a difference between tz databases than
   # a typo, and the caller has no way to see which database answered. So the
-  # error names it, says how many identifiers it has — the number that most
-  # legibly separates tzinfo-data's ~600 from a stock host's ~500 — and, when
-  # the missing backward-compat links are the likely cause, gives both ways to
-  # get them back. Runs on every leg: the message has to be right about
-  # whichever database is present, not just about the impoverished one.
+  # error names it and says how many identifiers it has — the number that most
+  # legibly separates tzinfo-data's ~600 from a stock host's ~500. Runs on
+  # every leg: the message has to be right about whichever database is
+  # present, not just about the impoverished one.
+  #
+  # The expectations are built from tzinfo, not from
+  # unknown_identifier_diagnosis. Asserting the message contains
+  # `datasource_description` would only prove that string interpolation works
+  # — it passes for any return value, including a degenerate one, which is
+  # precisely the vacuous-pass failure mode this suite is otherwise built to
+  # eliminate. Neither stale_tolerant nor the manifest can catch that, because
+  # nothing ever fails.
   def test_reference_zone_error_names_the_tz_datasource
     error = assert_raises(ArgumentError) do
       Duckling.parse("in 3 hours", locale: "en", dims: ["time"], reference_zone: "Not/A/Real/Zone")
     end
 
-    assert_includes error.message, Duckling::TZInfoCapabilities.datasource_description,
-      "expected the error to name the tz datasource that failed the lookup, got: #{error.message.inspect}"
-    assert_includes error.message, Duckling::TZInfoCapabilities.identifier_count.to_s,
-      "expected the error to report how many identifiers that datasource provides, got: #{error.message.inspect}"
+    source = TZInfo::DataSource.get
+    if source.respond_to?(:zoneinfo_dir)
+      assert_includes error.message, "system zoneinfo",
+        "expected the error to name the zoneinfo datasource, got: #{error.message.inspect}"
+      assert_includes error.message, source.zoneinfo_dir,
+        "expected the error to name the directory the zones came from, got: #{error.message.inspect}"
+    else
+      assert_includes error.message, "tzinfo-data",
+        "expected the error to name the gem datasource, got: #{error.message.inspect}"
+      assert_includes error.message, TZInfo::Data::Version::TZDATA,
+        "expected the error to name the bundled tzdata release, got: #{error.message.inspect}"
+    end
 
-    if Duckling::TZInfoCapabilities.backward_compat_links?
+    assert_match(/provides \d{3,} identifiers/, error.message,
+      "expected a plausible identifier count — both databases publish hundreds — " \
+      "got: #{error.message.inspect}")
+  end
+
+  # The backward-compat remedy is offered on the strength of the *database*
+  # having no links, and is deliberately worded as a condition rather than a
+  # claim about the identifier: knowing whether a given name is one of the
+  # ~100 in IANA's `backward` file would mean shipping that list, and a name
+  # the list missed would get no remedy at all. So a typo and a real legacy
+  # name get the same sentence, and it has to read correctly for both.
+  def test_reference_zone_error_offers_the_backward_compat_remedy_only_where_relevant
+    error = assert_raises(ArgumentError) do
+      Duckling.parse("in 3 hours", locale: "en", dims: ["time"], reference_zone: "Not/A/Real/Zone")
+    end
+
+    if TZCapabilities.backward_compat_links?
       refute_includes error.message, "tzdata-legacy",
-        "expected no backward-compat remedy on a datasource that already has the links, " \
+        "expected no backward-compat remedy on a database that already has the links, " \
         "got: #{error.message.inspect}"
     else
       assert_includes error.message, "tzinfo-data",
@@ -260,6 +291,59 @@ class DucklingTest < Minitest::Test
       assert_includes error.message, "tzdata-legacy",
         "expected the system-package remedy for the missing backward-compat links, " \
         "got: #{error.message.inspect}"
+      refute_match(/backward-compat names? such as this one/, error.message,
+        "expected the remedy phrased as a condition the reader evaluates, not as a claim " \
+        "that this identifier is a backward-compat name — it may just be a typo, as here. " \
+        "Got: #{error.message.inspect}")
+    end
+  end
+
+  # A host with neither zoneinfo files nor the tzinfo-data gem — a scratch or
+  # distroless container — is a supported configuration now that the gem does
+  # not bundle tz data, and tzinfo raises before any identifier lookup
+  # happens. Left unhandled that surfaces a raw tzinfo error mentioning
+  # neither reference_zone: nor this gem, which is the one tz-database
+  # difference with no diagnosis at all.
+  #
+  # Stubbed rather than reproduced: removing the datasource for real means
+  # having no zoneinfo directory on the machine running the suite.
+  def test_reference_zone_without_any_tz_database_raises_a_diagnosable_error
+    error = without_any_tz_datasource do
+      assert_raises(Duckling::TZDataUnavailable) do
+        Duckling.parse("in 3 hours", locale: "en", dims: ["time"], reference_zone: "America/New_York")
+      end
+    end
+
+    assert_includes error.message, "reference_zone",
+      "expected the error to name the keyword the caller passed, got: #{error.message.inspect}"
+    assert_includes error.message, "tzinfo-data",
+      "expected the gem remedy, got: #{error.message.inspect}"
+    assert_includes error.message, "tzdata",
+      "expected the system-package remedy, got: #{error.message.inspect}"
+  end
+
+  # Reproduces what tzinfo does on a host with no tz data: DataSource.get
+  # raises when it can neither require tzinfo/data nor find zoneinfo files,
+  # and TZInfo::Timezone.get surfaces that before looking at the identifier.
+  #
+  # Hand-rolled rather than minitest/mock, which minitest 6 no longer ships —
+  # and this is the only mock in the suite, so it isn't worth a dependency.
+  # $VERBOSE is silenced only around the redefinitions themselves: the suite
+  # runs with -w, and swapping a singleton method back and forth otherwise
+  # prints two "method redefined" warnings that mean nothing here.
+  def without_any_tz_datasource
+    original = TZInfo::Timezone.method(:get)
+    swap = lambda do |implementation|
+      verbose, $VERBOSE = $VERBOSE, nil
+      TZInfo::Timezone.define_singleton_method(:get, implementation)
+      $VERBOSE = verbose
+    end
+
+    swap.call(->(_identifier) { raise TZInfo::DataSourceNotFound, "No source of timezone data could be found." })
+    begin
+      yield
+    ensure
+      swap.call(original)
     end
   end
 
@@ -512,7 +596,12 @@ class DucklingTest < Minitest::Test
       # from the outside, so state the condition that makes the assertions
       # mean something and let stale_tolerant turn its absence into a
       # declared skip.
-      assert TZInfo::Timezone.get("Europe/Dublin").period_for(Time.utc(2026, 1, 15)).dst?,
+      # Asserted via the same predicate stale_tolerant consults, not a
+      # second copy of the zone and date. Two definitions could drift, and
+      # the drift would surface as an unexplained red leg: the assertion
+      # failing while supports? says the capability is present, so
+      # stale_tolerant re-raises rather than skipping.
+      assert TZCapabilities.models_negative_dst?,
         "expected Europe/Dublin to be modelled with negative DST (winter carrying tzinfo's " \
         "dst? flag); without that inversion this test cannot tell periods.first from a " \
         "dst?-flag lookup"

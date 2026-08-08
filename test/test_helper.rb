@@ -19,27 +19,28 @@ require "duckling"
 
 require "minitest/autorun"
 
+require_relative "support/tz_capabilities"
 require_relative "support/tz_fixtures"
-require_relative "support/tz_skip_manifest"
+require_relative "support/skip_manifest"
 
 module Minitest
   class Test
-    # Every executed test reports itself, so TZSkipManifest can hold the run
-    # to what its leg declared. after_teardown runs late enough that a skip is
+    # Every executed test reports itself, so SkipManifest can hold the run to
+    # what its leg declared. after_teardown runs late enough that a skip is
     # already recorded in `failures`.
     def after_teardown
       super
-      TZSkipManifest.observe(self)
+      SkipManifest.observe(self)
     end
   end
 end
 
-Minitest.after_run { TZSkipManifest.enforce! }
+Minitest.after_run { SkipManifest.enforce! }
 
 # Runs the block unguarded — its assertions are the real ones, not a weakened
-# variant — and converts a failure into a *named* skip only when
-# TZInfoCapabilities confirms the tz database in use genuinely cannot answer
-# `capability`. Anything else re-raises.
+# variant — and converts a failure into a *named* skip only when TZCapabilities
+# confirms the tz database in use genuinely cannot answer `capability`.
+# Anything else re-raises.
 #
 # Deliberately a rescue rather than a pre-guard. A pre-guard skips before
 # learning anything, so a database that would have passed anyway gets counted
@@ -47,17 +48,36 @@ Minitest.after_run { TZSkipManifest.enforce! }
 # Rescuing means the only skips recorded are ones where the assertion really
 # did fail and the capability really is absent.
 #
-# Both failure shapes have to be caught, because a missing capability reaches
-# the test either way: an identifier the database does not have raises
-# ArgumentError out of timezone_for before any assertion runs, while a stale
-# rule resolves fine and fails on an assertion instead.
+# Three failure shapes reach here, and they are not interchangeable:
+#
+# - A Minitest::Assertion, when the database resolves the zone and answers
+#   with different rules. The stale-vintage case.
+# - An ArgumentError out of timezone_for, when the identifier is missing
+#   outright. The backward-compat-links case.
+# - An ArgumentError out of verify_reference_time_offset!, when the zone
+#   exists but sits at a different offset than the test's reference_time:
+#   asserts. This is the one that actually fires for America/Nuuk on the
+#   stale legs — pre-2023a Greenland is -03:00 on 2026-03-28, so the block
+#   dies on the offset mismatch before reaching a single assertion.
+#
+# ARGUMENT_ERRORS keeps that third case from making the rescue a blanket
+# amnesty. Without it, *any* ArgumentError raised anywhere in the block
+# becomes a manifest-approved skip on a leg lacking the capability — an
+# invalid locale:/dims: value after a refactor, a regression in the offset
+# check itself, a bad Time.new in the test's own setup. All of those raise
+# plain ArgumentError, and none has anything to do with the tz database. Both
+# tz-related messages name the keyword that produced them; "unsupported
+# locale:"/"unsupported dimension:" do not.
+ARGUMENT_ERRORS_WORTH_SKIPPING = /reference_zone|reference_time/
+
 def stale_tolerant(capability)
   yield
 rescue Minitest::Assertion, ArgumentError => error
   raise if error.is_a?(Minitest::Skip)
-  raise if Duckling::TZInfoCapabilities.supports?(capability)
+  raise if error.is_a?(ArgumentError) && !error.message.match?(ARGUMENT_ERRORS_WORTH_SKIPPING)
+  raise if TZCapabilities.supports?(capability)
 
-  skip "#{capability} is absent from #{Duckling::TZInfoCapabilities.datasource_description}: " \
+  skip "#{capability} is absent from #{TZCapabilities.datasource_description}: " \
     "#{error.message.lines.first.to_s.strip}"
 end
 

@@ -222,12 +222,24 @@ Minitest::TestTask.create do |t|
   t.test_globs = FileList["test/**/*_test.rb"].exclude("test/gem/**/*")
 end
 
+# Minitest::TestTask requires every test file before applying any name filter,
+# so under rake the set of *defined* tests is complete even when only one test
+# runs. test/support/skip_manifest.rb needs to know that to tell a manifest
+# entry naming a deleted test from one whose file simply wasn't loaded.
+#
+# A prerequisite, not an extra action on :test — rake appends actions, so a
+# second `task :test do ... end` block would run after the test subprocess had
+# already exited, and the variable would never reach it.
+task :tz_full_run do
+  ENV["DUCKLING_TZ_FULL_RUN"] = "1"
+end
+
 # Minitest::TestTask has no built-in way to declare a task dependency, and
 # `task default: %i[standard compile test]`'s array ordering only protects
 # `bundle exec rake` itself — `bundle exec rake test` run directly has no
 # guarantee `compile` ran first, which would surface as a confusing
 # LoadError/stale-behavior failure unrelated to the code under test.
-task test: :compile
+task test: %i[compile tz_full_run]
 
 require "standard/rake"
 

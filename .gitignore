@@ -13,3 +13,7 @@ RESEARCH_CONTEXT.md
 /target/
 lib/duckling/duckling.bundle
 lib/duckling/duckling.so
+
+# Per-leg bundles (BUNDLE_LOCKFILE) — see the Gemfile and "The tz-database
+# axis" in AGENTS.md. Never committed; the default Gemfile.lock is.
+/Gemfile.*.lock

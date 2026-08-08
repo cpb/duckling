@@ -22,9 +22,12 @@ require "test_helper"
 #
 # Reached through Duckling.parse wherever an English expression can produce
 # the wall clock in question, so the coverage is outside-in and not merely a
-# unit test of local_time_in_zone. That is also why these are fixture zones
-# rather than Ruby doubles: timezone_for builds the zone internally from
-# TZInfo::Timezone.get, so nothing injectable reaches it from a test.
+# unit test of local_time_in_zone. The half-hour gap is the one exception —
+# no English expression lands reliably inside a 30-minute window, so that test
+# calls local_time_in_zone directly and says so. That outside-in default is
+# also why these are fixture zones rather than Ruby doubles: timezone_for
+# builds the zone internally from TZInfo::Timezone.get, so nothing injectable
+# reaches it from a test.
 class DucklingTZFixtureTest < Minitest::Test
   def setup
     @previous_datasource = TZInfo::DataSource.get
