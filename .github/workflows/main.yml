@@ -67,11 +67,18 @@ jobs:
       # Gemfile.lock. The checkout is disposable, but leaving it dirty would
       # make any later step that inspects the tree misleading, and the same
       # command is what a contributor runs locally.
+      #
+      # BUNDLE_DEPLOYMENT must be turned back off. `bundler-cache: true`
+      # above configures deployment mode, which requires the lockfile to be
+      # committed — and this leg's lockfile is generated here and gitignored
+      # by design. Resolving a different bundle is the entire point of the
+      # step, so deployment mode is the wrong setting for it specifically.
       - name: Run the suite against the host's zoneinfo (no tzinfo-data)
         env:
           DUCKLING_TZ_LEG: system-zoneinfo
           DUCKLING_TZINFO_DATA: none
           BUNDLE_LOCKFILE: Gemfile.system-zoneinfo.lock
+          BUNDLE_DEPLOYMENT: "false"
         run: |
           bundle install --jobs 4
           bundle exec rake test
