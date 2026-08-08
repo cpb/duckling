@@ -113,7 +113,9 @@ bin/build-stale-zoneinfo /tmp/stale-zoneinfo
 DUCKLING_TZ_LEG=stale-system-zoneinfo DUCKLING_ZONEINFO_DIR=/tmp/stale-zoneinfo bundle exec rake test
 ```
 
-`zic` is required (it ships with the `tzdata` package, and lives in `/usr/sbin`). Its absence is a hard error, not a skip — the fixtures exist precisely because this coverage kept degrading silently.
+**`zic` needs no provisioning anywhere this repo runs**, which is why nothing installs it. The compiler and the data come from different packages, and only the data is optional: on Debian/Ubuntu `zic` belongs to `libc-bin` (Priority: required, pulled in by libc6), *not* to `tzdata` — so even a slim image with no `/usr/share/zoneinfo` has it. That covers `ubuntu-latest` runners and the Claude Code Web sandbox alike. macOS ships `/usr/sbin/zic` as a stock utility, so the `Brewfile` needs no entry. It lives in `sbin`, which is off a non-root `PATH`, so `TZFixtures` and `bin/build-stale-zoneinfo` look there explicitly. Its absence is a hard error, not a skip — the fixtures exist precisely because this coverage kept degrading silently.
+
+`bin/build-stale-zoneinfo` is the one piece that does need `tzdata` itself, since it copies `/usr/share/zoneinfo`; it only ever runs on the CI leg-4 runner, and fails with a clear message if the directory is missing.
 
 ## Test guide
 

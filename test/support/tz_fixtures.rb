@@ -63,10 +63,17 @@ module TZFixtures
   # Deliberately a hard error rather than a skip when zic is missing. These
   # fixtures exist because the coverage they carry kept degrading silently on
   # hosts nobody was looking at; letting them vanish on a host without zic
-  # would reintroduce exactly that. zic ships with the tzdata package, which
-  # is installed on every GitHub Actions runner and on macOS.
+  # would reintroduce exactly that.
+  #
+  # In practice it is never missing on a host this suite runs on. Note that
+  # the compiler and the data come from different packages: on Debian and
+  # Ubuntu zic belongs to `libc-bin` (Priority: required, a dependency of
+  # libc6), *not* to `tzdata` — so even a slim image with no
+  # /usr/share/zoneinfo still has zic. macOS ships /usr/sbin/zic as a stock
+  # utility, with no Homebrew formula needed.
   def zic
     @zic ||= ENV["ZIC"] || ZIC_SEARCH_PATH.map { |dir| File.join(dir, "zic") }.find { |path| File.executable?(path) } ||
-      raise("zic not found in #{ZIC_SEARCH_PATH.join(", ")}. Install the tzdata package, or set ZIC to its path.")
+      raise("zic not found in #{ZIC_SEARCH_PATH.join(", ")}. It comes from libc-bin on " \
+            "Debian/Ubuntu and is stock on macOS; set ZIC to its path if it lives elsewhere.")
   end
 end
