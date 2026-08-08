@@ -1,0 +1,5 @@
+# Country index, required alongside iso3166.tab for the directory to be
+# recognized as zoneinfo. Zones absent from this file are still enumerated as
+# identifiers; they just belong to no country.
+#codes	coordinates	TZ
+ZZ	+0000+00000	Fixture/NegativeDst

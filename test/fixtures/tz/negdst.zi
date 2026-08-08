@@ -1,0 +1,21 @@
+# A synthetic negative-DST zone, shaped like Europe/Dublin.
+#
+# Dublin is the real zone that distinguishes local_time_in_zone's
+# first-occurrence-*by-position* rule from a dst?-flag lookup, because IANA
+# models it as +01:00 standard year round with a NEGATIVE one-hour saving in
+# winter — so tzinfo reports the winter period, not the summer one, as dst?.
+# Pick the "dst" occurrence out of a fall-back overlap there and you get the
+# second one, an hour off as an instant.
+#
+# Debian and Ubuntu compile tzdata in rearguard format, which re-expresses
+# those same offsets as ordinary positive DST. On such a host Dublin is no
+# longer a negative-DST zone, and a test written against it still passes while
+# testing nothing. This fixture keeps the distinction reachable on every host,
+# because it is compiled here rather than shipped by one.
+#
+# 2026-10-25 01:30 is the ambiguous wall clock: the transition at 01:00 UTC
+# takes the zone from +01:00 (save 0) back to +00:00 (save -1:00), so 01:00
+# through 02:00 local happens twice. The first occurrence is the +01:00 one.
+Rule	Duck	1981	max	-	Mar	lastSun	1:00u	0	STD
+Rule	Duck	1996	max	-	Oct	lastSun	1:00u	-1:00	WINT
+Zone	Fixture/NegativeDst	1:00	Duck	%s

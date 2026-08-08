@@ -46,13 +46,19 @@ Gem::Specification.new do |spec|
   # Resolves reference_zone:'s per-date IANA offsets (lib/duckling.rb). The
   # wrapped Rust crate only knows a single FixedOffset, so DST-aware
   # resolution needs a real tz database on the Ruby side.
+  #
+  # Deliberately *not* accompanied by a tzinfo-data dependency. tzinfo already
+  # prefers that gem when it is installed and falls back to the host's
+  # zoneinfo files otherwise (DataSource.create_default_data_source), so
+  # depending on it here would force bundled tz data on every consumer to
+  # serve the ones who want it. A consumer who does want pinned, patchable tz
+  # data — or who is on a host with no zoneinfo files at all, such as a
+  # scratch container — adds `gem "tzinfo-data"` themselves and gets exactly
+  # the behavior this gem used to impose, with no code change.
+  #
+  # The two databases are not interchangeable: see Duckling::TZInfoCapabilities
+  # for what differs and how the suite proves the difference is covered.
   spec.add_dependency "tzinfo", "~> 2.0"
-
-  # tzinfo falls back to the host's zoneinfo files, which are absent from slim
-  # container images and unpatchable at runtime when they are present. Bundling
-  # the IANA data keeps reference_zone: working everywhere, and lets a consumer
-  # pick up a tz-database revision by bumping this gem alone.
-  spec.add_dependency "tzinfo-data", "~> 1.2024"
 
   # only needed when developing or packaging your gem
   spec.add_development_dependency "rake-compiler", "~> 1.3.1"

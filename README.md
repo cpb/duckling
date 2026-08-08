@@ -55,9 +55,44 @@ Duckling.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_lat
   raises `TypeError`; wrap it in `Time.at(seconds)` first.
 - `with_latent:` (Boolean, default `false`) — include ambiguous/latent
   matches (e.g. a bare "morning") in the results.
+- `reference_zone:` (String, default `nil`) — an IANA zone name, e.g.
+  `"America/New_York"`. Resolves each wall-clock result's UTC offset against
+  that zone on the result's *own* date, so a result before a DST transition
+  and one after it get different offsets instead of sharing
+  `reference_time:`'s single fixed one. An unknown identifier raises
+  `ArgumentError`; so does a `reference_time:` whose `utc_offset` disagrees
+  with the zone at that instant. It does not anchor the parse — see "Time
+  zone data" below.
 
 There is no `Duckling::Error` class — invalid `locale:`/`dims:` values raise
 plain `ArgumentError`.
+
+### Time zone data
+
+`reference_zone:` resolves against [tzinfo][], which uses the `tzinfo-data`
+gem when it is installed and the host's own zoneinfo files otherwise. This gem
+does not depend on `tzinfo-data`, so by default you get the host's database.
+
+That is usually what you want, and it is the faster of the two to start up.
+Two cases where it is not:
+
+- **Backward-compatibility names.** Debian and Ubuntu ship names like
+  `"US/Eastern"` in a separate `tzdata-legacy` package that is not installed
+  by default, so roughly a hundred valid IANA identifiers raise
+  `ArgumentError` on a stock host. Either `gem "tzinfo-data"` or
+  `apt install tzdata-legacy` restores them. The error message names whichever
+  database answered and how many identifiers it has, so you can tell this
+  apart from a typo.
+- **No zoneinfo files at all**, as in a scratch or distroless container. Add
+  `gem "tzinfo-data"` to bundle the data with your app, where you can also
+  patch its vintage by bumping one gem.
+
+`reference_zone:` reinterprets result offsets; it does not anchor the parse.
+Given without `reference_time:`, a relative expression like `"tomorrow"` still
+anchors on the machine-local clock rather than on "now" in that zone — pass a
+`reference_time:` in the zone to anchor as well.
+
+[tzinfo]: https://github.com/tzinfo/tzinfo
 
 ### Return value
 

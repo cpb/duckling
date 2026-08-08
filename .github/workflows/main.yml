@@ -20,6 +20,10 @@ jobs:
   # own job (rather than folded into the informational matrix below) so the
   # `informational` job can `needs:` it and get skipped automatically by
   # GitHub Actions when this fails (see #98).
+  #
+  # Doubles as the first tz leg: with no DUCKLING_* variables set the Gemfile
+  # installs current tzinfo-data, which is what test/tz_skip_manifest.yml
+  # enforces under "tzinfo-data". See the `timezones` job for the rest.
   baseline:
     runs-on: ubuntu-latest
     name: "Ruby 3.3.6"
@@ -48,6 +52,81 @@ jobs:
         run: cargo clippy --manifest-path ext/duckling/Cargo.toml -- -D warnings
       - name: Run the default task
         run: bundle exec rake
+
+  # The tz-database axis. This gem does not depend on tzinfo-data, so
+  # reference_zone: resolves against whichever database tzinfo found, and the
+  # candidates disagree on both modelling (negative DST, backward-compat
+  # links) and vintage. A suite run against one of them cannot observe which
+  # one it ran against, so each configuration gets its own leg.
+  #
+  # `baseline` above already covers the fourth: with no DUCKLING_* variables
+  # set the Gemfile installs current tzinfo-data, which is the "tzinfo-data"
+  # leg and the default in test/tz_skip_manifest.yml. The three here are the
+  # ones a plain checkout never reaches.
+  #
+  # Every leg declares in that manifest exactly which tests it expects to
+  # skip, and the run fails if a test skips undeclared *or* if a declared one
+  # runs to completion — so what a leg costs in coverage shows up in a diff
+  # rather than in a passing log.
+  #
+  # bundler-cache is off deliberately: these legs resolve a different bundle
+  # than the committed lockfile, and the cache is keyed on that lockfile.
+  timezones:
+    needs: baseline
+    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # No tzinfo-data: the host's zoneinfo files. What a consumer who
+          # adds nothing to their Gemfile gets. ubuntu-latest ships rearguard
+          # tzdata without tzdata-legacy, which is exactly the shape under
+          # test — no special runner setup needed.
+          - name: "tz: system zoneinfo"
+            leg: system-zoneinfo
+            tzinfo_data: none
+          # A stale-but-present database. Chosen over an older vintage that
+          # lacks America/Nuuk entirely, because this one resolves the zone
+          # and answers with Greenland's pre-2023a rules — a wrong answer is
+          # harder to attribute than a missing identifier.
+          - name: "tz: tzinfo-data 1.2022.7"
+            leg: tzinfo-data-1.2022.7
+            tzinfo_data: 1.2022.7
+          # Both axes at once: host zoneinfo with America/Nuuk rolled back to
+          # its pre-2023a rules. The state an unpatched stock host is in, and
+          # one neither of the legs above reaches.
+          - name: "tz: stale system zoneinfo"
+            leg: stale-system-zoneinfo
+            tzinfo_data: none
+            build_stale_zoneinfo: true
+
+    env:
+      DUCKLING_TZ_LEG: ${{ matrix.leg }}
+      DUCKLING_TZINFO_DATA: ${{ matrix.tzinfo_data }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: '3.3.6'
+          bundler-cache: false
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable as of 2026-06-30
+        with:
+          toolchain: '1.94.1'
+      - name: Install dependencies
+        run: bundle install --jobs 4
+      - name: Build the stale zoneinfo directory
+        if: matrix.build_stale_zoneinfo
+        run: |
+          bin/build-stale-zoneinfo "$RUNNER_TEMP/stale-zoneinfo"
+          echo "DUCKLING_ZONEINFO_DIR=$RUNNER_TEMP/stale-zoneinfo" >> "$GITHUB_ENV"
+      - name: Run the test suite
+        run: bundle exec rake test
 
   # Forward-compat signals only — not required to merge (see issue #29).
   # `needs: baseline` means GitHub Actions automatically skips this job when

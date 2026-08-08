@@ -3,6 +3,7 @@
 require "tzinfo"
 
 require_relative "duckling/version"
+require_relative "duckling/tzinfo_capabilities"
 
 # A precompiled gem carries one binary per Ruby ABI, each in its own
 # lib/duckling/<major.minor>/ directory. Load the one for the running Ruby.
@@ -249,10 +250,19 @@ module Duckling
   end
   private_class_method :gap_delta
 
+  # An unknown identifier usually means the host's tz database is a different
+  # one than the caller had in mind, not that the name is wrong: this gem does
+  # not depend on tzinfo-data, so `reference_zone:` resolves against whatever
+  # tzinfo found, and a stock Debian/Ubuntu host is missing roughly a hundred
+  # backward-compat names ("US/Eastern") that tzinfo-data provides. Say which
+  # database answered and how to change it, rather than leaving the caller to
+  # doubt a name that is in fact valid IANA.
   def self.timezone_for(reference_zone)
     TZInfo::Timezone.get(reference_zone)
   rescue TZInfo::InvalidTimezoneIdentifier
-    raise ArgumentError, "invalid reference_zone: #{reference_zone.inspect}"
+    raise ArgumentError,
+      "invalid reference_zone: #{reference_zone.inspect} " \
+      "(#{TZInfoCapabilities.unknown_identifier_diagnosis})"
   end
   private_class_method :timezone_for
 

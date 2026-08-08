@@ -8,6 +8,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **On a stock Debian/Ubuntu host, roughly a hundred IANA zone identifiers
+  stop resolving.** `reference_zone: "US/Eastern"` — and every other
+  backward-compatibility name, such as `"US/Pacific"`, `"Europe/Kiev"`, or
+  `"Japan"` — now raises `ArgumentError` there. Those names live in the
+  `tzdata-legacy` system package, which is not installed by default. Two ways
+  to get them back, either of which restores the previous behavior exactly:
+
+  ```ruby
+  gem "tzinfo-data"   # in your Gemfile
+  ```
+  ```bash
+  apt install tzdata-legacy   # on the host
+  ```
+
+  Canonical identifiers (`"America/New_York"`, `"Europe/Kyiv"`) are
+  unaffected. A host with no zoneinfo files at all — a scratch or distroless
+  container — needs the gem for `reference_zone:` to work at all.
+
+  The error message names the tz database that answered, how many identifiers
+  it has, and both remedies, so this is distinguishable from a typo:
+
+  ```
+  invalid reference_zone: "US/Eastern" (resolved against system zoneinfo at
+  /usr/share/zoneinfo, which provides 497 identifiers; backward-compat names
+  such as this one need either the tzinfo-data gem or the tzdata-legacy
+  system package)
+  ```
+
+  A second, quieter difference comes with the same change: Debian and Ubuntu
+  compile tzdata in *rearguard* format, which strips negative DST. On such a
+  host `Europe/Dublin` is modelled as an ordinary positive-DST zone. Resolved
+  offsets are the same either way — only tzinfo's `dst?` flag differs — so no
+  `Duckling.parse` result changes because of it.
+
+- `tzinfo-data` is no longer a runtime dependency. `tzinfo` already prefers
+  that gem when it is installed and falls back to the host's zoneinfo files
+  otherwise, so depending on it forced bundled tz data on every consumer to
+  serve the ones who want it. This is the change that produces the identifier
+  behavior above. Consumers who add `gem "tzinfo-data"` themselves get exactly
+  the previous behavior with no code change, and can still pick up a
+  tz-database revision by bumping that one gem. Dropping it makes the first
+  zone lookup roughly 10× faster (13–28ms, once per process); steady-state
+  resolution and RSS are unchanged.
+
 - **Breaking:** `reference_time:` now requires a Ruby `Time` object (or
   `nil`), not a Unix-seconds Integer. This lets the caller's `utc_offset` be
   preserved into offset-aware `Instant` results (e.g. `"in one hour"`),

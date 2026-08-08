@@ -210,6 +210,59 @@ class DucklingTest < Minitest::Test
     end
   end
 
+  # "US/Eastern" is a real IANA identifier — a link to America/New_York in the
+  # `backward` file — and tzinfo-data carries it. Debian and Ubuntu moved the
+  # backward file into a separate `tzdata-legacy` package that is not
+  # installed by default, so a stock host is missing roughly a hundred names
+  # this one stands for.
+  #
+  # Since this gem no longer depends on tzinfo-data, that is now a supported
+  # configuration rather than an impossible one, and the honest answer is that
+  # such a host cannot resolve this zone. v0.4.0 does not ship a shim or a
+  # bundled links table to paper over it, so this test cannot be made to pass
+  # everywhere — the point is that where it fails, it fails as a *diagnosable*
+  # ArgumentError (see test_reference_zone_error_names_the_tz_datasource) and
+  # as a declared skip, not as a mystery.
+  def test_reference_zone_resolves_backward_compat_identifier
+    stale_tolerant :backward_compat_links do
+      entity = entity_for("March 7th 2026 3:00am", :time, reference_zone: "US/Eastern")
+      resolved = single_point(entity)[:value]
+
+      assert_equal(-18000, resolved.utc_offset,
+        "expected US/Eastern to resolve like America/New_York (EST, -18000), got #{resolved.inspect}")
+    end
+  end
+
+  # An unknown identifier is more often a difference between tz databases than
+  # a typo, and the caller has no way to see which database answered. So the
+  # error names it, says how many identifiers it has — the number that most
+  # legibly separates tzinfo-data's ~600 from a stock host's ~500 — and, when
+  # the missing backward-compat links are the likely cause, gives both ways to
+  # get them back. Runs on every leg: the message has to be right about
+  # whichever database is present, not just about the impoverished one.
+  def test_reference_zone_error_names_the_tz_datasource
+    error = assert_raises(ArgumentError) do
+      Duckling.parse("in 3 hours", locale: "en", dims: ["time"], reference_zone: "Not/A/Real/Zone")
+    end
+
+    assert_includes error.message, Duckling::TZInfoCapabilities.datasource_description,
+      "expected the error to name the tz datasource that failed the lookup, got: #{error.message.inspect}"
+    assert_includes error.message, Duckling::TZInfoCapabilities.identifier_count.to_s,
+      "expected the error to report how many identifiers that datasource provides, got: #{error.message.inspect}"
+
+    if Duckling::TZInfoCapabilities.backward_compat_links?
+      refute_includes error.message, "tzdata-legacy",
+        "expected no backward-compat remedy on a datasource that already has the links, " \
+        "got: #{error.message.inspect}"
+    else
+      assert_includes error.message, "tzinfo-data",
+        "expected the gem remedy for the missing backward-compat links, got: #{error.message.inspect}"
+      assert_includes error.message, "tzdata-legacy",
+        "expected the system-package remedy for the missing backward-compat links, " \
+        "got: #{error.message.inspect}"
+    end
+  end
+
   # An Interval-shaped time result's `from` and `to` legs must each be
   # reinterpreted against `reference_zone:` INDEPENDENTLY, using each leg's
   # own date's real UTC offset — not a single offset borrowed from
@@ -410,18 +463,29 @@ class DucklingTest < Minitest::Test
   # skipped wall clock itself; anchoring it to the UTC midnight of the wall
   # clock's date excluded such transitions, and the resulting nil made
   # gap_delta crash with NoMethodError instead of resolving the gap.
+  #
+  # America/Nuuk only grew these rules in tzdata 2023a, and was named
+  # America/Godthab before 2020a, so this is the one assertion in the suite
+  # that a stale-but-otherwise-fine tz database gets wrong rather than
+  # missing: a 2021–2022 vintage resolves the zone happily at -03:00/-02:00
+  # with no gap anywhere near 23:30. stale_tolerant lets the assertions below
+  # stay exactly as strict as they were and turns that case into a declared
+  # skip; DucklingTZFixtureTest covers the same edge on a fixture zone, which
+  # no vintage can move.
   def test_reference_zone_resolves_gap_late_in_local_day
-    reference_time = Time.new(2026, 3, 28, 12, 0, 0, "-02:00")
-    entity = entity_for("March 28 2026 11:30pm", :time,
-      reference_time: reference_time, reference_zone: "America/Nuuk")
-    resolved = single_point(entity)[:value]
+    stale_tolerant :greenland_2023_rules do
+      reference_time = Time.new(2026, 3, 28, 12, 0, 0, "-02:00")
+      entity = entity_for("March 28 2026 11:30pm", :time,
+        reference_time: reference_time, reference_zone: "America/Nuuk")
+      resolved = single_point(entity)[:value]
 
-    assert_equal 0, resolved.hour,
-      "expected the skipped 23:30 wall clock to shift forward past the gap to 00:30, got #{resolved.inspect}"
-    assert_equal 30, resolved.min
-    assert_equal 29, resolved.day, "expected the shift to land on the next day, got #{resolved.inspect}"
-    assert_equal(-3600, resolved.utc_offset,
-      "expected the post-transition offset (UTC-1, -3600), got #{resolved.inspect}")
+      assert_equal 0, resolved.hour,
+        "expected the skipped 23:30 wall clock to shift forward past the gap to 00:30, got #{resolved.inspect}"
+      assert_equal 30, resolved.min
+      assert_equal 29, resolved.day, "expected the shift to land on the next day, got #{resolved.inspect}"
+      assert_equal(-3600, resolved.utc_offset,
+        "expected the post-transition offset (UTC-1, -3600), got #{resolved.inspect}")
+    end
   end
 
   # The fall-back "first occurrence" is selected by position (periods.first in
@@ -431,16 +495,38 @@ class DucklingTest < Minitest::Test
   # dst?==true period, so flag-based resolution there returns the
   # post-transition occurrence, an hour off as an instant. Dublin's 2026-10-25
   # fall-back makes 01:30 ambiguous; the first occurrence is IST (+3600).
+  #
+  # This test's premise is entirely Dublin's negative DST, and Debian/Ubuntu
+  # compile tzdata in rearguard format, which strips it — on such a host
+  # Dublin is an ordinary positive-DST zone, position and dst? flag agree, and
+  # this stops distinguishing them while still passing. That silent
+  # degradation is worse than a failure, so stale_tolerant turns it into a
+  # declared skip, and DucklingTZFixtureTest asserts the same distinction
+  # against Fixture/NegativeDst, which is negative-DST on every host because
+  # it is compiled here rather than shipped.
   def test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
-    reference_time = Time.new(2026, 9, 1, 12, 0, 0, "+01:00")
-    entity = entity_for("October 25 2026 1:30am", :time,
-      reference_time: reference_time, reference_zone: "Europe/Dublin")
-    resolved = single_point(entity)[:value]
+    stale_tolerant :negative_dst do
+      # The premise, asserted rather than assumed. Everything below passes on
+      # rearguard data too — it just stops distinguishing position from flag,
+      # which is the entire point of the test. A vacuous pass is indetectable
+      # from the outside, so state the condition that makes the assertions
+      # mean something and let stale_tolerant turn its absence into a
+      # declared skip.
+      assert TZInfo::Timezone.get("Europe/Dublin").period_for(Time.utc(2026, 1, 15)).dst?,
+        "expected Europe/Dublin to be modelled with negative DST (winter carrying tzinfo's " \
+        "dst? flag); without that inversion this test cannot tell periods.first from a " \
+        "dst?-flag lookup"
 
-    assert_equal 1, resolved.hour, "expected the 1:30 wall clock preserved through the overlap, got #{resolved.inspect}"
-    assert_equal 30, resolved.min
-    assert_equal 3600, resolved.utc_offset,
-      "expected the first (pre-transition) occurrence (IST, +3600), got #{resolved.inspect}"
+      reference_time = Time.new(2026, 9, 1, 12, 0, 0, "+01:00")
+      entity = entity_for("October 25 2026 1:30am", :time,
+        reference_time: reference_time, reference_zone: "Europe/Dublin")
+      resolved = single_point(entity)[:value]
+
+      assert_equal 1, resolved.hour, "expected the 1:30 wall clock preserved through the overlap, got #{resolved.inspect}"
+      assert_equal 30, resolved.min
+      assert_equal 3600, resolved.utc_offset,
+        "expected the first (pre-transition) occurrence (IST, +3600), got #{resolved.inspect}"
+    end
   end
 
   # Fall-back side: an ambiguous recurrence entry resolves to its

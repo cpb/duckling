@@ -1,0 +1,47 @@
+# Which tests each CI leg expects to skip, enforced by
+# test/support/tz_skip_manifest.rb. A skip that is not declared here fails the
+# build, and so does a declared entry that runs to completion instead — so the
+# coverage a leg gives up shows up in a diff rather than in a passing log.
+#
+# A leg is selected with DUCKLING_TZ_LEG; see .github/workflows/main.yml for
+# how each is configured, and lib/duckling/tzinfo_capabilities.rb for the
+# probes that decide whether a skip is legitimate.
+
+# Leg-independent skips: known upstream limitations characterized by the tests
+# themselves, unrelated to tz data.
+always:
+  - DucklingCommaListTest#test_bare_comma_separated_dates_collapse_into_one_entity
+  - DucklingCommaListTest#test_naming_only_the_first_date_still_collapses_the_rest
+  - DucklingCommaListTest#test_ambiguous_leading_date_format_is_not_reliably_the_resolved_value
+  - DucklingParseTimeWeekdaysTest#test_next_monday_should_skip_to_the_following_monday
+  - DucklingParseTimeWeekdaysTest#test_monday_after_next_should_skip_to_the_following_monday
+
+# Leg 1 — current tzinfo-data. What a consumer who opts into the gem gets, and
+# the configuration this repo developed against. Nothing is expected to be
+# missing.
+tzinfo-data: []
+
+# Leg 2 — no tzinfo-data, host zoneinfo. What a consumer who does nothing gets
+# on a stock Debian/Ubuntu box: rearguard modelling (no negative DST) and no
+# backward-compat links, because those live in the tzdata-legacy package.
+# Fixture/NegativeDst (test/duckling_tz_fixture_test.rb) covers the
+# negative-DST behavior this loses; nothing restores US/Eastern, and v0.4.0
+# deliberately does not try to.
+system-zoneinfo:
+  - DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+  - DucklingTest#test_reference_zone_resolves_backward_compat_identifier
+
+# Leg 3 — tzinfo-data pinned to 1.2022.7. A stale-but-present database, which
+# is the harder failure mode: America/Nuuk resolves fine and answers with
+# Greenland's pre-2023a rules, so the test fails on assertions rather than on
+# lookup. Fixture/LateGap covers the gap-late-in-the-local-day edge this loses.
+tzinfo-data-1.2022.7:
+  - DucklingTest#test_reference_zone_resolves_gap_late_in_local_day
+
+# Leg 4 — host zoneinfo, with America/Nuuk overwritten by its pre-2023a rules
+# (bin/build-stale-zoneinfo). Both axes at once, which is the state an
+# unpatched stock host is actually in.
+stale-system-zoneinfo:
+  - DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+  - DucklingTest#test_reference_zone_resolves_backward_compat_identifier
+  - DucklingTest#test_reference_zone_resolves_gap_late_in_local_day
