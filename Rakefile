@@ -161,6 +161,43 @@ task :native_gem, [:platform] do |_t, platform:|
   end
 end
 
+# Coverage is per-leg by construction (test/support/coverage.rb), and the
+# analysis is the merge across legs — so the two tasks are separate on
+# purpose. `rake coverage` measures whichever leg the environment selects;
+# `rake coverage:analyze` reads every leg present under coverage/, whether
+# they were produced here by successive local runs or downloaded from CI.
+desc "Run the suite for the current tz leg with line+branch coverage"
+task :coverage do
+  ENV["DUCKLING_COVERAGE"] = "1"
+  Rake::Task[:test].invoke
+end
+
+namespace :coverage do
+  desc "Merge every leg's coverage under coverage/, report what no leg reached, and enforce test/coverage_manifest.yml"
+  task :analyze do
+    $LOAD_PATH.unshift File.expand_path("test", __dir__)
+    require "support/coverage_report"
+    require "support/coverage_manifest"
+
+    legs = CoverageAnalysis.resultsets
+    report = CoverageReport.render(legs)
+    puts report
+
+    # The same Markdown goes to the job summary, so a reviewer reads the
+    # findings on the run page rather than scrolling a log.
+    if (step_summary = ENV["GITHUB_STEP_SUMMARY"])
+      File.write(step_summary, report, mode: "a")
+    end
+
+    failed, verdict = CoverageManifest.verdict(legs)
+    warn verdict
+    # `abort` rather than `raise`: the message above is the whole finding, and
+    # a rake backtrace on top of it points at this line rather than at the
+    # code nothing covers.
+    abort if failed
+  end
+end
+
 task :benchmark_env do
   # Force a realistic release-profile build regardless of .env.local's
   # RB_SYS_CARGO_PROFILE=dev (local dev checkouts only, never present in
@@ -220,6 +257,14 @@ end
 # file's header.
 Minitest::TestTask.create do |t|
   t.test_globs = FileList["test/**/*_test.rb"].exclude("test/gem/**/*")
+
+  # Coverage has to start before the first test file is required, or
+  # test/test_helper.rb — which every test file requires, and which holds
+  # `stale_tolerant` — is never instrumented: Ruby's Coverage only sees files
+  # compiled after it starts, and a file already being loaded is past that
+  # point. test_helper requires this too, for a direct `ruby -Itest` run; the
+  # second require is a no-op. No-ops entirely unless DUCKLING_COVERAGE=1.
+  t.test_prelude = %(require "support/coverage")
 end
 
 # Minitest::TestTask requires every test file before applying any name filter,

@@ -2,6 +2,10 @@
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 
+# Before `require "duckling"`, so lib/ is measured from its first line. No-ops
+# unless DUCKLING_COVERAGE=1.
+require_relative "support/coverage"
+
 # The tz database under test is a CI axis, not a property of the host: this
 # gem does not depend on tzinfo-data, so reference_zone: resolves against
 # whichever database tzinfo found, and the two disagree. DUCKLING_TZINFO_DATA

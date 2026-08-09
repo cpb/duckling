@@ -172,7 +172,11 @@ class SkipManifestTest < Minitest::Test
       env = {
         "DUCKLING_SKIP_MANIFEST" => "#{dir}/manifest.yml",
         "DUCKLING_TZ_LEG" => "probe",
-        "DUCKLING_TZ_FULL_RUN" => "1"
+        "DUCKLING_TZ_FULL_RUN" => "1",
+        # Not a tz leg, so its coverage is not part of the cross-leg picture.
+        # Left set, this child would write a coverage/probe/ resultset that
+        # the analysis reads as a sixth database.
+        "DUCKLING_COVERAGE" => nil
       }
       command = [env, RbConfig.ruby, "-I#{__dir__}/../lib", "-I#{__dir__}", "#{dir}/skip_probe_test.rb"]
       system(*command, out: File::NULL, err: File::NULL)

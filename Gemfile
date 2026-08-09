@@ -13,6 +13,11 @@ gem "minitest"
 
 gem "standard"
 
+# Loaded only when DUCKLING_COVERAGE=1 (test/support/coverage.rb), so it is
+# `require: false` here — a plain `bundle exec rake` neither loads it nor pays
+# for the counters.
+gem "simplecov", require: false
+
 # tzinfo-data is deliberately not a runtime dependency (see duckling.gemspec),
 # so which tz database resolves a zone is a property of the consumer's
 # environment — and the two databases disagree, both about modelling

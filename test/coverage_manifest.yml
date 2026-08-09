@@ -1,0 +1,196 @@
+# What no tz leg reaches, and why that is acceptable.
+#
+# Enforced by test/support/coverage_manifest.rb, from `rake coverage:analyze`
+# over the merged per-leg resultsets. The counterpart to test/skip_manifest.yml:
+# that file governs whole tests (skipped, or ran), this one governs the lines
+# and branches *inside* the tests that ran, and inside lib/. A conditional
+# whose arm no leg takes reports as a passing test, which is quieter than a
+# skip and was how the backward-compat remedy shipped with assertions that had
+# never executed.
+#
+# Three ways this file fails a run: something unreached that is not declared
+# here, a declaration that matches nothing, and a leg that did not report.
+#
+# Scope: everything under lib/, plus every *branch* anywhere. A bare unreached
+# *line* under test/ is not declared here — that means a test skipped, and
+# test/skip_manifest.yml already declares every skip leg by leg.
+#
+# Entries name a file, the kind of branch (`line`, or e.g. "else of `if`"),
+# and the text of the line — never a position, not even the one a rendered
+# label carries. An edit above an entry therefore does not rot it, while
+# changing the line itself does, which is when the reason deserves re-reading.
+
+# Every leg expected to report, by the command name in its resultset (which is
+# DUCKLING_TZ_LEG). The merge cannot judge "no leg reached this" without all of
+# them, so a missing one fails the run in CI (DUCKLING_COVERAGE_ALL_LEGS=1) and
+# is a notice locally, where running five legs by hand is a bundle re-resolve
+# and two built zoneinfo trees.
+legs:
+  - tzinfo-data
+  - system-zoneinfo
+  - linkless-zoneinfo
+  - tzinfo-data-1.2022.7
+  - stale-system-zoneinfo
+
+expected:
+  # --- lib/ ---------------------------------------------------------------
+
+  - file: lib/duckling.rb
+    label: line
+    source: 'raise abi_load_error'
+    reason: >
+      The fallback of a fallback: neither the per-ABI directory a precompiled
+      fat gem ships nor the plain path a source build writes could be loaded.
+      Every leg runs against a checkout that just compiled the plain path, so
+      the outer rescue never opens. What this line is for is an installed gem
+      on the wrong platform — musl matching an unversioned -linux gem — which
+      test/gem/installed_gem_test.rb exercises with a real install, outside
+      the default suite and outside these counters.
+
+  - file: lib/duckling.rb
+    label: then of `unless`
+    source: 'return entities unless reference_zone'
+    reason: >
+      apply_reference_zone is public, and parse never calls it: parse resolves
+      the zone itself for offset validation and goes straight to
+      reinterpret_entities! with the TZInfo::Timezone it already has. So the
+      nil-zone guard only answers an outside caller, and nothing in the suite
+      is one.
+
+  - file: lib/duckling.rb
+    label: then of `unless`
+    source: 'next unless entity[:dim] == :time'
+    reason: >
+      Every reference_zone: test parses with dims: ["time"], so no non-time
+      entity is ever in the list to skip. Reaching it needs a multi-dimension
+      parse with a zone, which no test has a reason to do.
+
+  - file: lib/duckling.rb
+    label: else of `&.`
+    source: 'single[:values]&.each { |point| reinterpret_time_point!(point, zone) }'
+    reason: >
+      The nil arm of the safe navigation. Every Single the Rust side emits
+      carries a populated `values` array, explicit recurrence or not, so the
+      key is always present and always an array. The `&.` is insurance against
+      a shape drift in ext/duckling/src/lib.rs, which is exactly the kind of
+      thing nothing can exercise until it happens.
+
+  - file: lib/duckling.rb
+    label: else of `&.`
+    source: 'interval[:values]&.each { |endpoints| reinterpret_interval_endpoints!(endpoints, zone) }'
+    reason: Same as the Single case above, for an Interval's endpoint pairs.
+
+  - file: lib/duckling.rb
+    label: then of `if`
+    source: 'return if point.nil?'
+    reason: >
+      An Interval leg is Option<TimePoint> on the Rust side and serde emits
+      None as a present key holding nil, so this arm is real — but no
+      expression in the corpus parses to an interval with a missing endpoint,
+      so no leg produces one.
+
+  - file: lib/duckling/tzinfo_capabilities.rb
+    label: else of `if`
+    source: 'if defined?(TZInfo::DataSources::RubyDataSource) && source.is_a?(TZInfo::DataSources::RubyDataSource)'
+    reason: >
+      A datasource that is neither zoneinfo nor tzinfo-data — a consumer's own
+      TZInfo::DataSource subclass. Every leg installs one of the two real ones,
+      by construction: that is what a leg is.
+
+  - file: lib/duckling/tzinfo_capabilities.rb
+    label: else of `if`
+    source: 'version = " (tzdata #{TZInfo::Data::Version::TZDATA})" if defined?(TZInfo::Data::Version::TZDATA)'
+    reason: >
+      A tzinfo-data without the TZDATA constant. Both pinned versions define
+      it; the guard is for a vintage or a fork that does not.
+
+  - file: lib/duckling/tzinfo_capabilities.rb
+    label: line
+    source: '"the #{source.class} tz datasource"'
+    reason: The description for that same unrecognized datasource — see line 73 above.
+
+  - file: lib/duckling/version.rb
+    label: line
+    source: 'module Duckling'
+    reason: >
+      Loaded before the counters start, and not by the suite: the Gemfile
+      declares `gemspec`, so Bundler evaluates duckling.gemspec — which
+      requires this file for Duckling::VERSION — while setting up the process.
+      Ruby's Coverage only instruments files compiled after it starts, so this
+      one can never be measured from inside a bundled run. It is read on every
+      release by the tag/VERSION check in .github/workflows/release.yml.
+
+  - file: lib/duckling/version.rb
+    label: line
+    source: 'VERSION = "0.4.0"'
+    reason: Same as the line above — Bundler loads this file before coverage starts.
+
+  # --- test/ (branches only; skips are test/skip_manifest.yml's job) -------
+
+  - file: test/support/skip_manifest.rb
+    label: then of `unless`
+    source: 'raise "DUCKLING_TZ_LEG=#{LEG.inspect} is not declared in #{PATH} (declared legs: #{legs.inspect})"'
+    reason: >
+      Fires on a DUCKLING_TZ_LEG that the manifest does not declare. Every leg
+      CI runs is declared — that is the check's whole point — so it only fires
+      on a typo at the command line.
+
+  - file: test/support/skip_manifest.rb
+    label: else of `if`
+    source: 'return if found.empty?'
+    reason: >
+      The skip manifest's own failure path. It is tested — SkipManifestTest
+      runs a throwaway suite under a deliberately wrong manifest — but in a
+      subprocess, which runs with coverage off so it cannot write a sixth
+      resultset into a five-leg merge. Reached, then, but not by anything
+      these counters see.
+
+  - file: test/test_helper.rb
+    label: then of `if`
+    source: 'raise if error.is_a?(Minitest::Skip)'
+    reason: >
+      A skip raised inside a stale_tolerant block, which would otherwise be
+      caught by the rescue and re-reported as a tz-capability skip with the
+      wrong reason. No test both skips and sits inside such a block today.
+
+  - file: test/test_helper.rb
+    label: then of `if`
+    source: 'raise if TZCapabilities.supports?(capability)'
+    reason: >
+      The guard that keeps stale_tolerant from swallowing a real regression:
+      a failure on a database that *has* the capability re-raises instead of
+      skipping. It fires only when something is genuinely broken, so a green
+      run never reaches it. StaleTolerantTest pins the discrimination it can
+      reach — it runs against the fixture zoneinfo, where every capability is
+      absent, so this arm is the one case its setup cannot produce.
+
+  - file: test/test_helper.rb
+    label: then of `if`
+    source: 'return flunk("expected a :Naive- or :Instant-tagged TimePoint, got: nil") if tagged.nil?'
+    reason: >
+      A diagnostic for a nil TimePoint, which would otherwise fail as a
+      NoMethodError several frames away. Nothing in the corpus produces one.
+
+  - file: test/thread_pool_dispatch_test.rb
+    label: then of `&.`
+    source: 'counter&.increment'
+    reason: >
+      This arm running *is* the failure the test asserts against: the counter
+      is only bound on threads inside the measured pool, so an increment means
+      Duckling.parse spawned a per-call Thread with no Fiber scheduler
+      installed. Unreached here is the assertion holding.
+
+  - file: test/thread_pool_dispatch_test.rb
+    label: else of `unless`
+    source: 'unless SpawnCounter.installed'
+    reason: >
+      Re-entry guard on the Thread.new patch. install! is called once per
+      process, so the already-installed arm never runs.
+
+  - file: test/thread_pool_dispatch_test.rb
+    label: then of `if`
+    source: 'skip "test requires no ambient Fiber scheduler" if Fiber.scheduler'
+    reason: >
+      No leg runs the suite under a Fiber scheduler, so the skip never fires.
+      Note it would be an undeclared skip in test/skip_manifest.yml if it did
+      — the two manifests agree that this arm does not run.

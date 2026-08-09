@@ -45,6 +45,12 @@ jobs:
   baseline:
     runs-on: ubuntu-latest
     name: "Ruby 3.3.6"
+    # Line and branch coverage for every leg this job runs, one directory per
+    # leg under coverage/, collected by the `coverage` job below. Set at job
+    # level so all three legs are measured; test/support/coverage.rb no-ops
+    # without it.
+    env:
+      DUCKLING_COVERAGE: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -116,6 +122,13 @@ jobs:
           bin/build-linkless-zoneinfo "$RUNNER_TEMP/linkless-zoneinfo"
           DUCKLING_ZONEINFO_DIR="$RUNNER_TEMP/linkless-zoneinfo" bundle exec rake test
 
+      - name: Upload coverage for the three baseline legs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-baseline
+          path: coverage
+          if-no-files-found: error
+
   # The tz-database axis. This gem does not depend on tzinfo-data, so
   # reference_zone: resolves against whichever database tzinfo found, and the
   # candidates disagree on both modelling (negative DST, backward-compat
@@ -170,6 +183,7 @@ jobs:
       DUCKLING_TZ_LEG: ${{ matrix.leg }}
       DUCKLING_TZINFO_DATA: ${{ matrix.tzinfo_data }}
       BUNDLE_LOCKFILE: Gemfile.${{ matrix.leg }}.lock
+      DUCKLING_COVERAGE: "1"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -193,6 +207,58 @@ jobs:
           echo "DUCKLING_ZONEINFO_DIR=$RUNNER_TEMP/stale-zoneinfo" >> "$GITHUB_ENV"
       - name: Run the test suite
         run: bundle exec rake test
+
+      - name: Upload coverage for this leg
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-${{ matrix.leg }}
+          path: coverage
+          if-no-files-found: error
+
+  # What no leg reached.
+  #
+  # Each leg above measures line and branch coverage for its own database, and
+  # a single leg's report cannot answer the question that matters here: it
+  # calls code uncovered that another leg exercises, and says nothing about
+  # code *no* leg evaluates. Only the merge can, so this job is the one place
+  # the question gets asked — and the reason it needs all five legs, which is
+  # what DUCKLING_COVERAGE_ALL_LEGS turns from a notice into a failure.
+  #
+  # The gap it closes is one the skip manifest structurally cannot see. That
+  # file reasons about whole tests, skipped or not; a conditional inside a test
+  # that ran, whose other arm no database produces, reports as a passing test.
+  # That is how v0.4.0's backward-compat remedy came to have assertions that
+  # had never executed on any leg.
+  #
+  # `needs: timezones` puts this behind two legs that are allowed to fail, so
+  # this check is not required to merge either — same posture as the legs it
+  # depends on, and it still gates a release, since release.yml's `needs: ci`
+  # waits on this whole workflow rather than on the required check alone.
+  coverage:
+    needs: [baseline, timezones]
+    runs-on: ubuntu-latest
+    name: "Cross-leg coverage"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: '3.3.6'
+          bundler-cache: true
+      # Every leg's directory, merged back into one coverage/ tree. No Rust
+      # and no compile: the analysis reads JSON that the legs already wrote.
+      - name: Download every leg's coverage
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+          path: coverage
+      - name: Report what no leg reached, and enforce test/coverage_manifest.yml
+        env:
+          DUCKLING_COVERAGE_ALL_LEGS: "1"
+        run: bundle exec rake coverage:analyze
 
   # Forward-compat signals only — not required to merge (see issue #29).
   # `needs: baseline` means GitHub Actions automatically skips this job when
