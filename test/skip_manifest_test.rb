@@ -14,7 +14,7 @@ require "tmpdir"
 # in the process it ends; that one runs a throwaway suite in a subprocess and
 # reads the status the shell would.
 class SkipManifestTest < Minitest::Test
-  SEEDED = %i[@entries @executed @skipped @defined_tests @loaded_classes].freeze
+  SEEDED = %i[@entries @executed @skipped @passed @defined_tests @loaded_classes].freeze
 
   def setup
     super
@@ -26,13 +26,16 @@ class SkipManifestTest < Minitest::Test
     super
   end
 
-  # `executed`/`skipped` are what the run observed; `entries` is what the leg
-  # declared. Everything defined is assumed to exist unless a case says
-  # otherwise.
-  def seed(entries:, executed: [], skipped: [], defined: nil)
+  # `executed`/`skipped`/`passed` are what the run observed; `entries` is what
+  # the leg declared. `passed` defaults to the realistic `executed - skipped`;
+  # seed it explicitly to model a test that failed. Everything defined is
+  # assumed to exist unless a case says otherwise.
+  def seed(entries:, executed: [], skipped: [], passed: nil, defined: nil)
+    passed ||= executed - skipped
     SkipManifest.instance_variable_set(:@entries, entries)
     SkipManifest.instance_variable_set(:@executed, executed)
     SkipManifest.instance_variable_set(:@skipped, skipped)
+    SkipManifest.instance_variable_set(:@passed, passed)
     SkipManifest.instance_variable_set(:@defined_tests, defined || entries.map(&:id) | executed | skipped)
     SkipManifest.instance_variable_set(:@loaded_classes, (defined || entries.map(&:id)).map { |id| id.split("#").first })
   end
@@ -67,6 +70,24 @@ class SkipManifestTest < Minitest::Test
     seed(entries: [entry("T#a")], executed: [], skipped: [])
 
     assert_empty SkipManifest.problems
+  end
+
+  # A declared entry that *failed* is minitest's job to report. Judging it
+  # here too would tack a misleading "ran to completion" line onto an
+  # already-red run.
+  def test_ignores_a_declared_entry_that_failed
+    seed(entries: [entry("T#a")], executed: ["T#a"], skipped: [], passed: [])
+
+    assert_empty SkipManifest.problems
+  end
+
+  # A typo'd capability name is a load-time error (validate!), not something
+  # the run should discover from enforce! after the suite has finished.
+  def test_validate_rejects_an_unknown_capability_name
+    seed(entries: [entry("T#a", :no_such_capability)])
+
+    error = assert_raises(ArgumentError) { SkipManifest.validate! }
+    assert_match(/unknown tz capability/, error.message)
   end
 
   # The subtlest of the four, and the reason `unless:` is still a two-way

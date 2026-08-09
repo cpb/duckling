@@ -15,22 +15,27 @@ require "yaml"
 # real thing on a tz database that cannot possibly answer it, and skip instead
 # of failing. On its own that is how coverage disappears quietly. So each leg
 # declares, in test/skip_manifest.yml, exactly which tests it expects to skip
-# — and this fails the build three ways:
+# — and this fails the build four ways:
 #
 # - A test skips that the leg did not declare. Something lost coverage.
-# - A declared test runs to completion instead of skipping. The leg gained a
-#   capability, and the manifest is now overstating what it costs.
+# - A declared test passes instead of skipping. The leg gained a capability,
+#   and the manifest is now overstating what it costs.
+# - A conditional entry skips while the capability it is conditional on is
+#   present. Something other than a missing capability stopped it — a
+#   vacuous pass wearing a skip.
 # - A declared entry names a test that does not exist. A rename, a deletion,
 #   or a typo — which would otherwise sit in the file forever, enforcing
-#   nothing, since a test that never runs trips neither check above.
+#   nothing, since a test that never runs trips none of the other checks.
 #
 # Together those keep the manifest honest as databases move; a manifest that
 # only ever grows would end up declaring skips that stopped happening years
 # ago, and one that can name nothing would stop declaring anything at all.
 #
-# Only tests that actually executed are considered for the second check, so
-# running a single file or a single test — `bin/test path/to/file.rb:42` —
-# does not trip it for everything the run left out.
+# Only tests that passed are considered for the second check, so running a
+# single file or a single test — `bin/test path/to/file.rb:42` — does not
+# trip it for everything the run left out, and a declared test that *fails*
+# is reported by minitest itself rather than re-described here as "ran to
+# completion".
 module SkipManifest
   # Overridable so skip_manifest_test.rb can run a throwaway suite against a
   # deliberately wrong manifest in a subprocess, which is the only way to
@@ -65,12 +70,17 @@ module SkipManifest
     @skipped ||= []
   end
 
+  def passed
+    @passed ||= []
+  end
+
   # Called from Minitest::Test#after_teardown, by which point the skip
   # exception is already recorded in the test's own `failures`.
   def observe(test)
     id = "#{test.class}##{test.name}"
     executed << id
     skipped << id if test.failures.any?(Minitest::Skip)
+    passed << id if test.failures.empty?
   end
 
   # A declared expectation. `capability` is nil for a plain entry, or the name
@@ -79,15 +89,16 @@ module SkipManifest
 
   # Why an entry may be conditional.
   #
-  # A leg fixes which *datasource* answers, and for most properties that
-  # settles what it can do: every Debian/Ubuntu host compiles rearguard
-  # tzdata, so "no negative DST" follows from "host zoneinfo". The
-  # backward-compat links do not follow. They moved to a separate
-  # `tzdata-legacy` package, and whether a given image ends up with them is a
-  # property of that image, not of the leg — two Ubuntu 24.04 systems
-  # disagree: this repo's dev container (tzdata 2025b) resolves 497
-  # identifiers and no `US/Eastern`, while a GitHub `ubuntu-latest` runner
-  # (tzdata 2026b, no tzdata-legacy) resolves it fine.
+  # A leg fixes which *datasource* answers, but that does not settle every
+  # capability. The backward-compat links moved to a separate `tzdata-legacy`
+  # package, and whether a given image ends up with them is a property of
+  # that image, not of the leg — two Ubuntu 24.04 systems disagree: this
+  # repo's dev container (tzdata 2025b) resolves 497 identifiers and no
+  # `US/Eastern`, while a GitHub `ubuntu-latest` runner (tzdata 2026b, no
+  # tzdata-legacy) resolves it fine. The modelling has the same problem:
+  # Debian/Ubuntu compile rearguard tzdata and macOS agrees, but Alpine and
+  # FreeBSD ship vanguard data that models negative DST — so "no negative
+  # DST" does not follow from "host zoneinfo" either.
   #
   # Declaring such a test as an unconditional skip asserts a fact about the
   # machine that the leg does not control, and the run fails wherever the
@@ -96,6 +107,10 @@ module SkipManifest
   # present. Still a two-way check — and the "must run when present"
   # direction is the valuable one, since a tz test that runs to completion
   # without the capability it depends on is a vacuous pass.
+  #
+  # The one unconditional tz entry is linkless-zoneinfo's backward-compat
+  # one, and only because bin/build-linkless-zoneinfo hard-fails if
+  # `US/Eastern` survives the strip — a checked guarantee, not an assumption.
   CONDITIONAL_NOTE = "unless:"
 
   def manifest
@@ -163,7 +178,7 @@ module SkipManifest
   def problems
     undeclared = skipped - expected
     skipped_despite_capability = skipped & expected_to_run
-    declared_but_ran = (expected_to_skip & executed) - skipped
+    declared_but_ran = expected_to_skip & passed
 
     undeclared.map { |id|
       "#{id} skipped, but the #{LEG.inspect} leg does not declare it. " \
@@ -180,6 +195,22 @@ module SkipManifest
       "#{id} is declared in #{PATH} but no such test exists. " \
         "It was renamed or removed; update the entry, or drop it."
     }
+  end
+
+  # Called once from test_helper at load, so a misspelled leg name or a
+  # typo'd `unless:` capability fails before the suite runs rather than from
+  # enforce! after it. `entries` already raises on an undeclared leg; this
+  # adds the capability check, which otherwise only fires lazily inside
+  # expected_to_skip.
+  def validate!
+    entries.each do |entry|
+      next unless entry.capability
+      next if TZCapabilities::CAPABILITIES.key?(entry.capability.to_sym)
+
+      raise ArgumentError,
+        "#{PATH} declares #{entry.id} with unknown tz capability #{entry.capability.inspect} " \
+        "(expected one of #{TZCapabilities::CAPABILITIES.keys.inspect})"
+    end
   end
 
   # Fails the process even when every test passed. A skip that nobody declared

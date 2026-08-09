@@ -24,6 +24,12 @@
 # needs: what it must guarantee is that `US/Eastern` — the probe target, and
 # the name the CHANGELOG and the error message both use — is genuinely gone.
 #
+# It also does not touch *modelling*: the copy keeps whatever the host has
+# (rearguard on Debian/Ubuntu/macOS, vanguard on Alpine/FreeBSD). That is why
+# the leg's negative-DST manifest entry is conditional while its
+# backward-compat one is not — only the links absence is guaranteed here,
+# and the postcondition below is what checks it.
+#
 # Usage: bin/build-linkless-zoneinfo <output-dir>
 #   ZONEINFO_DIR  source directory to copy (default /usr/share/zoneinfo)
 set -euo pipefail

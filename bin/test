@@ -3,7 +3,9 @@
 # With no arguments, runs the full suite via `bundle exec rake` (standard +
 # compile + test). With arguments, routes through `bundle exec rake test` --
 # not a raw `ruby -I test` invocation -- so the Rakefile's `task test:
-# :compile` prerequisite guarantees the extension is compiled first.
+# %i[compile tz_full_run]` prerequisites guarantee the extension is compiled
+# first and DUCKLING_TZ_FULL_RUN is set for the skip manifest (see
+# test/support/skip_manifest.rb).
 # Minitest::TestTask takes no CLI args directly; it reads env vars instead
 # (see minitest/test_task.rb's process_env), so arguments are "massaged"
 # into that interface:
@@ -19,7 +21,7 @@
 # PreToolUse hook, so a fresh Claude Code Web session needs its own JIT gem
 # install here too. Compiling the extension is no longer needed here --
 # `bundle exec rake test` compiles it via the Rakefile's `task test:
-# :compile` prerequisite.
+# %i[compile tz_full_run]` prerequisite.
 if [ "${CLAUDE_CODE_REMOTE:-}" = true ]; then
   . "$(dirname "$0")/claude-web-deps.sh"
   install_gems

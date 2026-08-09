@@ -155,8 +155,12 @@ jobs:
             leg: tzinfo-data-1.2022.7
             tzinfo_data: 1.2022.7
           # Both axes at once: host zoneinfo with America/Nuuk rolled back to
-          # its pre-2023a rules. The state an unpatched stock host is in, and
-          # one neither of the legs above reaches.
+          # its pre-2023a rules — rearguard modelling and a stale vintage
+          # together, which neither of the legs above reaches. The copied
+          # tree inherits the runner's links state (it has them), so this is
+          # an unpatched stock host plus US/Eastern; on a links-less host the
+          # same build reproduces one exactly. The manifest's conditional
+          # backward_compat_links entry absorbs the difference.
           - name: "tz: stale system zoneinfo"
             leg: stale-system-zoneinfo
             tzinfo_data: none

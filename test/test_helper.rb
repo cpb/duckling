@@ -23,6 +23,11 @@ require_relative "support/tz_capabilities"
 require_relative "support/tz_fixtures"
 require_relative "support/skip_manifest"
 
+# Fail at load, not at end-of-run, on a misspelled DUCKLING_TZ_LEG or a typo'd
+# `unless:` capability in the manifest — the suite's result is meaningless
+# under either, so the cheapest time to say so is before it runs.
+SkipManifest.validate!
+
 module Minitest
   class Test
     # Every executed test reports itself, so SkipManifest can hold the run to
@@ -80,6 +85,15 @@ end
 # plain ArgumentError, and none has anything to do with the tz database. Both
 # tz-related messages name the keyword that produced them; "unsupported
 # locale:"/"unsupported dimension:" do not.
+#
+# Note the asymmetry: the message guard applies to ArgumentError only. A
+# failed *assertion* is converted without discrimination, because no message
+# shape distinguishes "the database answered differently" from "the code
+# regressed" — the capability probe alone decides. That is acceptable only
+# because the same assertions run unguarded on every leg where the capability
+# is present, and the fixture zones pin the same edges on every leg, so a
+# real regression fails somewhere. It is also why stale_tolerant stays
+# limited to tests with that redundancy.
 ARGUMENT_ERRORS_WORTH_SKIPPING = /reference_zone|reference_time/
 
 def stale_tolerant(capability)

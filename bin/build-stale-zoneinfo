@@ -9,10 +9,12 @@
 #
 # Built by copying the host's own zoneinfo directory and compiling
 # test/fixtures/zoneinfo-overrides/*.zi over it. The copy keeps the host's
-# rearguard modelling and its missing backward-compat links; the overrides
-# roll named zones back to earlier rules. Compiling a whole tzdata release
-# instead would need a download, and rolling back only the zones under
-# assertion says more plainly which staleness is being tested.
+# modelling (rearguard on Debian/Ubuntu/macOS, vanguard on Alpine/FreeBSD)
+# and whatever links state the host has (missing on a stock host, present on
+# a GitHub runner); the leg's conditional manifest entries absorb both. The
+# overrides roll named zones back to earlier rules. Compiling a whole tzdata
+# release instead would need a download, and rolling back only the zones
+# under assertion says more plainly which staleness is being tested.
 #
 # Usage: bin/build-stale-zoneinfo <output-dir>
 #   ZONEINFO_DIR  source directory to copy (default /usr/share/zoneinfo)

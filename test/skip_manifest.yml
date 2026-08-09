@@ -3,8 +3,9 @@
 #
 # This governs EVERY skip in the default suite, not only tz-capability ones —
 # a new unconditional `skip` anywhere has to be declared under `always:`
-# before a plain `bundle exec rake` passes. Three ways to fail: a skip nobody
-# declared, a declared entry that runs to completion, and a declared entry
+# before a plain `bundle exec rake` passes. Four ways to fail: a skip nobody
+# declared, a declared entry that passes instead of skipping, a conditional
+# entry that skips while its capability is present, and a declared entry
 # naming a test that no longer exists. So the coverage a leg gives up shows up
 # in a diff rather than in a passing log, and the declarations can't rot.
 #
@@ -21,9 +22,14 @@
 # loses it only where that capability is absent, and requires it to RUN where
 # the capability is present. Use the conditional form only where the leg does
 # not actually determine the capability — see CONDITIONAL_NOTE in
-# test/support/skip_manifest.rb. Rearguard modelling follows from "host
-# zoneinfo" on every Debian/Ubuntu image, so negative_dst stays unconditional;
-# the backward-compat links do not, so it does not.
+# test/support/skip_manifest.rb. Neither tz capability is determined by "host
+# zoneinfo" alone: the backward-compat links depend on the image (two Ubuntu
+# 24.04 systems disagree), and the modelling is rearguard on
+# Debian/Ubuntu/macOS but vanguard on Alpine and FreeBSD, which ship tzdata
+# that models negative DST. So both stay conditional; the one exception is
+# linkless-zoneinfo's backward-compat entry, which is unconditional because
+# bin/build-linkless-zoneinfo hard-fails if US/Eastern survives — a checked
+# guarantee, not an assumption about the host.
 
 # Leg-independent skips: known upstream limitations characterized by the tests
 # themselves, unrelated to tz data.
@@ -46,7 +52,8 @@ tzinfo-data: []
 # negative-DST behavior this loses; nothing restores US/Eastern, and v0.4.0
 # deliberately does not try to.
 system-zoneinfo:
-  - DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+  - test: DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+    unless: negative_dst
   - test: DucklingTest#test_reference_zone_resolves_backward_compat_identifier
     unless: backward_compat_links
 
@@ -57,12 +64,18 @@ system-zoneinfo:
 # No runner is in this state on its own — ubuntu-latest resolves those names
 # and so does macOS — so without this leg the headline behavior of v0.4.0 has
 # no coverage anywhere, and the only assertions on the error message's remedy
-# text never execute. Both entries are unconditional on purpose: the leg
-# *guarantees* the capability is absent, so `unless:` would let a silently
-# broken strip go green again, and `declared_but_ran` is what proves the
-# fixture worked.
+# text never execute.
+#
+# The backward-compat entry is unconditional on purpose: the script hard-fails
+# if US/Eastern survives the strip, so the leg *guarantees* the capability is
+# absent — a checked guarantee, and `unless:` would let a silently broken
+# strip go green again. The negative-DST entry is conditional instead: the
+# script copies the host's modelling untouched (rearguard on
+# Debian/Ubuntu/macOS, vanguard on Alpine/FreeBSD), so that capability is the
+# host's fact, not the leg's.
 linkless-zoneinfo:
-  - DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+  - test: DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+    unless: negative_dst
   - DucklingTest#test_reference_zone_resolves_backward_compat_identifier
 
 # Leg 4 — tzinfo-data pinned to 1.2022.7. A stale-but-present database, which
@@ -73,10 +86,13 @@ tzinfo-data-1.2022.7:
   - DucklingTest#test_reference_zone_resolves_gap_late_in_local_day
 
 # Leg 5 — host zoneinfo, with America/Nuuk overwritten by its pre-2023a rules
-# (bin/build-stale-zoneinfo). Both axes at once, which is the state an
-# unpatched stock host is actually in.
+# (bin/build-stale-zoneinfo). Both axes at once. The copied tree inherits the
+# host's links state, so on a links-less host this is exactly an unpatched
+# stock host, and on the CI runner (which has the links) it is that state
+# plus US/Eastern — the conditional entry absorbs the difference.
 stale-system-zoneinfo:
-  - DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+  - test: DucklingTest#test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
+    unless: negative_dst
   - test: DucklingTest#test_reference_zone_resolves_backward_compat_identifier
     unless: backward_compat_links
   - DucklingTest#test_reference_zone_resolves_gap_late_in_local_day

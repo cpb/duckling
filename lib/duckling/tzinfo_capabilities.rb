@@ -93,6 +93,13 @@ module Duckling
     # will supply it, which is the same mistake in the opposite direction —
     # and a list would be worse still, since a name it missed would get no
     # remedy at all.
+    #
+    # The remedies also assume the datasource is the host's default. A caller
+    # who pointed TZInfo::DataSource at their own directory gets the same
+    # clause, and for them neither remedy applies — they need to fix that
+    # directory instead. The message naming the directory is what makes that
+    # case recognizable; how the datasource came to be chosen is not knowable
+    # from here.
     def unknown_identifier_diagnosis
       diagnosis = "resolved against #{datasource_description}, " \
         "which provides #{identifier_count} identifiers"
