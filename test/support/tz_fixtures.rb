@@ -53,9 +53,8 @@ module TZFixtures
     BUILD_DIR
   end
 
-  # Hard error, not a skip: silent fixture loss is the failure mode these
-  # fixtures exist to prevent. zic comes from libc-bin on Debian/Ubuntu and
-  # is stock on macOS.
+  # zic comes from libc-bin on Debian/Ubuntu and is stock on macOS. A missing
+  # zic is a hard error.
   def zic
     @zic ||= ENV["ZIC"] || ZIC_SEARCH_PATH.map { |dir| File.join(dir, "zic") }.find { |path| File.executable?(path) } ||
       raise("zic not found in #{ZIC_SEARCH_PATH.join(", ")}. It comes from libc-bin on " \

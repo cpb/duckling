@@ -3,9 +3,9 @@
 require "test_helper"
 
 # Environment contract for the links-less zoneinfo environment
-# (bin/build-linkless-zoneinfo + DUCKLING_ZONEINFO_DIR). Invoked directly by
-# the CI step that builds the stripped tree, never loaded by the suite. Run
-# by hand against a built tree:
+# (bin/build-linkless-zoneinfo + DUCKLING_ZONEINFO_DIR). Run directly by the
+# CI step that builds the stripped tree; the suite does not load it. Run by
+# hand against a built tree:
 #
 #   bin/build-linkless-zoneinfo /tmp/linkless-zoneinfo
 #   DUCKLING_ZONEINFO_DIR=/tmp/linkless-zoneinfo bundle exec ruby -Ilib -Itest test/environments/linkless_zoneinfo_test.rb

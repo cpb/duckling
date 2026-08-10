@@ -16,9 +16,7 @@ require "minitest/autorun"
 require_relative "support/tz_capabilities"
 require_relative "support/tz_fixtures"
 
-# Banner: which database this run got and what it could do. An environment's
-# name alone does not say; this is what reconciles a missing capability test
-# with a CI log.
+# Banner: which database this run got and which probes passed.
 begin
   probes = TZCapabilities::CAPABILITIES.keys.map { |name| "#{name}=#{TZCapabilities.supports?(name)}" }
   warn "tz datasource: #{TZCapabilities.datasource_description}; #{probes.join(" ")}"
@@ -30,8 +28,8 @@ end
 # A failure reports as a skip naming `reason`; a pass flunks (drop the
 # wrapper, keep the assertions). Only Minitest::Assertion is rescued — it
 # inherits from Exception, and a wider rescue would launder a crash into
-# "known limitation". Not for environment-dependent tests: those live in
-# test/capabilities/. See docs/tz-database-axis.md.
+# "known limitation". Environment-dependent tests live in test/capabilities/.
+# See docs/tz-database-axis.md.
 def expect_failure(reason)
   yield
 rescue Minitest::Skip
@@ -44,7 +42,7 @@ end
 
 # Matches the reference time used throughout the pyduckling / wafer-inc-duckling
 # corpora (2013-02-12T04:30:00-02:00, a Tuesday), so relative expressions
-# resolve to fixed, assertable values instead of drifting with the real clock.
+# resolve to fixed, assertable values that do not drift with the real clock.
 # A real `Time` (not an Integer): `Native.parse`'s `reference_time:` requires
 # a `Time`-like value (or something responding to `#to_time`) so its
 # `utc_offset` can be threaded through to `Naive` results via

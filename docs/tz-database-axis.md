@@ -85,8 +85,7 @@ The linkless environment must be built. No runner is in that state.
 `ubuntu-latest` resolves `US/Eastern` from its own tzdata. macOS does too.
 Note: the runner is not a stock Ubuntu for tz data. A plain `ubuntu:24.04`
 container of an earlier tzdata point release does not resolve the links.
-The runner does. So the links are a probed capability, not a fact about the
-runner.
+The runner does. So no runner fact settles the links. The suite probes them.
 
 One configuration deliberately has no environment: a host with no tz
 database at all. A runner without tz data would break more than this gem.
@@ -100,7 +99,7 @@ Neither datasource exposes a version. `RubyDataSource` keeps `version_info`
 private. `ZoneinfoDataSource` exposes only `zoneinfo_dir`. So a probe asks
 the database a question. It does not read a release string.
 
-Probes are split by consumer, not by topic:
+Probes are split by consumer:
 
 - `Duckling::TZInfoCapabilities` (`lib/duckling/tzinfo_capabilities.rb`)
   ships in the gem. It holds only what the unknown-identifier error message
@@ -187,13 +186,14 @@ positively:
   a different base image can add a top-level entry a real host keeps.
 - `stale_vintage_test.rb`: `America/Nuuk` answers with the pre-2023a rules.
   The wrong answer is asserted on purpose. A stale database's dangerous
-  failure is a wrong answer, not a missing zone. If the pin or the rollback
+  failure is a wrong answer. A missing zone is easier to attribute. If the
+  pin or the rollback
   stops taking effect, the capability-gated test simply starts loading and
   passing. The suite goes green against a different database than the
   environment exists for. This contract turns red instead.
 - `system_zoneinfo_links_test.rb` and `alpine_vanguard_test.rb`: the
   defining probe answers true. An environment that lost its defining
-  capability would run less, not fail. The contract is the loud half.
+  capability would silently run less. The contract is the loud half.
 
 Without a contract, a broken setup presents as a smaller green suite. The
 capability-gated files simply load less.
@@ -231,7 +231,8 @@ Rules for `datasource_description`:
 - The gem case is detected by class. Whether `tzinfo-data` is loaded says
   nothing about whether it answered. A custom datasource in a bundle that
   also carries the gem must not be described as tzinfo-data.
-- An unrecognized datasource is named by its own class. Never guessed.
+- An unrecognized datasource is named by its own class. Do not describe it
+  as another database.
 - A host with no database gets its own string. This method builds failure
   messages. It must not raise. Raising would replace the explanation with a
   raw tzinfo error at the moment the explanation was wanted.
@@ -245,7 +246,7 @@ keyword and both fixes: the `tzinfo-data` gem, or the system `tzdata`
 package.
 
 `TZDataUnavailable` is deliberately not an `ArgumentError`. It reports the
-state of the deployment, not a bad argument. A caller that validates user
+state of the deployment. A caller that validates user
 input by rescuing `ArgumentError` must not swallow it. It is a named class
 for the same reason as `ShapeError`: greppable, and not satisfiable by an
 unrelated `RuntimeError`.
@@ -268,7 +269,7 @@ Why fixture zones:
   point exists. This is also why Ruby doubles cannot replace the fixture
   zones. A double can only reach `local_time_in_zone` directly. That stops
   short of the outside-in path through `Duckling.parse`.
-- The restore in `teardown` is mandatory, not hygiene. A leaked fixture
+- The restore in `teardown` is mandatory. A leaked fixture
   datasource leaves every later test with three zones and nothing else.
 - `TZInfo::DataSource.get` creates the default source when none is set. It
   raises when it cannot. So setup tolerates the absence. Teardown restores
@@ -307,9 +308,9 @@ The three fixture zones:
 - Alpine: `zic` is in `tzdata-utils`. The `tz-containers` job installs it.
 - `zic` lives in `sbin`. That is off a non-root `PATH`. `TZFixtures` and
   `bin/build-stale-zoneinfo` search there explicitly.
-- A missing `zic` is a hard error, not a skip. These fixtures exist because
-  this coverage kept degrading silently on hosts nobody watched. A skip
-  would reintroduce exactly that.
+- A missing `zic` is a hard error. These fixtures exist because this
+  coverage kept degrading silently on hosts nobody watched. A skip would
+  reintroduce exactly that.
 
 ## The build scripts
 
@@ -350,7 +351,7 @@ rules.
   tests absorb both.
 - Rolling back only the zones under assertion says plainly which staleness
   is tested. Compiling a full old tzdata release would need a download.
-- The override replaces the zone's entire history, not just the post-2023a
+- The override replaces the zone's entire history, including the pre-2023a
   rules. Harmless for the contract: it only looks at 2026. Every other zone
   in the copied directory stays as the host has it.
 - This script needs `tzdata` installed. It copies `/usr/share/zoneinfo`. It
@@ -358,7 +359,8 @@ rules.
 - The override shadows a real identifier on purpose. The
   `test/fixtures/tz/*.zi` zones are `Fixture/`-prefixed so they cannot be
   mistaken for real ones. Here shadowing is the point. The environment must
-  be a plausible stale host, not a synthetic zone nothing asserts against.
+  be a plausible stale host. A synthetic zone would give nothing to assert
+  against.
 
 ## `expect_failure`
 
@@ -426,8 +428,8 @@ installed. So it does not exercise tzinfo's own fallback.
   `bundle config unset --local deployment` (and `frozen`).
   `bundler-cache: true` writes `deployment: true` into `.bundle/config`.
   Deployment requires a committed lockfile. The environment lockfiles are
-  gitignored by design. It must be unset in the local config, not with
-  `BUNDLE_DEPLOYMENT`. Bundler resolves local config first and environment
+  gitignored by design. It must be unset in the local config.
+  `BUNDLE_DEPLOYMENT` cannot override it. Bundler resolves local config first and environment
   variables second (`Bundler::Settings#configs`). An env var cannot
   override anything `bundle config --local` has written.
 - The Alpine image is pinned by digest. The floating `ruby:3.4-alpine` tag

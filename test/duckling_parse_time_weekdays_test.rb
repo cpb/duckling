@@ -9,9 +9,8 @@ require "test_helper"
 #
 # Expected values below were cross-checked against the wrapped Rust crate's
 # OWN training corpus (`duckling-0.4.0/src/corpus/time_en.rs`, which uses the
-# identical reference moment 2013-02-12T04:30:00-02:00), not just reasoned
-# about from first principles, so they reflect the ground truth this gem is
-# supposed to expose, not just plausible guesses.
+# identical reference moment 2013-02-12T04:30:00-02:00), so they reflect the
+# ground truth this gem is supposed to expose.
 #
 # Reference date: 2013-02-12T04:30:00-02:00 is a TUESDAY. A bare weekday name
 # resolves to the *strictly next* occurrence of that weekday STRICTLY AFTER
@@ -161,7 +160,7 @@ class DucklingParseTimeWeekdaysTest < Minitest::Test
 
   # -- known gap: "next monday" / "monday after next" -------------------------
   #
-  # Genuine behavior gap, not a corpus-assumption mistake: Monday is the one
+  # This is a genuine behavior gap. Monday is the one
   # weekday that has ALREADY passed within the reference week (this week's
   # Monday, 02-11, is before the 2013-02-12 Tuesday reference), so bare
   # "monday" already resolves to *next* week (02-18, per
@@ -175,10 +174,10 @@ class DucklingParseTimeWeekdaysTest < Minitest::Test
   # test_thursday_after_next_skips_past_this_weeks_thursday above). For
   # Monday specifically, they do not: this gem's Duckling.parse returns the
   # exact same date (02-18) for "monday", "next monday", and "monday after
-  # next" alike, instead of skipping "next"/"after next" forward to 02-25 the
-  # way the not_immediate / FarFuture direction rules (ext/duckling wraps
-  # duckling-0.4.0's src/dimensions/time/en.rs) are documented to behave, and
-  # the way they verifiably do for every other weekday in this file.
+  # next" alike. The not_immediate / FarFuture direction rules (ext/duckling
+  # wraps duckling-0.4.0's src/dimensions/time/en.rs) document a skip forward
+  # to 02-25 for "next"/"after next", and they verifiably behave that way
+  # for every other weekday in this file.
   #
   # Each case is a pair of tests, mirroring test/duckling_comma_list_test.rb:
   #   - `test_current_actual_*` — passing, pins today's real (buggy) output.

@@ -5,14 +5,12 @@ require "tzinfo"
 module Duckling
   # Which tz database `reference_zone:` resolves against, for the
   # unknown-identifier error message. Behavioral because neither datasource
-  # exposes a version. Internal, not public API. The suite's wider probes
-  # live in test/support/tz_capabilities.rb. See docs/tz-database-axis.md.
+  # exposes a version. Internal. See docs/tz-database-axis.md.
   module TZInfoCapabilities
     module_function
 
-    # DataSourceNotFound is a sibling of InvalidTimezoneIdentifier, not a
-    # subclass, so it must be named. A probe is a total boolean: a host with
-    # no database answers false.
+    # DataSourceNotFound does not inherit from InvalidTimezoneIdentifier;
+    # name it explicitly. A host with no database answers false.
     def backward_compat_links?
       TZInfo::Timezone.get("US/Eastern")
       true
@@ -46,8 +44,8 @@ module Duckling
       "the #{source.class} tz datasource"
     end
 
-    # The remedy is phrased as a condition, not a claim about the identifier:
-    # only the database is checked. See docs/tz-database-axis.md.
+    # The remedy is phrased as a condition: only the database is checked.
+    # See docs/tz-database-axis.md.
     def unknown_identifier_diagnosis
       diagnosis = "resolved against #{datasource_description}, " \
         "which provides #{identifier_count} identifiers"

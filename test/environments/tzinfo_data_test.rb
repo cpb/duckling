@@ -3,10 +3,10 @@
 require "test_helper"
 
 # Environment contract for the default environment (current tzinfo-data).
-# Invoked directly by the baseline CI step, never loaded by the suite. The
+# Run directly by the baseline CI step; the suite does not load it. The
 # default environment is the one place all three capabilities are guaranteed,
 # so this is the tripwire for the capability-gated loader: a probe that
-# rotted to false would unload its capability file silently everywhere else.
+# drifted to false would unload its capability file silently everywhere else.
 # See docs/tz-database-axis.md.
 class TzinfoDataTest < Minitest::Test
   def test_the_datasource_is_the_tzinfo_data_gem

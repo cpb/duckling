@@ -24,8 +24,8 @@ fi
 rm -rf "$out"
 mkdir -p "$out"
 
-# -L dereferences the alias symlinks, so an override writes a real file
-# rather than following a link back into the host's directory.
+# -L dereferences the alias symlinks, so an override writes a real file and
+# cannot follow a link back into the host's directory.
 cp -RL "$source_dir/." "$out/"
 
 for zi in "$overrides"/*.zi; do

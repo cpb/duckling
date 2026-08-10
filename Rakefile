@@ -60,7 +60,7 @@ end
 # extconf.rb runs in its own subprocess. ENV changes made there do not
 # reach the parent process, and the parent process runs `make`.
 #
-# So this fix changes ENV here, in the Rakefile, not in extconf.rb.
+# So this fix changes ENV here, in the Rakefile.
 # The fix adds a prerequisite task to the local build's Makefile task.
 # This prerequisite task sets the correct host target. It runs before
 # the Makefile task, and before `make` runs later.
@@ -71,7 +71,7 @@ if (ruby_target = ENV["RUBY_TARGET"]) && ruby_target != RUBY_PLATFORM
   # away. Clearing RUST_TARGET alone lets rb_sys fall back to the target
   # baked into the container's $CARGO_HOME/config.toml, which is the
   # cross-compile target again. So a host triple that cannot be read is a
-  # hard error, not something to skip past.
+  # hard error.
   #
   # Both variables belong to the whole rake process, and the cross build
   # reads them too. This is safe only because rake generates the cross
@@ -121,8 +121,8 @@ end
 #
 # So build from a throwaway plain clone instead, whose .git is a real
 # directory under the mount. Two consequences: the gem carries *committed*
-# state, not the working tree, and the clone gets its own Cargo target
-# directory rather than reusing this checkout's.
+# state (uncommitted changes are excluded), and the clone gets its own Cargo
+# target directory separate from this checkout's.
 CLONE_DIR = "tmp/native_gem_clone"
 
 def build_native_gem(platform)
@@ -163,10 +163,10 @@ end
 
 task :benchmark_env do
   # Force a realistic release-profile build regardless of .env.local's
-  # RB_SYS_CARGO_PROFILE=dev (local dev checkouts only, never present in
-  # CI). Must reenable :compile in case it already ran earlier in this same
-  # rake process, so it's guaranteed to recompile under the forced profile
-  # rather than reusing a stale dev-profile build.
+  # RB_SYS_CARGO_PROFILE=dev (local dev checkouts only; CI never has it).
+  # Must reenable :compile in case it already ran earlier in this same
+  # rake process, so it recompiles under the forced profile. A stale
+  # dev-profile build would be reused otherwise.
   ENV.delete("RB_SYS_CARGO_PROFILE")
   Rake::Task[:compile].reenable
 end
@@ -184,8 +184,8 @@ namespace :benchmark do
 
   desc "Run :record on a fresh branch off origin/main, then commit/push and open+auto-merge a PR via gh"
   task record_pr: ["release:guard_clean"] do
-    # Explicit bash, not Rake's default `sh -c` (dash on Debian/Ubuntu
-    # runners): dash's `set` doesn't support the `-o pipefail` flag below.
+    # Explicit bash: Rake's default `sh -c` is dash on Debian/Ubuntu
+    # runners, and dash's `set` doesn't support the `-o pipefail` flag below.
     sh("bash", "-c", <<~SH)
       set -euo pipefail
       original_ref="$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)"

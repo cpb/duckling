@@ -14,9 +14,8 @@ class BackwardCompatLinksTest < Minitest::Test
     assert_equal(-18000, resolved.utc_offset,
       "expected US/Eastern to resolve like America/New_York (EST, -18000), got #{resolved.inspect}")
 
-    # Where the link points, not just that it resolves. Compared
-    # behaviorally: canonical_identifier differs per datasource (tzinfo-data
-    # models links; compiled TZif carries no link metadata).
+    # Compare behaviorally: canonical_identifier differs per datasource
+    # (tzinfo-data models links; compiled TZif carries no link metadata).
     canonical = single_point(
       entity_for("March 7th 2026 3:00am", :time, reference_zone: "America/New_York")
     )[:value]

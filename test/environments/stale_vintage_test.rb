@@ -4,9 +4,9 @@ require "test_helper"
 
 # Environment contract for the two stale-vintage environments (tzinfo-data
 # pinned to 1.2022.7; host zoneinfo rolled back by bin/build-stale-zoneinfo).
-# Invoked directly by those CI steps, never loaded by the suite. A stale
-# database's dangerous failure is a wrong answer, not a missing zone, so the
-# wrong answer is asserted on purpose. See docs/tz-database-axis.md.
+# Run directly by those CI steps; the suite does not load it. A stale
+# database's dangerous failure is a wrong answer, so the wrong answer is
+# asserted on purpose. See docs/tz-database-axis.md.
 class StaleVintageTest < Minitest::Test
   def test_the_environment_lacks_greenlands_2023a_rules
     refute TZCapabilities.supports?(:greenland_2023_rules),
@@ -16,7 +16,7 @@ class StaleVintageTest < Minitest::Test
 
   # No reference_time: the two stale sources disagree about the exact
   # transition times, so the offset is pinned against the database's own
-  # answer for that instant instead.
+  # answer for that instant.
   def test_america_nuuk_answers_with_pre_2023a_rules
     entity = entity_for("March 28 2026 11:30pm", :time, reference_zone: "America/Nuuk")
     resolved = single_point(entity)[:value]

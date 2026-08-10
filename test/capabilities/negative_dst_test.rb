@@ -2,14 +2,14 @@
 
 require "test_helper"
 
-# Europe/Dublin's fall-back overlap: the first occurrence is selected by
-# position, not by tzinfo's dst? flag — negative DST inverts the flag, so a
-# flag lookup returns the post-transition occurrence, an hour off. Loads only
-# where the database models negative DST. See docs/tz-database-axis.md.
+# Europe/Dublin's fall-back overlap: negative DST inverts tzinfo's dst?
+# flag, so a flag lookup returns the post-transition occurrence, an hour off.
+# First occurrence by position. Loads only where the database models negative
+# DST. See docs/tz-database-axis.md.
 class NegativeDstTest < Minitest::Test
   def test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
-    # The premise, asserted with the same predicate the loader consults: data
-    # that stopped discriminating must fail here, not pass vacuously.
+    # The premise, asserted with the loader's own predicate: the IANA data
+    # can drift after the gate has loaded this file.
     assert TZCapabilities.models_negative_dst?,
       "expected Europe/Dublin to be modelled with negative DST (winter carrying tzinfo's " \
       "dst? flag); without that inversion this test cannot tell periods.first from a " \

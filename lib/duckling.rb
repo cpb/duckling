@@ -22,7 +22,7 @@ rescue LoadError => abi_load_error
     require_relative "duckling/duckling"
   rescue LoadError
     # The ABI directory is missing, and so is the plain path. Raise the first
-    # error, not the second.
+    # error.
     #
     # A binary that exists but refuses to load fails here too, and its error
     # says why. An Alpine install does this: RubyGems matches an unversioned
@@ -43,8 +43,9 @@ module Duckling
   class ShapeError < RuntimeError; end
 
   # Raised when `reference_zone:` is given on a host with no tz database at
-  # all (no zoneinfo files, no tzinfo-data gem). Not an ArgumentError: an
-  # environment fault, not a bad argument. See docs/tz-database-axis.md.
+  # all (no zoneinfo files, no tzinfo-data gem). Deliberately outside
+  # ArgumentError: it reports the deployment, so input-validation rescues do
+  # not swallow it. See docs/tz-database-axis.md.
   class TZDataUnavailable < RuntimeError; end
 
   # Native.parse already releases the GVL around the native call, but a bare
@@ -70,7 +71,7 @@ module Duckling
   # thread-termination backtrace to stderr — Thread#value still re-raises it
   # to the caller as ordinary control flow.
   #
-  # reference_time: is coerced here, not in the native extension:
+  # reference_time: is coerced here because the native extension cannot:
   # Native.parse's Magnus binding only accepts a strict kind_of?(Time) (issue
   # #45), which rejects ActiveSupport::TimeWithZone and stdlib DateTime even
   # though both carry the same to_i/utc_offset a real Time does — #to_time
@@ -85,13 +86,12 @@ module Duckling
   #
   # A fixed offset and a zone that disagree at the reference instant have no
   # principled resolution — silently preferring either would resolve results
-  # against an offset the caller never asked for — so that combination raises
-  # rather than guessing.
+  # against an offset the caller never asked for — so that combination raises.
   #
   # reference_zone: only reinterprets result offsets after the fact; it does
   # NOT anchor the parse. Given without reference_time:, relative expressions
-  # ("tomorrow") still anchor on the machine-local clock, not on "now" in that
-  # zone, so on a US host reference_zone: "Asia/Tokyo" can land on the wrong
+  # ("tomorrow") still anchor on the machine-local clock. They do not anchor
+  # on "now" in that zone, so on a US host reference_zone: "Asia/Tokyo" can land on the wrong
   # calendar day. Pass a reference_time: in the zone to anchor as well.
   def self.parse(text, locale: "en", dims: ["time"], reference_time: nil, with_latent: false, reference_zone: nil)
     reference_time = reference_time.to_time if reference_time && !reference_time.is_a?(Time) && reference_time.respond_to?(:to_time)
@@ -118,7 +118,8 @@ module Duckling
 
   # Reinterprets every TimePoint::Naive (wall-clock) leaf of each :time entity
   # against `reference_zone`, using the real IANA offset for that leaf's own
-  # date rather than the single fixed offset reference_time: carries.
+  # date. reference_time: carries a single fixed offset, which cannot be right
+  # for every leaf.
   #
   # TimePoint::Instant leaves are left strictly alone: the wrapped crate
   # already collapsed their relative arithmetic against one FixedOffset before
@@ -127,7 +128,7 @@ module Duckling
   #
   # Walks the externally-tagged shape ext/duckling/src/lib.rs's patch_time_value
   # produces, and raises on any tag it doesn't recognize: a shape drift on the
-  # Rust side must fail loudly here rather than quietly returning results
+  # Rust side must fail loudly here. The outcome to prevent is quiet results
   # resolved against the wrong offset.
   def self.apply_reference_zone(entities, reference_zone)
     return entities unless reference_zone
@@ -137,8 +138,8 @@ module Duckling
 
   # Zone-object core of apply_reference_zone. parse calls this directly with
   # the TZInfo::Timezone it already resolved for offset validation, so the
-  # zone is looked up once per call rather than once for validation and again
-  # for reinterpretation.
+  # zone is looked up once per call. Validation and reinterpretation share the
+  # lookup.
   def self.reinterpret_entities!(entities, zone)
     entities.each do |entity|
       next unless entity[:dim] == :time
@@ -166,7 +167,7 @@ module Duckling
 
   # An Interval's from/to are Option<TimePoint> on the Rust side, and serde
   # emits Option::None as a present key holding nil — hence the nil tolerance
-  # in reinterpret_time_point!, rather than a missing-key check here.
+  # in reinterpret_time_point!. A missing-key check here would reject that shape.
   def self.reinterpret_interval_endpoints!(endpoints, zone)
     reinterpret_time_point!(endpoints[:from], zone)
     reinterpret_time_point!(endpoints[:to], zone)
@@ -233,19 +234,19 @@ module Duckling
   # `time` is necessarily the one whose gap it landed in.
   #
   # The ±1-day scan window is centered on the skipped wall clock itself read
-  # as UTC — not on the UTC midnight of its date. The transition's UTC instant
+  # as UTC. The UTC midnight of its date would be the wrong anchor. The transition's UTC instant
   # is the wall clock minus a zone offset, and offsets never reach a day, so
   # this window always contains it; a midnight-anchored window does not. A
   # gap late in the local day in a negative-offset zone (America/Nuuk springs
   # forward at 23:00 local) has its transition instant past the *next* UTC
   # midnight, outside a midnight-anchored window — `find` returned nil and
-  # this method crashed instead of resolving.
+  # this method crashed.
   #
-  # Read from the transition rather than assumed to be 3600. ActiveSupport's
+  # Read from the transition. Do not assume 3600. ActiveSupport's
   # TimeWithZone#get_period_and_ensure_valid_local_time instead hardcodes
   # `@time += 1.hour` and retries: for Australia/Lord_Howe's 30-minute gap
-  # that lands half an hour past the gap's end (02:15 → 03:15 rather than
-  # 02:45). Every one-hour gap — i.e. every zone in current use but Lord Howe
+  # that lands half an hour past the gap's end (02:15 → 03:15; the correct
+  # answer is 02:45). Every one-hour gap — i.e. every zone in current use but Lord Howe
   # — resolves identically either way.
   def self.gap_delta(zone, time)
     wall_clock = Time.utc(time.year, time.month, time.day, time.hour, time.min, time.sec)

@@ -2,7 +2,7 @@
 # Builds a zoneinfo directory without the backward-compatibility links: the
 # stock links-less host, where US/Eastern stops resolving. Built because no
 # runner is in that state. The keep-list is transcribed from a real
-# links-less host (497 identifiers), not guessed. See docs/tz-database-axis.md.
+# links-less host (497 identifiers). See docs/tz-database-axis.md.
 #
 # Usage: bin/build-linkless-zoneinfo <output-dir>
 #   ZONEINFO_DIR  source directory to copy (default /usr/share/zoneinfo)
@@ -37,7 +37,7 @@ for entry in "$out"/*; do
   esac
 done
 
-# The postcondition, checked rather than assumed: catches under-stripping.
+# Checked postcondition; catches under-stripping only.
 if [ -e "$out/US/Eastern" ]; then
   echo "build-linkless-zoneinfo: US/Eastern survived the strip in $out" >&2
   exit 1

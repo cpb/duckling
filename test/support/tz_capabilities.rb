@@ -5,10 +5,9 @@ require "tzinfo"
 # Behavioral tz-database probes used only by the suite: the gate behind
 # test/capabilities/ and the assertions in test/environments/. Probes with a
 # production caller live in Duckling::TZInfoCapabilities. Rules for every
-# probe: a total boolean (false on a host with no database;
-# DataSourceNotFound is a sibling of InvalidTimezoneIdentifier, not a
-# subclass), and nothing memoized (DataSource.set swaps the database
-# mid-process). See docs/tz-database-axis.md.
+# probe: answer false on a host with no database (DataSourceNotFound does
+# not inherit from InvalidTimezoneIdentifier), and memoize nothing
+# (DataSource.set swaps the database mid-process). See docs/tz-database-axis.md.
 module TZCapabilities
   # Capability name (as test/capabilities/ filenames spell it) => predicate.
   CAPABILITIES = {
@@ -45,7 +44,7 @@ module TZCapabilities
     Duckling::TZInfoCapabilities.datasource_description
   end
 
-  # Raises on an unknown capability name rather than reporting it absent.
+  # Raises on an unknown capability name.
   def supports?(capability)
     predicate = CAPABILITIES.fetch(capability.to_sym) do
       raise ArgumentError,

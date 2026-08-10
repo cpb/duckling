@@ -25,7 +25,7 @@ jobs:
   # tzinfo-data, the host's zoneinfo, the host's zoneinfo without the
   # backward-compat links) as steps, because only a required check gates a
   # merge. The remaining environments live in `timezones`/`tz-containers`,
-  # where a red result informs rather than blocks. See docs/tz-database-axis.md.
+  # where a red result only informs. See docs/tz-database-axis.md.
   baseline:
     runs-on: ubuntu-latest
     name: "Ruby 3.3.6"
@@ -179,9 +179,9 @@ jobs:
             # exactly the crate's edition-2024 floor, so this leg always runs
             # on the minimum compiler it will ever have, with no upgrade
             # path. ext/duckling/Cargo.toml records that floor as
-            # `rust-version`, which converts a future >1.85 requirement into
-            # a clean MSRV error from cargo instead of a confusing parse
-            # error here while every other job stays green.
+            # `rust-version`, so a future >1.85 requirement fails as a clean
+            # MSRV error from cargo. Without it, the failure would be a
+            # confusing parse error here while every other job stays green.
             setup: apt-get update -qq && apt-get install -y --no-install-recommends build-essential cargo rustc git tzdata tzdata-legacy libclang-dev
             contract: test/environments/system_zoneinfo_links_test.rb
           # tzdata carries the zoneinfo (Alpine's ruby image ships none) and
@@ -225,10 +225,10 @@ jobs:
       - name: Check the environment contract
         run: bundle exec ruby -Ilib -Itest ${{ matrix.contract }}
 
-  # Forward-compat signals only — not required to merge (see issue #29).
+  # Forward-compat signals only; merging does not require them (see issue #29).
   # `needs: baseline` means GitHub Actions automatically skips this job when
-  # `baseline` fails, instead of always running all entries in parallel
-  # regardless of the baseline's outcome (see #98).
+  # `baseline` fails. Without it, all entries would run in parallel regardless
+  # of the baseline's outcome (see #98).
   informational:
     needs: baseline
     runs-on: ubuntu-latest

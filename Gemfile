@@ -23,7 +23,7 @@ gem "standard"
 #
 # Set BUNDLE_LOCKFILE alongside this for anything but the default, or the
 # resolve overwrites the committed Gemfile.lock. An unrecognized value raises
-# here rather than deep in the resolver.
+# here, before the resolver runs.
 case (tzinfo_data = ENV["DUCKLING_TZINFO_DATA"].to_s)
 when ""
   gem "tzinfo-data"

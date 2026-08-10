@@ -3,9 +3,9 @@
 require "test_helper"
 
 # Environment contract for the system-zoneinfo-with-links environment
-# (Debian + tzdata-legacy; the tz-containers job). Invoked directly by that
-# CI step, never loaded by the suite. An environment that lost the links
-# would quietly run less, not fail — so their absence here is a red step.
+# (Debian + tzdata-legacy; the tz-containers job). Run directly by that CI
+# step; the suite does not load it. An environment that lost the links would
+# silently run less, so their absence here is a red step.
 # See docs/tz-database-axis.md.
 class SystemZoneinfoLinksTest < Minitest::Test
   def test_the_environment_has_the_backward_compat_links

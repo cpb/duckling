@@ -4,11 +4,11 @@ require "test_helper"
 
 # Characterizes a known upstream limitation: a bare, comma-separated run of
 # <time> expressions with nothing else between them collapses into a single
-# Entity instead of one per date, and every date after the first is silently
-# dropped from the result — not deprioritized as latent, not truncated with a
-# warning, just absent.
+# Entity when one per date would be correct. Every date after the first is
+# silently dropped from the result — absent entirely, with no latent
+# deprioritization and no truncation warning.
 #
-# Root cause (confirmed by reading wafer-inc-duckling's source, not guessed):
+# Root cause (confirmed by reading wafer-inc-duckling's source):
 #
 # 1. `src/dimensions/time/en.rs` has a compose rule matching
 #    `<time> "of"/"from"/"for"/","/"'s" <time>` — a bare comma between two
@@ -120,7 +120,7 @@ class DucklingCommaListTest < Minitest::Test
   def test_current_actual_extraction_for_ambiguous_leading_date_format
     # Beyond losing dates, the single :value that *does* survive isn't even
     # reliably the leftmost one: the ambiguous "3/3" here causes the SECOND
-    # date (March 9) to win instead of the first, with nothing in the output
+    # date (March 9) to win over the first, with nothing in the output
     # signaling that happened.
     text = "Birthdays: Emma 3/3, March 9, April 12, May 5"
     assert_equal([COMMA_LIST_MARCH_9], extracted_dates(text))

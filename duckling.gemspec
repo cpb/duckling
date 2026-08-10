@@ -60,7 +60,6 @@ Gem::Specification.new do |spec|
   # used by test/falcon_fiber_blocking_test.rb (empirically testing that
   # Duckling.parse doesn't block sibling Fibers sharing a Falcon/async-gem
   # reactor thread) and benchmark/parse_benchmark.rb (measuring thread-per-call
-  # dispatch overhead, which only manifests with a Fiber scheduler installed)
-  # — not a runtime dependency of the gem itself.
+  # dispatch overhead, which only manifests with a Fiber scheduler installed).
   spec.add_development_dependency "async", "~> 2.41"
 end

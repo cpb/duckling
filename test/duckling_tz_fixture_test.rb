@@ -28,8 +28,8 @@ class DucklingTZFixtureTest < Minitest::Test
   end
 
   # The 2026-10-25 transition takes the zone from +01:00 to +00:00, so 01:30
-  # local happens twice. First occurrence by position (+3600), not by dst?
-  # flag — the flag picks the other one, an hour late.
+  # local happens twice. First occurrence by position (+3600); a dst?-flag
+  # lookup picks the other one, an hour late.
   def test_negative_dst_overlap_takes_the_first_occurrence
     reference_time = Time.new(2026, 9, 1, 12, 0, 0, "+01:00")
     entity = entity_for("October 25 2026 1:30am", :time,

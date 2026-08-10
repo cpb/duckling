@@ -87,7 +87,7 @@ If you notice this file describing a not-yet-built piece as current, or vice ver
 
 ## The tz-database axis
 
-This gem depends on `tzinfo` but deliberately not on `tzinfo-data`. Which tz database answers `reference_zone:` is therefore a property of the consumer's environment, and the databases disagree: modelling (negative DST), backward-compat links, and vintage. A suite run cannot observe which database it ran against, so the coverage rests on four mechanisms: environments (`DUCKLING_TZINFO_DATA`, `DUCKLING_ZONEINFO_DIR`, `BUNDLE_LOCKFILE`), behavioral probes, capability-gated tests (`test/capabilities/`), and environment contracts (`test/environments/`).
+This gem depends on `tzinfo`. It deliberately does not depend on `tzinfo-data`. Which tz database answers `reference_zone:` is therefore a property of the consumer's environment, and the databases disagree: modelling (negative DST), backward-compat links, and vintage. A suite run cannot observe which database it ran against, so the coverage rests on four mechanisms: environments (`DUCKLING_TZINFO_DATA`, `DUCKLING_ZONEINFO_DIR`, `BUNDLE_LOCKFILE`), behavioral probes, capability-gated tests (`test/capabilities/`), and environment contracts (`test/environments/`).
 
 **See [docs/tz-database-axis.md](docs/tz-database-axis.md) for the full reference**: the drift axes, the seven CI environments and their gating, the probe rules, the error-message rules, the fixture zones, the build scripts, `expect_failure`, and how to run an environment locally. When you change any of those, update that doc in the same PR.
 
@@ -160,7 +160,7 @@ The test suite covers several distinct concerns:
 - **Tag protection**: `v*.*.*` tags can only be created/updated by repo admins. Configured via `.github/scripts/apply-tag-ruleset.sh`.
 - **Before a release**: test cross-compilation locally or via `gh workflow run cross-gem.yml --ref <branch>` — that dispatch runs the `smoke` job too, so it is the cheapest full rehearsal of what `release.yml` will publish. To rehearse one gem by hand (a Heroku-shaped, Rust-free install), download the artifact and run `test/gem/installed_gem_test.rb` against it in a plain Ruby container — see that file's own header for the one-liner. Capture additional benchmark data points from other environments via `gh workflow run benchmark.yml --ref <branch>` (adds `docs/benchmarks/<environment>/` data) or locally via `bin/benchmark` (see "Build and test commands" above). **`benchmark.yml` has real side effects even when dispatched ad hoc**: it always branches off `origin/main`, commits/pushes, and opens+auto-merges a PR (`bundle exec rake benchmark:record_pr`) — it is not read-only data capture.
 
-## `bin/` scripts (dev-workflow tooling, not part of the gem)
+## `bin/` scripts (dev-workflow tooling; the gem ships none of them)
 
 These come from the cpb Claude Code plugin's harness (commit `d69ba38`) and manage git worktrees / tmux / GitHub PR workflow for *this development environment* — they are not part of what ships in the gem and shouldn't be touched when working on the gem's actual functionality:
 
