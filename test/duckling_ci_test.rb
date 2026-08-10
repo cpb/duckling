@@ -13,7 +13,12 @@ class DucklingCiTest < Minitest::Test
     assert File.exist?(File.join(ext_dir, "Cargo.toml")),
       "ext/duckling/Cargo.toml must exist — Rust crate not yet set up"
 
-    cargo = File.read(File.join(ext_dir, "Cargo.toml"))
+    # Explicit UTF-8 rather than Encoding.default_external: these files carry
+    # prose comments with em-dashes, and on a host whose locale leaves the
+    # default at US-ASCII (a bare container, a cron shell) every match against
+    # the contents raises "invalid byte sequence" instead of reporting on the
+    # config it was asked about.
+    cargo = File.read(File.join(ext_dir, "Cargo.toml"), encoding: "UTF-8")
     assert_match(/\[lib\]/, cargo, "Cargo.toml must declare a [lib] section")
     assert_match(/crate-type.*cdylib/, cargo, "Cargo.toml must set crate-type = [\"cdylib\"]")
   end
@@ -66,6 +71,8 @@ class DucklingCiTest < Minitest::Test
   private
 
   def workflow
+    # No encoding argument needed, unlike the File.read above: Psych opens
+    # with "r:bom|utf-8" regardless of the host locale.
     @workflow ||= YAML.load_file(CROSS_GEM_WORKFLOW)
   end
 
