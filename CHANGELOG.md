@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.4.1] - 2026-08-10
 
+## What's Changed
+* Stop packaging agent files in the gem; release 0.4.1 by @cpb in https://github.com/cpb/duckling/pull/124
+
+
+**Full Changelog**: https://github.com/cpb/duckling/compare/v0.4.0...v0.4.1
+
+
+## [0.4.1] - 2026-08-10
+
 ### Fixed
 
 - The packaged gem no longer includes agent- and development-tooling files.
