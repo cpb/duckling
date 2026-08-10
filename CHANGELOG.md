@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-08-10
+
+### Fixed
+
+- The packaged gem no longer includes agent- and development-tooling files.
+  0.3.0 and 0.4.0 shipped `.claude/settings.json`, `AGENTS.md`, and
+  `CLAUDE.md`: the gemspec built its file list from `git ls-files` with a
+  reject-list of paths to exclude, so every newly tracked dotfile or tool
+  directory was packaged by default. The gemspec now allow-lists what ships
+  (`lib/`, `ext/`, `docs/` other than `docs/benchmarks/`, and a named set of
+  root files), so anything new stays out of the gem unless it is added
+  deliberately. Regression coverage checks the gemspec's file list in the
+  main suite and the built artifacts in `test/gem/packaged_gem_test.rb`.
+  None of the previously shipped files contained secrets — they are
+  development configuration and documentation, all public in the repository
+  — so the already-published 0.3.0/0.4.0 gems are unaffected in behavior and
+  have been left in place.
+
+## [0.4.0] - 2026-08-10
+
 ### Changed
 
 - **On a stock Debian/Ubuntu host, roughly a hundred IANA zone identifiers
@@ -63,6 +83,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   work; steady-state parsing is unaffected either way, since `reference_zone:`
   resolution goes through the same tzinfo call once a database is loaded.
 
+### Added
+
+- `Duckling::TZDataUnavailable`, raised when `reference_zone:` is given on a
+  host with no tz database at all — no zoneinfo files and no `tzinfo-data`
+  gem, as in a scratch or distroless container. Newly reachable because of the
+  dependency change above; previously a database always existed. It names both
+  fixes, where the underlying tzinfo error mentioned neither this gem nor
+  `reference_zone:`. Deliberately not an `ArgumentError`: it reports the
+  deployment's state, not a bad argument, so code rescuing `ArgumentError`
+  around caller-supplied zone names does not swallow it. Every other keyword
+  works without a tz database.
+
+## [0.3.0] - 2026-08-04
+
+### Changed
+
 - **Breaking:** `reference_time:` now requires a Ruby `Time` object (or
   `nil`), not a Unix-seconds Integer. This lets the caller's `utc_offset` be
   preserved into offset-aware `Instant` results (e.g. `"in one hour"`),
@@ -94,18 +130,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   explicit `to: nil` (or `from: nil`) key instead of omitting the key
   entirely — check `interval[:to].nil?` rather than `interval.key?(:to)`
   to detect an unbounded endpoint.
-
-### Added
-
-- `Duckling::TZDataUnavailable`, raised when `reference_zone:` is given on a
-  host with no tz database at all — no zoneinfo files and no `tzinfo-data`
-  gem, as in a scratch or distroless container. Newly reachable because of the
-  dependency change above; previously a database always existed. It names both
-  fixes, where the underlying tzinfo error mentioned neither this gem nor
-  `reference_zone:`. Deliberately not an `ArgumentError`: it reports the
-  deployment's state, not a bad argument, so code rescuing `ArgumentError`
-  around caller-supplied zone names does not swallow it. Every other keyword
-  works without a tz database.
 
 ## [0.2.0] - 2026-07-01
 
