@@ -73,9 +73,22 @@ jobs:
   # point: both hosts carry tz data materially different from the ubuntu
   # runner's, and the suite is green regardless, because the gem depends on
   # tzinfo-data and tzinfo prefers it — the host's database never reaches the
-  # suite. #118 drops that dependency, points the suite at the host's
+  # suite. The matrix entries are named for that present-tense coverage — a
+  # red leg means a toolchain/build break, not tz handling — and #118
+  # renames them as it drops the dependency, points the suite at the host's
   # database in jobs like these, and adds the environment contracts that pin
   # what each state then means.
+  #
+  # Gating: not merge-blocking (branch protection requires only the
+  # `baseline` context), but release-blocking — release.yml runs this
+  # workflow as its `ci` reusable-workflow job, and `cross_gems`,
+  # `benchmark`, and `publish` all `needs: ci`, and a reusable-workflow job
+  # succeeds only if every job in the called workflow does. That is the
+  # intended gate: don't cut a release the musl source build can't serve.
+  # It does make these the only release-gating legs that hit external
+  # package repositories at release time — every other job in the pipeline
+  # uses preinstalled runner software or pinned actions — so the install
+  # steps below are the flake surface, and `bundle install` retries.
   #
   # Container jobs, so the image's own Ruby runs and ruby/setup-ruby does not
   # apply (it has no musl support anyway); the toolchain comes from the
@@ -90,8 +103,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "tz: system zoneinfo + tzdata-legacy (Debian)"
+          - name: "source build: Debian trixie + tzdata-legacy"
             image: ruby:3.4-trixie
+            # trixie's rustc is frozen for the life of Debian 13 at 1.85.0 —
+            # exactly the crate's edition-2024 floor, so this leg always runs
+            # on the minimum compiler it will ever have, with no upgrade
+            # path. ext/duckling/Cargo.toml records that floor as
+            # `rust-version`, which converts a future >1.85 requirement into
+            # a clean MSRV error from cargo instead of a confusing parse
+            # error here while every other job stays green.
             setup: apt-get update -qq && apt-get install -y --no-install-recommends build-essential cargo rustc git tzdata tzdata-legacy libclang-dev
           # tzdata carries the zoneinfo (Alpine's ruby image ships none).
           # The clang22-* packages are for rb-sys's bindgen, which needs
@@ -101,8 +121,17 @@ jobs:
           # explicitly. Any musl consumer building the source gem needs the
           # same three things. #118 adds tzdata-utils (zic) for its
           # fixture-zone tests.
-          - name: "tz: Alpine vanguard zoneinfo (musl source build)"
-            image: ruby:3.4-alpine
+          #
+          # The image is pinned by digest (consistent with the SHA-pinned
+          # actions) because the floating `ruby:3.4-alpine` tag silently
+          # rebases across Alpine releases, and Alpine drops older versioned
+          # clang packages as it rolls — an unpinned tag landing on an
+          # Alpine without clang22-* fails this leg at `apk add` with zero
+          # changes in this repo. Bump by resolving the tag's current digest
+          # (`docker buildx imagetools inspect ruby:3.4-alpine`) and
+          # re-verifying the clang package names against the new release.
+          - name: "source build: Alpine/musl"
+            image: ruby:3.4-alpine@sha256:c5a5064d190055633011c03aa800170cc36945ff3afb5f6c915329f92d6f1e00 # ruby:3.4-alpine, 3.4.10-alpine3.24
             setup: |
               apk add --no-cache build-base cargo rust git tzdata clang22-libclang clang22-headers
               headers="$(find /usr/lib/llvm* -name stdckdint.h -print -quit)"
@@ -118,8 +147,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # No bundler-cache here (no ruby/setup-ruby in a container), so every
+      # run re-downloads the full gem set; --retry keeps a transient
+      # rubygems blip from failing a release-gating leg.
       - name: Install dependencies
-        run: bundle install --jobs 4
+        run: bundle install --jobs 4 --retry 3
       - name: Run the test suite
         run: bundle exec rake test
 
