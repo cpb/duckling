@@ -2,6 +2,13 @@
 name = "duckling"
 version = "0.1.0"
 edition = "2024"
+# Edition 2024 already floors the compiler at 1.85; naming it lets cargo
+# fail with a clean MSRV error instead of a parse error. It is also the de
+# facto floor of the Debian-trixie CI leg, whose rustc is frozen at 1.85.0
+# for the life of Debian 13 — the first crate change requiring a newer
+# compiler turns that leg red, and this field is what makes the error
+# legible there.
+rust-version = "1.85"
 
 [lib]
 crate-type = ["cdylib"]
