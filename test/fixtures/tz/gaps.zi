@@ -1,23 +1,7 @@
-# Two synthetic spring-forward gaps, each standing in for a real zone whose
-# rules are a moving target.
-#
-# Fixture/HalfHourGap — Australia/Lord_Howe's shape: a 30-minute gap, not an
-# hour. 2026-10-04 02:00 local jumps to 02:30, so a skipped 02:15 must resolve
-# to 02:45. This is what separates gap_delta's "read the transition's real
-# width" from ActiveSupport's hardcoded `@time += 1.hour`, which overshoots to
-# 03:15. Lord Howe has been stable for years, but it is the only zone in
-# current use with a sub-hour gap — the coverage rests entirely on one real
-# zone's continued existence, which this removes.
-#
-# Fixture/LateGap — America/Nuuk's shape: a gap late in the local day in a
-# negative-offset zone, so the transition's UTC instant lands past the *next*
-# UTC midnight (23:00 local at -02:00 is 01:00 UTC the following day). That is
-# what forces gap_delta's scan window to be centered on the skipped wall clock
-# read as UTC rather than on the UTC midnight of its date; a midnight-anchored
-# window misses the transition entirely and gap_delta crashes. Nuuk only grew
-# these rules in tzdata 2023a, and was named America/Godthab before 2020a, so
-# a real-zone test for this edge is both vintage-dependent and, on older data,
-# silently a different test.
+# Two synthetic spring-forward gaps. Fixture/HalfHourGap: Australia/Lord_Howe's
+# shape, a 30-minute gap — 2026-10-04 02:15 skips to 02:45. Fixture/LateGap:
+# America/Nuuk's shape, a gap late in the local day at negative offset — the
+# transition lands past the next UTC midnight. See docs/tz-database-axis.md.
 Rule	Half	2000	max	-	Oct	Sun>=1	2:00	0:30	D
 Rule	Half	2000	max	-	Apr	Sun>=1	2:00	0	S
 Zone	Fixture/HalfHourGap	10:30	Half	%s

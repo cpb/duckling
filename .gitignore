@@ -14,6 +14,6 @@ RESEARCH_CONTEXT.md
 lib/duckling/duckling.bundle
 lib/duckling/duckling.so
 
-# Per-environment bundles (BUNDLE_LOCKFILE) — see the Gemfile and "The
-# tz-database axis" in AGENTS.md. Never committed; the default Gemfile.lock is.
+# Per-environment bundles (BUNDLE_LOCKFILE) — never committed; the default
+# Gemfile.lock is. See docs/tz-database-axis.md.
 /Gemfile.*.lock

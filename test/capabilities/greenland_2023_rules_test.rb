@@ -2,23 +2,11 @@
 
 require "test_helper"
 
-# A gap late in the local day has a transition instant past the *next* UTC
-# midnight when the zone's offset is negative — America/Nuuk springs forward
-# at 23:00 local while at UTC-2, putting the transition at 01:00 UTC the
-# following day. gap_delta's scan window must therefore center on the
-# skipped wall clock itself; anchoring it to the UTC midnight of the wall
-# clock's date excluded such transitions, and the resulting nil made
-# gap_delta crash with NoMethodError instead of resolving the gap.
-#
-# America/Nuuk only grew these rules in tzdata 2023a, and was named
-# America/Godthab before 2020a, so this is the one assertion in the suite
-# that a stale-but-otherwise-fine tz database gets wrong rather than
-# missing: a 2021–2022 vintage resolves the zone happily at -03:00/-02:00
-# with no gap anywhere near 23:30. This file therefore loads only where the
-# database carries the 2023a rules (see the loader at the bottom of
-# test_helper.rb); the stale answer itself is pinned positively by
-# test/environments/stale_vintage_test.rb, and DucklingTZFixtureTest covers
-# the same edge on Fixture/LateGap, which no vintage can move.
+# America/Nuuk springs forward at 23:00 local while at UTC-2, so the
+# transition instant falls past the next UTC midnight. Loads only where the
+# database carries the 2023a rules; a stale vintage resolves the zone and
+# answers with the old rules, pinned by test/environments/stale_vintage_test.rb.
+# See docs/tz-database-axis.md.
 class Greenland2023RulesTest < Minitest::Test
   def test_reference_zone_resolves_gap_late_in_local_day
     reference_time = Time.new(2026, 3, 28, 12, 0, 0, "-02:00")

@@ -87,65 +87,9 @@ If you notice this file describing a not-yet-built piece as current, or vice ver
 
 ## The tz-database axis
 
-`tzinfo` resolves a zone against the `tzinfo-data` gem when it is installed and against the host's zoneinfo files otherwise (`DataSource.create_default_data_source`). This gem depends on `tzinfo` but **not** on `tzinfo-data`, so both are ordinary production configurations — and they do not answer the same questions the same way. Two independent drift axes:
+This gem depends on `tzinfo` but deliberately not on `tzinfo-data`. Which tz database answers `reference_zone:` is therefore a property of the consumer's environment, and the databases disagree: modelling (negative DST), backward-compat links, and vintage. A suite run cannot observe which database it ran against, so the coverage rests on four mechanisms: environments (`DUCKLING_TZINFO_DATA`, `DUCKLING_ZONEINFO_DIR`, `BUNDLE_LOCKFILE`), behavioral probes, capability-gated tests (`test/capabilities/`), and environment contracts (`test/environments/`).
 
-- **Modelling.** Ubuntu and macOS compile tzdata in *rearguard* format, which strips negative DST: `Europe/Dublin` is a negative-DST zone under `tzinfo-data` and an ordinary positive-DST zone under their host zoneinfo. Debian switched to vanguard with trixie, and Alpine/FreeBSD ship vanguard data — so "host zoneinfo" settles neither this axis nor the next. Those distributions also moved the backward-compat links into a separate `tzdata-legacy` package that is not installed by default, so `US/Eastern` raises and the identifier count drops from ~600 to ~500.
-- **Vintage.** A pinned `tzinfo-data` or an unpatched host can predate a rule change. Greenland's 2023a change is the one the suite touches: a 2021–2022 vintage resolves `America/Nuuk` happily and answers with the old rules, and anything below 2020a doesn't have the name at all.
-
-A suite run against one database cannot observe either axis — it passes identically against both. Four mechanisms keep it honest:
-
-1. **Environments.** `DUCKLING_TZINFO_DATA` (Gemfile) and `DUCKLING_ZONEINFO_DIR` (`test_helper.rb`) select the database; `BUNDLE_LOCKFILE` keeps an environment's bundle resolution out of the committed `Gemfile.lock` (without it an environment leaves a dirty tree, which `release:guard_clean` then rejects from `rake release` and `rake benchmark:record_pr` with an unrelated-looking error). Seven environments run in CI, split by who is on them:
-
-   `baseline` runs the three that gate a merge, since it carries the only required check — current `tzinfo-data`; the host's zoneinfo; and the host's zoneinfo with the backward-compat links stripped (`bin/build-linkless-zoneinfo`). That third one has to be **built**: no runner is in that state (`ubuntu-latest` resolves `US/Eastern` from its own tzdata, and so does macOS), so without it the configuration the CHANGELOG and README describe has no coverage anywhere, and the assertions on the error message's remedy text never execute.
-
-   `timezones` runs the two stale databases, where red means "this vintage answers differently", not "the gem is broken". They don't gate a *merge*, but they do gate a *release*, deliberately: `release.yml`'s `needs: ci` waits on the whole called workflow, not on the required check, and a vintage that answers differently is worth holding a publish for even when it shouldn't hold a merge.
-
-   `tz-containers` runs the two environments no runner image provides, in containers: Debian + `tzdata-legacy` (system zoneinfo *with* the links — the deterministic counterpart to whatever ubuntu-latest happens to ship) and Alpine (vanguard modelling, and the suite's only musl source-build coverage — no precompiled gem targets musl, so it covers the source build an Alpine consumer reaches after forcing `--platform ruby`; the *default* install takes the glibc gem and fails at require, per "musl consumers get the glibc build" below).
-
-   An environment is a *checked state*, not just a matrix slot — see "Environment contracts" below.
-
-   **One configuration deliberately has no environment: a host with no tz database at all** (scratch, distroless), which `Duckling::TZDataUnavailable` and the README's "Time zone data" section are about. Every probe answers `false` there rather than raising, so the suite *loads* and runs — that is asserted by the `DataSourceNotFound` arm in `TZCapabilities`, not by a CI job — but no matrix entry pins it, because a runner with its tz data removed would break far more than this gem. `test/gem/installed_gem_test.rb` skips its `reference_zone:` case there for the same reason.
-2. **Probes.** `Duckling::TZInfoCapabilities` answers "can this database do X" behaviorally; the suite-only axes live in `test/support/tz_capabilities.rb` (split by consumer — see "Public and internal APIs").
-3. **Capability-gated paths.** A test whose premise is one of those capabilities lives in `test/capabilities/<capability>_test.rb`, and `test_helper.rb` loads it only where the probe passes — selection, not reconciliation: on a database that cannot answer it, the test is not in the run at all, rather than failing for want of the capability or passing vacuously. The filename is the declaration; an unknown capability name raises at load. Two disciplines keep the gate honest. A probe that rotted false-*absent* would unload its file silently everywhere — so the default environment's contract asserts all three probes answer true against current tzinfo-data, which guarantees them. And **a test whose weak mode is a vacuous pass must assert its own premise** (the Dublin test does), so a false-*present* probe — or IANA data that stopped discriminating — fails loudly instead of testing nothing.
-4. **Environment contracts.** A synthesized environment proves it is in the state it exists for via `test/environments/<name>_test.rb`, invoked directly by the CI step that creates the state (plain `ruby -Ilib -Itest`, the way `test/gem/` runs) — never loaded by the suite. Each asserts the state positively: linkless (`US/Eastern` raises, naming both remedies), stale vintage (`America/Nuuk` answers with the pre-2023a rules — the wrong answer, on purpose, because a stale database's dangerous failure is a wrong answer rather than a missing zone), system-zoneinfo-links and alpine-vanguard (the defining probe answers true), and the default environment (the datasource is the gem, and all three probes answer true). Without a contract, a broken setup — a strip that stops stripping, a pin that stops pinning, an image that drops a package — presents as a smaller green suite, because capability-gated files simply load less.
-
-Where an environment genuinely loses coverage, the behavior is restored by a `zic`-compiled **fixture zone** (`test/fixtures/tz/`, `test/duckling_tz_fixture_test.rb`) rather than left uncovered: compiled at test time from committed source, identical on every host and every vintage, and reached through `Duckling.parse` so the coverage stays outside-in. Ruby doubles can't do this job — `timezone_for` builds the zone internally from `TZInfo::Timezone.get`, so nothing injectable reaches it. Backward-compat identifiers are the one loss with no substitute: the gem diagnoses that failure (`unknown_identifier_diagnosis`) rather than restoring it, deliberately — no shim, no bundled links table.
-
-Known limitations that fail on *every* host (upstream grammar/ranking gaps, nothing to do with tz data) use `expect_failure` (`test_helper.rb`) instead of a bare `skip`: the assertions run for real, a failure reports as a skip naming the reason, and a pass flunks — so the wrapper is self-cleaning the moment upstream fixes the behavior. Do not use it for anything environment-dependent: it cannot tell an absent capability from a genuine regression, and would convert either into the same skip.
-
-**Running an environment locally:**
-
-Always pass `BUNDLE_LOCKFILE` to both the `bundle install` and the run — an environment resolves a different bundle than the committed lockfile, and these files are gitignored (`/Gemfile.*.lock`) precisely so an environment can't overwrite it. The suite adapts itself to whatever database it gets (the capability gate), so there is no environment name to set — run the matching contract afterward to prove you got the state you meant to.
-
-```bash
-# no tzinfo-data: the host's zoneinfo files
-export DUCKLING_TZINFO_DATA=none BUNDLE_LOCKFILE=Gemfile.system-zoneinfo.lock
-bundle install && bundle exec rake test
-
-# the same, with the backward-compat links stripped (US/Eastern stops resolving)
-bin/build-linkless-zoneinfo /tmp/linkless-zoneinfo
-DUCKLING_ZONEINFO_DIR=/tmp/linkless-zoneinfo bundle exec rake test
-DUCKLING_ZONEINFO_DIR=/tmp/linkless-zoneinfo \
-  bundle exec ruby -Ilib -Itest test/environments/linkless_zoneinfo_test.rb
-
-# a pinned stale vintage
-export DUCKLING_TZINFO_DATA=1.2022.7 BUNDLE_LOCKFILE=Gemfile.tzinfo-data-1.2022.7.lock
-bundle install && bundle exec rake test
-bundle exec ruby -Ilib -Itest test/environments/stale_vintage_test.rb
-
-# both axes at once
-bin/build-stale-zoneinfo /tmp/stale-zoneinfo
-export DUCKLING_TZINFO_DATA=none BUNDLE_LOCKFILE=Gemfile.stale-system-zoneinfo.lock
-bundle install && DUCKLING_ZONEINFO_DIR=/tmp/stale-zoneinfo bundle exec rake test
-DUCKLING_ZONEINFO_DIR=/tmp/stale-zoneinfo \
-  bundle exec ruby -Ilib -Itest test/environments/stale_vintage_test.rb
-```
-
-`DUCKLING_ZONEINFO_DIR` alone (pointing at `/usr/share/zoneinfo`, with `tzinfo-data` still bundled) reaches the same *datasource* as the system leg without re-resolving anything, which is the quick way to reproduce a system-zoneinfo failure. It is not the same configuration, though — the gem is still installed, so it does not exercise tzinfo's own fallback.
-
-**`zic` needs no provisioning anywhere this repo runs, except Alpine.** The compiler and the data come from different packages, and only the data is optional: on Debian/Ubuntu `zic` belongs to `libc-bin` (Priority: required, pulled in by libc6), *not* to `tzdata` — so even a slim image with no `/usr/share/zoneinfo` has it. macOS ships `/usr/sbin/zic` as a stock utility, so the `Brewfile` needs no entry. Alpine is the exception: `zic` there lives in `tzdata-utils`, which the `tz-containers` job installs alongside `tzdata`. It lives in `sbin`, which is off a non-root `PATH`, so `TZFixtures` and `bin/build-stale-zoneinfo` look there explicitly. Its absence is a hard error, not a skip — see `test/support/tz_fixtures.rb` for why.
-
-`bin/build-stale-zoneinfo` is the one piece that does need `tzdata` itself, since it copies `/usr/share/zoneinfo`; it only ever runs in the stale-system-zoneinfo CI environment, and fails with a clear message if the directory is missing.
+**See [docs/tz-database-axis.md](docs/tz-database-axis.md) for the full reference**: the drift axes, the seven CI environments and their gating, the probe rules, the error-message rules, the fixture zones, the build scripts, `expect_failure`, and how to run an environment locally. When you change any of those, update that doc in the same PR.
 
 ## Test guide
 
@@ -230,6 +174,13 @@ Two exceptions *are* part of the gem's own test tooling, both building a zoneinf
 - `bin/claude-code-web-setup` — PreToolUse hook for remote/web Claude Code sessions. Before each `Edit`/`Write`, just-in-time installs gems (`bundle install`) and compiles the native extension (`bundle exec rake compile`) — each step cached via receipt files in `tmp/claude-web-receipts/` so it's a no-op after the first call per session. Does not provision `hk`: `bin/lint` (see above) calls the underlying lint tools directly, so remote sessions never need `hk` installed — it's local-dev-only (see `hk.pkl`/`Brewfile` above). The gems/extension installers live in `bin/claude-web-deps.sh` (sourced, not directly executable); `bin/test` shares its `install_gems` installer (called unconditionally, any-args or no-args) since Bash tool calls don't trigger this Edit/Write-gated hook — `bin/test` no longer needs `compile_extension` itself, since `bundle exec rake test`'s compile prerequisite handles that.
 
 ## Code comment conventions
+
+Inline comments are kept to the bare minimum. Anything longer than a line or
+two belongs in a central doc under `docs/` (for example
+[docs/tz-database-axis.md](docs/tz-database-axis.md)), with at most a
+one-line pointer left inline. All code comments and documentation are written
+in ASD-STE100 Simplified Technical English: short sentences, active voice,
+one idea per sentence, approved vocabulary, no idioms.
 
 Comments (in Ruby, Rust, and this file) are long-lived documentation, not a
 transcript of the PR or session that wrote them. Prefer explaining the

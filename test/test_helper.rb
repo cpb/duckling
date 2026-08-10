@@ -2,14 +2,8 @@
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 
-# The tz database under test is a CI axis, not a property of the host: this
-# gem does not depend on tzinfo-data, so reference_zone: resolves against
-# whichever database tzinfo found, and the two disagree. DUCKLING_TZINFO_DATA
-# (see the Gemfile) chooses whether the gem is in the bundle at all;
-# DUCKLING_ZONEINFO_DIR points at a specific compiled zoneinfo directory,
-# which is how the stale-system leg reaches a state no released tzdata
-# tarball is in. Set before duckling is required so nothing resolves a zone
-# against the default source first.
+# Selects the tz database under test (see docs/tz-database-axis.md). Set
+# before duckling is required so nothing resolves against the default first.
 if (zoneinfo_dir = ENV["DUCKLING_ZONEINFO_DIR"])
   require "tzinfo"
   TZInfo::DataSource.set(:zoneinfo, zoneinfo_dir)
@@ -22,12 +16,9 @@ require "minitest/autorun"
 require_relative "support/tz_capabilities"
 require_relative "support/tz_fixtures"
 
-# One line naming the tz database this run actually got, and what it turned
-# out to be able to do. Two Ubuntu 24.04 images disagree about the
-# backward-compat links, so a CI environment's name does not by itself tell
-# you which capabilities were present — without this line, reconciling a
-# capability test that didn't run against a CI log means guessing at the
-# runner's tzdata packaging.
+# Banner: which database this run got and what it could do. An environment's
+# name alone does not say; this is what reconciles a missing capability test
+# with a CI log.
 begin
   probes = TZCapabilities::CAPABILITIES.keys.map { |name| "#{name}=#{TZCapabilities.supports?(name)}" }
   warn "tz datasource: #{TZCapabilities.datasource_description}; #{probes.join(" ")}"
@@ -35,32 +26,12 @@ rescue TZInfo::DataSourceNotFound => error
   warn "tz datasource: none (#{error.message.lines.first.to_s.strip})"
 end
 
-# Strict expected-failure for known limitations that fail on every host
-# (upstream grammar/ranking gaps — see test/duckling_comma_list_test.rb and
-# test/duckling_parse_time_weekdays_test.rb). Runs the block — the assertions
-# are the real ones, not a weakened variant — and converts a failure into a
-# skip naming `reason`. A *pass* fails the test: a limitation that stops
-# reproducing (an upstream fix, a ranking change) turns the suite red here
-# rather than letting the wrapper rot into a permanent skip, and the red is
-# the signal to drop the wrapper and keep the assertions.
-#
-# Only Minitest::Assertion is rescued, deliberately. Adding StandardError
-# would launder any crash *before* the assertions — a NoMethodError from a
-# :value shape drift, a Duckling::ShapeError, an ArgumentError from a keyword
-# change — into "known upstream limitation", which is exactly the confusion
-# the paragraph below rules out for the tz axis. The same logic disqualifies
-# it here: a genuine regression must surface as a crash, not as a documented
-# gap. Minitest::Assertion inherits from Exception rather than StandardError,
-# so naming it is what makes the intended arm work at all.
-#
-# Minitest::Skip subclasses Minitest::Assertion, so a `skip` inside the block
-# would otherwise be swallowed and re-emitted under `reason`, replacing the
-# real explanation. Re-raised first.
-#
-# Deliberately *not* used for the tz-database axis: an environment-dependent
-# test wrapped this way would convert a genuine regression into a skip just
-# as happily as an absent capability, and nothing would notice. Those live in
-# test/capabilities/ instead — see the loader at the bottom of this file.
+# Strict expected-failure for known limitations that fail on every host.
+# A failure reports as a skip naming `reason`; a pass flunks (drop the
+# wrapper, keep the assertions). Only Minitest::Assertion is rescued — it
+# inherits from Exception, and a wider rescue would launder a crash into
+# "known limitation". Not for environment-dependent tests: those live in
+# test/capabilities/. See docs/tz-database-axis.md.
 def expect_failure(reason)
   yield
 rescue Minitest::Skip
@@ -123,34 +94,13 @@ def interval_points(entity)
   [time_point(interval[:from]), time_point(interval[:to])]
 end
 
-# Capability-gated tests live in test/capabilities/<capability>_test.rb and
-# load only where the tz database in use can actually answer them: a test
-# whose premise this database cannot meet never enters the run, instead of
-# failing for want of the capability or — worse — passing vacuously. See
-# "The tz-database axis" in AGENTS.md.
-#
-# The filename IS the declaration: supports? raises on a name that isn't in
-# CAPABILITIES, so a typo'd file fails the run at load rather than silently
-# never loading. The counterpart for synthesized states is
-# test/environments/ — contract files invoked directly by the CI step that
-# creates the state, never loaded here.
-#
-# This runs last so every helper above is already defined for the files it
-# loads. A file invoked directly (`ruby -Itest
-# test/capabilities/negative_dst_test.rb`) is skipped here to avoid a double
-# load — it then runs regardless of the probe, which is the point of running
-# one by hand.
-# $VERBOSE is silenced around the requires: each capability file starts with
-# its own `require "test_helper"` (so it can also be run directly), which is
-# a circular require from here — harmless, but the suite runs with -w, and
-# Ruby warns about it.
-#
-# A test/environments/ contract requires this helper too, and must NOT drag
-# the capability suite in behind it: those steps ask one narrow question about
-# an environment's setup, and a failing capability test there would redden a
-# step named for the environment with a message about Dublin or Nuuk. The
-# "never loaded by the suite" direction was accounted for; this is the
-# reverse coupling.
+# Loads test/capabilities/<capability>_test.rb only where the probe passes
+# (see docs/tz-database-axis.md). The filename is the declaration; supports?
+# raises on an unknown name. Skipped for a file run directly (it then runs
+# regardless of the probe) and for a test/environments/ contract (which must
+# not drag the capability suite in behind it). $VERBOSE is silenced around
+# the requires: each capability file re-requires this helper, a circular
+# require the suite's -w would warn about.
 running_environment_contract =
   File.expand_path($PROGRAM_NAME).start_with?(File.expand_path("environments", __dir__) + File::SEPARATOR)
 

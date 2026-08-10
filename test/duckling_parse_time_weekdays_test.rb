@@ -180,14 +180,12 @@ class DucklingParseTimeWeekdaysTest < Minitest::Test
   # duckling-0.4.0's src/dimensions/time/en.rs) are documented to behave, and
   # the way they verifiably do for every other weekday in this file.
   #
-  # Each case is documented as a pair of tests, mirroring the pattern in
-  # test/duckling_comma_list_test.rb:
+  # Each case is a pair of tests, mirroring test/duckling_comma_list_test.rb:
   #   - `test_current_actual_*` — passing, pins today's real (buggy) output.
-  #   - `test_*` (expect_failure) — asserts the semantically correct output
-  #     (one week past bare "monday"). It runs for real: skipping while the
-  #     gap stands, flunking the moment the correct output appears — which,
-  #     together with `test_current_actual_*` failing, confirms a fix landed
-  #     and the wrapper can be dropped.
+  #   - `test_*` (expect_failure) — asserts the correct output (one week past
+  #     bare "monday"). It skips while the gap stands and flunks the moment a
+  #     fix lands; that and the `test_current_actual_*` failure are the cue
+  #     to drop the wrapper.
 
   def test_current_actual_next_monday_does_not_skip_past_bare_monday
     entity = time_entity("next monday")

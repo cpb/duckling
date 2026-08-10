@@ -76,13 +76,10 @@ class DucklingCommaListTest < Minitest::Test
   # is documented by a *pair* of tests:
   #
   #   - `test_current_actual_*` — passing, pins today's real (wrong) output.
-  #     If wafer-inc-duckling's grammar or ranking ever changes, this test
-  #     starts failing, which is one half of the signal to revisit the pair.
-  #   - `test_*` (expect_failure) — asserts the *correct* extraction (four
-  #     distinct dates) we actually want. It runs for real: while the
-  #     limitation stands it reports as a skip, and the moment the correct
-  #     output appears it flunks — the other half of the signal, and the
-  #     cue to drop the wrapper and keep the assertions.
+  #   - `test_*` (expect_failure) — asserts the correct extraction. It skips
+  #     while the limitation stands and flunks the moment upstream fixes it;
+  #     that and the `test_current_actual_*` failure are the cue to drop the
+  #     wrapper and keep the assertions.
 
   def test_current_actual_extraction_for_bare_comma_separated_dates
     # The trailing "and may 5" isn't part of the comma chain, so it survives

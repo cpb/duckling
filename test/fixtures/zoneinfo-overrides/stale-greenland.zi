@@ -1,28 +1,8 @@
-# America/Nuuk as tzdata modelled Greenland before the 2023a rule change:
-# -03:00 standard, -02:00 in summer, transitioning on the EU schedule at
-# 01:00 UTC. Under these rules 2026-03-28 23:30 local is an ordinary wall
-# clock the zone observes at -03:00 — there is no gap there at all.
-#
-# bin/build-stale-zoneinfo compiles this over a copy of the host's zoneinfo
-# directory to produce the one configuration a real host can reach but CI
-# otherwise cannot construct: system-shaped data that is *also* stale on a
-# rule the suite asserts. The copy inherits the host's modelling and links
-# state, which varies by image, and the capability-gated tests in
-# test/capabilities/ absorb that difference. Either way this is the
-# combination where a stale database answers confidently and wrongly rather
-# than raising, which is the harder of the two failure modes to attribute.
-#
-# This deliberately shadows a real identifier, unlike test/fixtures/tz/*.zi,
-# whose `Fixture/`-prefixed zones exist precisely so they cannot be mistaken
-# for real ones. Shadowing is the point here: the environment has to be a
-# plausible stale host, not a synthetic zone nothing asserts against.
-#
-# Note the scope within Nuuk: the Zone line below replaces the zone's *entire*
-# history with these rules, not just the post-2023a ones. Harmless for what
-# stale_vintage_test.rb asserts, which only looks at 2026. Across the tree the
-# replacement is narrow, though — every other zone in the copied directory
-# (America/New_York's 2007 rules, Australia/Lord_Howe's 30-minute gap,
-# Europe/Dublin's modelling) stays exactly as the host has it.
+# America/Nuuk with the pre-2023a rules: -03:00 standard, -02:00 in summer.
+# Under these rules 2026-03-28 23:30 local is an ordinary wall clock — no gap.
+# bin/build-stale-zoneinfo compiles this over a copy of the host's zoneinfo.
+# The Zone line replaces the zone's entire history; harmless, since the
+# contract only looks at 2026. See docs/tz-database-axis.md.
 Rule	StaleGl	1981	max	-	Mar	lastSun	1:00u	1:00	-02
 Rule	StaleGl	1996	max	-	Oct	lastSun	1:00u	0	-03
 Zone	America/Nuuk	-3:00	StaleGl	%s

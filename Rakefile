@@ -216,14 +216,10 @@ end
 # The default suite exercises the extension compiled in this checkout.
 # Three test subtrees run outside it:
 # - test/gem/ exercises a *built* or *installed* gem instead — it needs one
-#   handed to it, and the installed suite must not see this checkout's lib/
-#   at all — so both run on their own, as plain `ruby test/gem/<file>`.
-# - test/capabilities/ is loaded by test_helper itself, gated on the tz
-#   probes (see the bottom of test/test_helper.rb), so the files must not
-#   also be required unconditionally here.
-# - test/environments/ holds per-environment contracts, each invoked
-#   directly by the CI step that creates the environment it pins.
-# See each file's header, and "The tz-database axis" in AGENTS.md.
+#   handed to it, and the installed suite must not see this checkout's lib/.
+# - test/capabilities/ is loaded by test_helper itself, gated on the tz probes.
+# - test/environments/ holds contracts invoked directly by their CI step.
+# See docs/tz-database-axis.md.
 Minitest::TestTask.create do |t|
   t.test_globs = FileList["test/**/*_test.rb"].exclude("test/gem/**/*", "test/capabilities/**/*", "test/environments/**/*")
 end

@@ -211,23 +211,11 @@ class DucklingTest < Minitest::Test
   end
 
   # The backward-compat identifier case (US/Eastern) lives in
-  # test/capabilities/backward_compat_links_test.rb — it can only pass where
-  # the database carries the links, so it loads only there.
+  # test/capabilities/backward_compat_links_test.rb.
 
-  # An unknown identifier is more often a difference between tz databases than
-  # a typo, and the caller has no way to see which database answered. So the
-  # error names it and says how many identifiers it has — the number that most
-  # legibly separates tzinfo-data's ~600 from a stock host's ~500. Runs on
-  # every leg: the message has to be right about whichever database is
-  # present, not just about the impoverished one.
-  #
-  # The expectations are built from tzinfo, not from
-  # unknown_identifier_diagnosis. Asserting the message contains
-  # `datasource_description` would only prove that string interpolation works
-  # — it passes for any return value, including a degenerate one, which is
-  # precisely the vacuous-pass failure mode this suite is otherwise built to
-  # eliminate. No capability gate can catch that here, because nothing ever
-  # fails — so this test runs on every environment, ungated.
+  # Runs on every environment, ungated: the message must be right about
+  # whichever database is present. Expectations are built from tzinfo, not
+  # from unknown_identifier_diagnosis, so the test cannot pass vacuously.
   def test_reference_zone_error_names_the_tz_datasource
     error = assert_raises(ArgumentError) do
       Duckling.parse("in 3 hours", locale: "en", dims: ["time"], reference_zone: "Not/A/Real/Zone")
@@ -242,17 +230,13 @@ class DucklingTest < Minitest::Test
     elsif defined?(TZInfo::DataSources::RubyDataSource) && source.is_a?(TZInfo::DataSources::RubyDataSource)
       assert_includes error.message, "tzinfo-data",
         "expected the error to name the gem datasource, got: #{error.message.inspect}"
-      # Guarded exactly as production guards it. Dereferencing it unguarded
-      # here would raise NameError instead of failing on the message, and
-      # would also assert that production's own `defined?` check is dead.
+      # Guarded as production guards it; unguarded it raises NameError.
       if defined?(TZInfo::Data::Version::TZDATA)
         assert_includes error.message, TZInfo::Data::Version::TZDATA,
           "expected the error to name the bundled tzdata release, got: #{error.message.inspect}"
       end
     else
-      # The arm production wrote defensively, and the one a two-way split
-      # asserted backwards: a custom datasource must be named by its class,
-      # not described as tzinfo-data.
+      # A custom datasource is named by its class, never described as tzinfo-data.
       assert_includes error.message, source.class.to_s,
         "expected an unrecognized datasource to be named by its class, got: #{error.message.inspect}"
     end
@@ -262,11 +246,8 @@ class DucklingTest < Minitest::Test
       "got: #{error.message.inspect}")
   end
 
-  # The backward-compat remedy is offered on the strength of the *database*
-  # having no links, and is worded as a condition rather than a claim about
-  # the identifier — see unknown_identifier_diagnosis in
-  # lib/duckling/tzinfo_capabilities.rb for why. So a typo and a real legacy
-  # name get the same sentence, and it has to read correctly for both.
+  # The remedy fires on the database having no links, so a typo and a real
+  # legacy name get the same conditional wording. See docs/tz-database-axis.md.
   def test_reference_zone_error_offers_the_backward_compat_remedy_only_where_relevant
     error = assert_raises(ArgumentError) do
       Duckling.parse("in 3 hours", locale: "en", dims: ["time"], reference_zone: "Not/A/Real/Zone")
@@ -282,20 +263,14 @@ class DucklingTest < Minitest::Test
       assert_includes error.message, "tzdata-legacy",
         "expected the system-package remedy for the missing backward-compat links, " \
         "got: #{error.message.inspect}"
-      # Pins the hedge positively rather than forbidding one phrasing of its
-      # opposite. A `refute_match` on a specific claim-shaped sentence only
-      # rules out the wording nobody would arrive at by accident — "this
-      # identifier is a backward-compat name", "US/Eastern and names like it",
-      # and "that is a legacy name" would all have passed it. Requiring the
-      # conditional clause to be present fails on every one of them.
+      # Pins the hedge positively: a refute on one claim-shaped phrasing
+      # would miss the others.
       assert_includes error.message, "if that is what this is",
         "expected the remedy phrased as a condition the reader evaluates ('...so if that is " \
         "what this is, it needs...'), not as a claim that this identifier is a backward-compat " \
         "name — it may just be a typo, as here. Got: #{error.message.inspect}"
 
-      # The identifier must not appear inside the remedy clause itself, which
-      # is the structural form of the same mistake: naming it there turns the
-      # condition back into a claim about it.
+      # Naming the identifier in the remedy clause turns the condition into a claim.
       remedy = error.message[/;.*/]
       refute_includes remedy.to_s, "Not/A/Real/Zone",
         "expected the remedy clause not to name the identifier the caller passed, " \
@@ -303,21 +278,10 @@ class DucklingTest < Minitest::Test
     end
   end
 
-  # A host with neither zoneinfo files nor the tzinfo-data gem — a scratch or
-  # distroless container — is a supported configuration, and tzinfo raises
-  # before any identifier lookup happens. Left unhandled that surfaces a raw
-  # tzinfo error mentioning neither reference_zone: nor this gem.
-  #
-  # Stubbed rather than reproduced: removing the datasource for real means
-  # having no zoneinfo directory on the machine running the suite.
-  #
-  # The limit of the stub: this pins that timezone_for converts the error, not
-  # that tzinfo raises it *there* — TZInfo::Timezone.get raising
-  # DataSourceNotFound on a datasource-less host is assumed, not asserted. If
-  # a tzinfo upgrade moved the raise (to require time, or to a different call
-  # in the path) this test stays green while a real distroless container gets
-  # the raw tzinfo error again. Falsifying that needs a subprocess with no
-  # zoneinfo directory reachable at all.
+  # A host with no tz database (scratch, distroless) is a supported
+  # configuration. Stubbed: reproducing it needs a machine with no zoneinfo
+  # directory. This pins that timezone_for converts the error; where tzinfo
+  # raises it is assumed, not asserted.
   def test_reference_zone_without_any_tz_database_raises_a_diagnosable_error
     error = without_any_tz_datasource do
       assert_raises(Duckling::TZDataUnavailable) do
@@ -333,15 +297,9 @@ class DucklingTest < Minitest::Test
       "expected the system-package remedy, got: #{error.message.inspect}"
   end
 
-  # Reproduces what tzinfo does on a host with no tz data: DataSource.get
-  # raises when it can neither require tzinfo/data nor find zoneinfo files,
-  # and TZInfo::Timezone.get surfaces that before looking at the identifier.
-  #
-  # Hand-rolled rather than minitest/mock, which minitest 6 no longer ships —
-  # and this is the only mock in the suite, so it isn't worth a dependency.
-  # $VERBOSE is silenced only around the redefinitions themselves: the suite
-  # runs with -w, and swapping a singleton method back and forth otherwise
-  # prints two "method redefined" warnings that mean nothing here.
+  # Reproduces tzinfo's no-data raise. Hand-rolled: minitest 6 ships no mock,
+  # and this is the suite's only one. $VERBOSE is silenced around the
+  # redefinitions because the suite runs with -w.
   def without_any_tz_datasource
     original = TZInfo::Timezone.method(:get)
     swap = lambda do |implementation|
@@ -551,16 +509,9 @@ class DucklingTest < Minitest::Test
       "expected the resolved Time to carry the offset Lord Howe observes at its own instant"
   end
 
-  # The late-in-the-local-day gap case (America/Nuuk) lives in
-  # test/capabilities/greenland_2023_rules_test.rb — a stale database answers
-  # it with the pre-2023a rules rather than raising, so it loads only where
-  # the 2023a rules are present. The stale answer itself is pinned by
-  # test/environments/stale_vintage_test.rb.
-
-  # The negative-DST overlap case (Europe/Dublin) lives in
-  # test/capabilities/negative_dst_test.rb — under rearguard data its
-  # assertions pass without distinguishing anything, so it loads only where
-  # the modelling survives.
+  # The late-in-the-local-day gap case (America/Nuuk) and the negative-DST
+  # overlap case (Europe/Dublin) live in test/capabilities/ — both load only
+  # where the database can answer them. See docs/tz-database-axis.md.
 
   # Fall-back side: an ambiguous recurrence entry resolves to its
   # first (pre-transition) occurrence rather than raising. "every sunday at

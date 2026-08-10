@@ -14,27 +14,16 @@ gem "minitest"
 gem "standard"
 
 # tzinfo-data is deliberately not a runtime dependency (see duckling.gemspec),
-# so which tz database resolves a zone is a property of the consumer's
-# environment — and the two databases disagree, both about modelling
-# (negative DST, backward-compat links) and about vintage. That makes "which
-# database" a test axis rather than a constant, so the bundle's tz data is
-# env-driven and CI runs one environment per configuration (see "The
-# tz-database axis" in AGENTS.md):
+# so the bundle's tz data is env-driven and CI runs one environment per
+# configuration (see docs/tz-database-axis.md):
 #
-#   unset      current tzinfo-data — the default environment, and what a
-#              consumer who opts into the gem gets
-#   "none"     omitted, so tzinfo falls back to the host's zoneinfo files —
-#              what a consumer who does nothing now gets
-#   "1.2022.7" that exact vintage, reproducing a stale-but-present database
+#   unset      current tzinfo-data (the default environment)
+#   "none"     omitted; tzinfo falls back to the host's zoneinfo files
+#   "1.2022.7" that exact vintage
 #
 # Set BUNDLE_LOCKFILE alongside this for anything but the default, or the
-# environment's resolution overwrites the committed Gemfile.lock and leaves a
-# dirty tree — which then blocks `rake release` and `rake benchmark:record_pr`,
-# both guarded by release:guard_clean, with an error that looks unrelated.
-#
-# An unrecognized value is rejected here rather than passed through as a
-# version requirement, which would fail deep in the resolver with a message
-# about an unsatisfiable constraint instead of at the typo.
+# resolve overwrites the committed Gemfile.lock. An unrecognized value raises
+# here rather than deep in the resolver.
 case (tzinfo_data = ENV["DUCKLING_TZINFO_DATA"].to_s)
 when ""
   gem "tzinfo-data"

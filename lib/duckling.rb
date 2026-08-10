@@ -43,17 +43,8 @@ module Duckling
   class ShapeError < RuntimeError; end
 
   # Raised when `reference_zone:` is given on a host with no tz database at
-  # all — no zoneinfo files and no tzinfo-data gem, as in a scratch or
-  # distroless container.
-  #
-  # Only reachable because this gem does not depend on tzinfo-data — with the
-  # gem installed, a datasource always exists. It is an environment fault
-  # rather than a bad argument, hence not an ArgumentError — a caller
-  # validating user input by rescuing ArgumentError around reference_zone:
-  # should not silently swallow "this deployment cannot resolve any zone".
-  # Named (not a bare RuntimeError) for the same reason as ShapeError:
-  # greppable, and it can't be satisfied by the unrelated native-panic
-  # RuntimeError.
+  # all (no zoneinfo files, no tzinfo-data gem). Not an ArgumentError: an
+  # environment fault, not a bad argument. See docs/tz-database-axis.md.
   class TZDataUnavailable < RuntimeError; end
 
   # Native.parse already releases the GVL around the native call, but a bare
@@ -264,13 +255,6 @@ module Duckling
   end
   private_class_method :gap_delta
 
-  # An unknown identifier usually means the host's tz database is a different
-  # one than the caller had in mind, not that the name is wrong: this gem does
-  # not depend on tzinfo-data, so `reference_zone:` resolves against whatever
-  # tzinfo found, and a stock Debian/Ubuntu host is missing roughly a hundred
-  # backward-compat names ("US/Eastern") that tzinfo-data provides. Say which
-  # database answered and how to change it, rather than leaving the caller to
-  # doubt a name that is in fact valid IANA.
   def self.timezone_for(reference_zone)
     TZInfo::Timezone.get(reference_zone)
   rescue TZInfo::InvalidTimezoneIdentifier
@@ -278,10 +262,8 @@ module Duckling
       "invalid reference_zone: #{reference_zone.inspect} " \
       "(#{TZInfoCapabilities.unknown_identifier_diagnosis})"
   rescue TZInfo::DataSourceNotFound => error
-    # tzinfo raises this before any identifier lookup happens, so the zone
-    # name is beside the point — nothing would resolve. Its own message is
-    # about tzinfo, not about this gem, so restate the problem in terms of
-    # the keyword the caller actually passed and name both fixes.
+    # tzinfo raises this before any identifier lookup, so restate it in
+    # terms of the keyword the caller passed, naming both fixes.
     raise TZDataUnavailable,
       "cannot resolve reference_zone: #{reference_zone.inspect} — this host has no tz database. " \
       "Add `gem \"tzinfo-data\"` to bundle the IANA data with your app, or install the system " \

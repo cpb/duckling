@@ -1,5 +1,4 @@
-# TZInfo::DataSources::ZoneinfoDataSource refuses a directory without this
-# file. Nothing in the fixture zones needs a country, so one placeholder code
-# is enough to make the directory recognizable as zoneinfo.
+# ZoneinfoDataSource refuses a directory without this file. One placeholder
+# code is enough.
 #code	name
 ZZ	Fixtureland
