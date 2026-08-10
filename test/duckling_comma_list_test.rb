@@ -77,11 +77,12 @@ class DucklingCommaListTest < Minitest::Test
   #
   #   - `test_current_actual_*` — passing, pins today's real (wrong) output.
   #     If wafer-inc-duckling's grammar or ranking ever changes, this test
-  #     starts failing, which is the signal to revisit the paired skip below.
-  #   - `test_*` (skipped) — asserts the *correct* extraction (four distinct
-  #     dates) we actually want. Skipped so it doesn't break CI. Delete the
-  #     `skip` line once the current-actual test above starts failing, to
-  #     confirm the fix and re-enable the real assertion.
+  #     starts failing, which is one half of the signal to revisit the pair.
+  #   - `test_*` (expect_failure) — asserts the *correct* extraction (four
+  #     distinct dates) we actually want. It runs for real: while the
+  #     limitation stands it reports as a skip, and the moment the correct
+  #     output appears it flunks — the other half of the signal, and the
+  #     cue to drop the wrapper and keep the assertions.
 
   def test_current_actual_extraction_for_bare_comma_separated_dates
     # The trailing "and may 5" isn't part of the comma chain, so it survives
@@ -92,13 +93,13 @@ class DucklingCommaListTest < Minitest::Test
   end
 
   def test_bare_comma_separated_dates_collapse_into_one_entity
-    skip "known upstream limitation: bare comma-to-comma date runs collapse into one Entity (see file comment)"
-
-    text = "birthdays are march 3, march 9, april 12 and may 5"
-    assert_equal(
-      [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
-      extracted_dates(text)
-    )
+    expect_failure "known upstream limitation: bare comma-to-comma date runs collapse into one Entity (see file comment)" do
+      text = "birthdays are march 3, march 9, april 12 and may 5"
+      assert_equal(
+        [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
+        extracted_dates(text)
+      )
+    end
   end
 
   def test_current_actual_extraction_when_only_the_first_date_is_named
@@ -110,13 +111,13 @@ class DucklingCommaListTest < Minitest::Test
   end
 
   def test_naming_only_the_first_date_still_collapses_the_rest
-    skip "known upstream limitation: bare comma-to-comma date runs collapse into one Entity (see file comment)"
-
-    text = "Birthdays: Emma March 3, March 9, April 12, May 5"
-    assert_equal(
-      [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
-      extracted_dates(text)
-    )
+    expect_failure "known upstream limitation: bare comma-to-comma date runs collapse into one Entity (see file comment)" do
+      text = "Birthdays: Emma March 3, March 9, April 12, May 5"
+      assert_equal(
+        [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
+        extracted_dates(text)
+      )
+    end
   end
 
   def test_current_actual_extraction_for_ambiguous_leading_date_format
@@ -129,12 +130,12 @@ class DucklingCommaListTest < Minitest::Test
   end
 
   def test_ambiguous_leading_date_format_is_not_reliably_the_resolved_value
-    skip "known upstream limitation: the composed :value is not reliably the leftmost date (see file comment)"
-
-    text = "Birthdays: Emma 3/3, March 9, April 12, May 5"
-    assert_equal(
-      [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
-      extracted_dates(text)
-    )
+    expect_failure "known upstream limitation: the composed :value is not reliably the leftmost date (see file comment)" do
+      text = "Birthdays: Emma 3/3, March 9, April 12, May 5"
+      assert_equal(
+        [COMMA_LIST_MARCH_3, COMMA_LIST_MARCH_9, COMMA_LIST_APRIL_12, COMMA_LIST_MAY_5],
+        extracted_dates(text)
+      )
+    end
   end
 end

@@ -91,7 +91,20 @@ class InstalledGemTest < Minitest::Test
 
   # reference_zone: crosses back the other way, reading Time objects the native
   # call produced.
+  #
+  # The gem does not depend on tzinfo-data, so this needs a tz database the
+  # *host* provides. Every runner the smoke job uses has one; a scratch or
+  # distroless container does not, and there reference_zone: cannot work at
+  # all until the consumer adds `gem "tzinfo-data"`. Skip rather than fail in
+  # that case — the absence is the environment's, not the gem's, and the rest
+  # of this suite still proves the binary loads and runs.
   def test_parse_with_reference_zone
+    begin
+      TZInfo::DataSource.get
+    rescue TZInfo::DataSourceNotFound
+      skip "no tz database on this host; reference_zone: needs zoneinfo files or the tzinfo-data gem"
+    end
+
     entity = Duckling.parse(
       "tomorrow at 3pm",
       dims: ["time"],

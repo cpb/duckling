@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Builds a zoneinfo directory that is system-shaped *and* stale.
+#
+# This builds the stale-system-zoneinfo environment (see "The tz-database
+# axis" in AGENTS.md): the two drift axes at once, which is the state an
+# unpatched stock Debian/Ubuntu host is actually in. Neither axis alone
+# reaches it — a current host is system-shaped but not stale, and a pinned
+# tzinfo-data is stale but carries the backward-compat links and models
+# negative DST.
+#
+# Built by copying the host's own zoneinfo directory and compiling
+# test/fixtures/zoneinfo-overrides/*.zi over it. The copy keeps the host's
+# modelling (rearguard on Ubuntu/macOS, vanguard on Alpine/FreeBSD—and Debian since trixie)
+# and whatever links state the host has (missing on a stock host, present on
+# a GitHub runner); the capability-gated tests absorb both, loading wherever
+# the capability happens to exist. The overrides roll named zones back to
+# earlier rules. Compiling a whole tzdata release instead would need a
+# download, and rolling back only the zones under assertion says more plainly
+# which staleness is being tested.
+#
+# The environment's contract is test/environments/stale_vintage_test.rb.
+#
+# Usage: bin/build-stale-zoneinfo <output-dir>
+#   ZONEINFO_DIR  source directory to copy (default /usr/share/zoneinfo)
+set -euo pipefail
+
+out="${1:?usage: bin/build-stale-zoneinfo <output-dir>}"
+source_dir="${ZONEINFO_DIR:-/usr/share/zoneinfo}"
+overrides="$(cd "$(dirname "$0")/.." && pwd)/test/fixtures/zoneinfo-overrides"
+
+# zic lives in sbin, which is not on a non-root PATH.
+export PATH="$PATH:/usr/sbin:/sbin"
+
+if [ ! -d "$source_dir" ]; then
+  echo "build-stale-zoneinfo: no zoneinfo directory at $source_dir" >&2
+  exit 1
+fi
+
+rm -rf "$out"
+mkdir -p "$out"
+
+# -L dereferences the symlinks a packaged zoneinfo tree uses for aliases, so
+# an override writes a real file rather than following a link back out into
+# the host's own directory.
+cp -RL "$source_dir/." "$out/"
+
+for zi in "$overrides"/*.zi; do
+  zic -b fat -d "$out" "$zi"
+done
+
+echo "build-stale-zoneinfo: wrote $out from $source_dir with overrides from $overrides"

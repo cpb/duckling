@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Builds a zoneinfo directory with the backward-compatibility links removed:
+# the stock links-less host, where `US/Eastern` and friends stop resolving.
+#
+# It needs building because no runner is in that state. A stock Debian or
+# Ubuntu box splits those names into a `tzdata-legacy` package that is not
+# installed by default, but a GitHub `ubuntu-latest` runner resolves them
+# anyway (its tzdata 2026b carries them, with no tzdata-legacy in the image),
+# and so does a macOS dev machine. Left to the host, this configuration has
+# no coverage anywhere.
+#
+# What gets removed: every top-level entry that is not a region directory or
+# one of the non-legacy extras a stock links-less host keeps. That keep-list
+# is transcribed from a real one (a Debian-family container with tzdata but
+# no tzdata-legacy: 497 identifiers, no `US/`), not guessed.
+#
+# What this deliberately does not reproduce: `tzdata-legacy` also owns ~60
+# in-region aliases (`America/Godthab`, `Europe/Kiev`, `Asia/Calcutta`), which
+# live inside the region directories and are indistinguishable there from
+# aliases a stock host keeps (`Asia/Istanbul`, `Pacific/Samoa`). So this tree
+# exposes more identifiers than a stock host's. That costs nothing the
+# environment needs: what it must guarantee is that `US/Eastern` — the probe
+# target, and the name the CHANGELOG and the error message both use — is
+# genuinely gone.
+#
+# It also does not touch *modelling*: the copy keeps whatever the host has
+# (rearguard on Ubuntu/macOS, vanguard on Alpine/FreeBSD—and Debian since trixie). So only the
+# links absence gets an environment contract
+# (test/environments/linkless_zoneinfo_test.rb) — modelling follows the host,
+# and the capability-gated Dublin test simply loads or doesn't. The
+# postcondition below is what makes the contract's premise trustworthy.
+#
+# Usage: bin/build-linkless-zoneinfo <output-dir>
+#   ZONEINFO_DIR  source directory to copy (default /usr/share/zoneinfo)
+set -euo pipefail
+
+out="${1:?usage: bin/build-linkless-zoneinfo <output-dir>}"
+source_dir="${ZONEINFO_DIR:-/usr/share/zoneinfo}"
+
+if [ ! -d "$source_dir" ]; then
+  echo "build-linkless-zoneinfo: no zoneinfo directory at $source_dir" >&2
+  exit 1
+fi
+
+rm -rf "$out"
+mkdir -p "$out"
+
+# -L dereferences the alias symlinks, so removing a legacy entry can't leave a
+# dangling link and can't follow one back out into the host's own directory.
+cp -RL "$source_dir/." "$out/"
+
+for entry in "$out"/*; do
+  case "$(basename "$entry")" in
+    # IANA region directories — every canonical zone lives under one.
+    Africa | America | Antarctica | Arctic | Asia | Atlantic | Australia | Etc | Europe | Indian | Pacific) ;;
+    # Top-level zones and links a stock links-less host still has. Every name
+    # here was read off that host's own top level, none added defensively —
+    # including Factory and posixrules, which are still present on Ubuntu
+    # 24.04's tzdata 2025b (posixrules as a symlink) despite being retired
+    # upstream. test/environments/linkless_zoneinfo_test.rb asserts the
+    # resulting identifier count, which is what catches this list going stale
+    # in the over-stripping direction the postcondition below cannot see.
+    CET | CST6CDT | EET | EST | EST5EDT | Factory | HST | MET | MST | MST7MDT | PST8PDT | WET | UTC | GMT | localtime | posixrules) ;;
+    # Index and data files tzinfo needs to recognize the directory.
+    *.tab | *.zi | *.list | leapseconds) ;;
+    *) rm -rf "$entry" ;;
+  esac
+done
+
+# The postcondition, checked rather than assumed. If a future image moved
+# US/Eastern somewhere this loop does not reach, the environment would
+# otherwise go green while covering nothing.
+if [ -e "$out/US/Eastern" ]; then
+  echo "build-linkless-zoneinfo: US/Eastern survived the strip in $out" >&2
+  exit 1
+fi
+
+echo "build-linkless-zoneinfo: wrote $out from $source_dir with backward-compat links removed"

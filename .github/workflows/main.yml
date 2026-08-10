@@ -20,6 +20,30 @@ jobs:
   # own job (rather than folded into the informational matrix below) so the
   # `informational` job can `needs:` it and get skipped automatically by
   # GitHub Actions when this fails (see #98).
+  #
+  # Carries the tz environments that must not regress unnoticed, because
+  # being the required check is the only thing that makes an environment
+  # blocking:
+  #
+  # - "tzinfo-data", implicitly — with no DUCKLING_* variables set the Gemfile
+  #   installs current tzinfo-data. What this repo develops against.
+  # - "system-zoneinfo", as a second step — what every consumer who does not
+  #   add `gem "tzinfo-data"` now gets, and so the configuration least
+  #   affordable to break. It runs here rather than in the `timezones` matrix
+  #   below purely so it gates a merge; it needs no Ruby or Rust setup of its
+  #   own, only a re-resolve of the bundle.
+  #
+  #   Note this runner is not a stock Ubuntu as far as tz data goes: it
+  #   resolves the backward-compat links (US/Eastern) even though
+  #   tzdata-legacy is not in its package list, where a plain ubuntu:24.04
+  #   container of an earlier tzdata point release does not. So this
+  #   environment proves the zoneinfo fallback and rearguard modelling; the
+  #   links are a capability the suite probes, not a fact about the runner —
+  #   and the deterministic with-links environment lives in `tz-containers`.
+  #
+  # The remaining environments are diagnostics for databases no consumer is
+  # on by default, and live in `timezones`/`tz-containers` where a red result
+  # informs rather than blocks.
   baseline:
     runs-on: ubuntu-latest
     name: "Ruby 3.3.6"
@@ -48,20 +72,154 @@ jobs:
         run: cargo clippy --manifest-path ext/duckling/Cargo.toml -- -D warnings
       - name: Run the default task
         run: bundle exec rake
+      # The default environment is the one place all three tz capabilities
+      # are guaranteed, so its contract doubles as the tripwire for the
+      # capability-gated loader (see test/environments/tzinfo_data_test.rb).
+      - name: Check the default environment contract
+        run: bundle exec ruby -Ilib -Itest test/environments/tzinfo_data_test.rb
+      # BUNDLE_LOCKFILE keeps this re-resolve out of the committed
+      # Gemfile.lock. The checkout is disposable, but leaving it dirty would
+      # make any later step that inspects the tree misleading, and the same
+      # command is what a contributor runs locally.
+      #
+      # Deployment mode has to be turned back off. `bundler-cache: true`
+      # above writes `deployment: true` into .bundle/config, and deployment
+      # requires a committed lockfile — while this leg's lockfile is
+      # generated here and gitignored by design. Resolving a different bundle
+      # is the entire point of the step, so deployment is the wrong setting
+      # for it specifically.
+      #
+      # It has to be unset in the *local config*, not overridden with
+      # BUNDLE_DEPLOYMENT. Bundler resolves settings local-config-first and
+      # environment-second (`Bundler::Settings#configs`), which is the
+      # opposite of the usual convention: an env var cannot override anything
+      # `bundle config --local` has written.
+      - name: Run the suite against the host's zoneinfo (no tzinfo-data)
+        env:
+          DUCKLING_TZINFO_DATA: none
+          BUNDLE_LOCKFILE: Gemfile.system-zoneinfo.lock
+        run: |
+          bundle config unset --local deployment
+          bundle config unset --local frozen
+          bundle install --jobs 4
+          bundle exec rake test
+      # A host where the backward-compat names stop resolving. It has to be
+      # built, because no runner is in that state — this one resolves
+      # US/Eastern from its own tzdata, and so does macOS. Without this leg
+      # that configuration has no coverage, and the only assertions on the
+      # error message's remedy text never execute.
+      #
+      # Gates a merge for the same reason the step above does. Reuses that
+      # step's bundle (same DUCKLING_TZINFO_DATA, same lockfile), so it costs
+      # a directory copy and a suite run, not a re-resolve. The contract run
+      # is what turns a silently-broken strip red — see the file's header.
+      - name: Run the suite with the backward-compat links removed
+        env:
+          DUCKLING_TZINFO_DATA: none
+          BUNDLE_LOCKFILE: Gemfile.system-zoneinfo.lock
+        run: |
+          bin/build-linkless-zoneinfo "$RUNNER_TEMP/linkless-zoneinfo"
+          DUCKLING_ZONEINFO_DIR="$RUNNER_TEMP/linkless-zoneinfo" bundle exec rake test
+          DUCKLING_ZONEINFO_DIR="$RUNNER_TEMP/linkless-zoneinfo" bundle exec ruby -Ilib -Itest test/environments/linkless_zoneinfo_test.rb
 
-  # Two host environments no GitHub runner image provides, in containers:
+  # The tz-database axis. This gem does not depend on tzinfo-data, so
+  # reference_zone: resolves against whichever database tzinfo found, and the
+  # candidates disagree on both modelling (negative DST, backward-compat
+  # links) and vintage. A suite run against one of them cannot observe which
+  # one it ran against, so each configuration gets its own environment.
   #
-  # - Debian trixie + tzdata-legacy: vanguard tzdata (it models negative DST
-  #   where rearguard-compiled data — Ubuntu, macOS — flattens it away) and,
-  #   deliberately, the backward-compat links Debian split into tzdata-legacy.
-  #   libclang-dev is for rb-sys's bindgen (GitHub's runner images ship
-  #   libclang; this minimal image does not).
-  # - Alpine: vanguard tzdata again, on musl. No precompiled gem targets musl
-  #   (cross_targets.rb), so the source build this job runs is the path an
-  #   Alpine consumer reaches only after forcing it (`gem install --platform
-  #   ruby`, or `bundle config set force_ruby_platform true`). The *default*
-  #   install picks the unversioned -linux gem — Gem::Platform matches it
-  #   against a musl runtime — and fails at require on the missing glibc; see
+  # `baseline` above runs the environments a consumer is actually on —
+  # current tzinfo-data, and the host's zoneinfo — so that they gate a merge.
+  # These two are stale databases: worth knowing about, but a red result here
+  # means "this vintage answers differently", not "the gem is broken for
+  # anyone today". Note they are *not* required checks, so a merge can
+  # proceed over them; they do gate a release, since release.yml's
+  # `needs: ci` waits on this whole workflow rather than on the required
+  # check alone.
+  #
+  # What each environment covers falls out of the suite itself:
+  # capability-gated tests (test/capabilities/) load wherever their probe
+  # passes, and each environment's contract (test/environments/, run as the
+  # last step) proves the run got the database the environment exists for.
+  #
+  # bundler-cache is off deliberately: these environments resolve a different
+  # bundle than the committed lockfile, and the cache is keyed on that
+  # lockfile. BUNDLE_LOCKFILE keeps that resolution out of the committed file.
+  timezones:
+    needs: baseline
+    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # A stale-but-present database. Chosen over an older vintage that
+          # lacks America/Nuuk entirely, because this one resolves the zone
+          # and answers with Greenland's pre-2023a rules — a wrong answer is
+          # harder to attribute than a missing identifier.
+          - name: "tz: tzinfo-data 1.2022.7"
+            environment: tzinfo-data-1.2022.7
+            tzinfo_data: 1.2022.7
+            contract: test/environments/stale_vintage_test.rb
+          # Both axes at once: host zoneinfo with America/Nuuk rolled back to
+          # its pre-2023a rules — rearguard modelling and a stale vintage
+          # together, which neither of the environments above reaches. The
+          # copied tree inherits the runner's links state (it has them), so
+          # this is an unpatched stock host plus US/Eastern; on a links-less
+          # host the same build reproduces one exactly, and the
+          # capability-gated tests absorb the difference.
+          - name: "tz: stale system zoneinfo"
+            environment: stale-system-zoneinfo
+            tzinfo_data: none
+            build_stale_zoneinfo: true
+            contract: test/environments/stale_vintage_test.rb
+
+    env:
+      DUCKLING_TZINFO_DATA: ${{ matrix.tzinfo_data }}
+      BUNDLE_LOCKFILE: Gemfile.${{ matrix.environment }}.lock
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: '3.3.6'
+          bundler-cache: false
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable as of 2026-06-30
+        with:
+          toolchain: '1.94.1'
+      - name: Install dependencies
+        run: bundle install --jobs 4
+      - name: Build the stale zoneinfo directory
+        if: matrix.build_stale_zoneinfo
+        run: |
+          bin/build-stale-zoneinfo "$RUNNER_TEMP/stale-zoneinfo"
+          echo "DUCKLING_ZONEINFO_DIR=$RUNNER_TEMP/stale-zoneinfo" >> "$GITHUB_ENV"
+      - name: Run the test suite
+        run: bundle exec rake test
+      - name: Check the environment contract
+        run: bundle exec ruby -Ilib -Itest ${{ matrix.contract }}
+
+  # The two tz environments no GitHub runner image provides, in containers:
+  #
+  # - Debian + tzdata-legacy: system zoneinfo *with* the backward-compat
+  #   links. ubuntu-latest's own tzdata happens to carry them today (the
+  #   baseline system-zoneinfo step covers that state only as long as the
+  #   image does); here the state is deliberate — Debian split the links into
+  #   tzdata-legacy, and this environment installs it. libclang-dev is for
+  #   rb-sys's bindgen (GitHub's runner images ship libclang; this minimal
+  #   image does not).
+  # - Alpine: vanguard tzdata, which models negative DST where rearguard-
+  #   compiled data (Ubuntu, macOS) flattens it away. Doubles as the suite's
+  #   only musl coverage — no precompiled gem targets musl (cross_targets.rb),
+  #   so the source build this job runs is the path an Alpine consumer
+  #   reaches only after forcing it (`gem install --platform ruby`, or
+  #   `bundle config set force_ruby_platform true`). The *default* install
+  #   picks the unversioned -linux gem — Gem::Platform matches it against a
+  #   musl runtime — and fails at require on the missing glibc; see
   #   AGENTS.md's "musl consumers get the glibc build". This job does not
   #   reproduce that default either, since bundling a path-sourced gemspec
   #   compiles from source regardless. What it proves is narrower and worth
@@ -69,15 +227,12 @@ jobs:
   #   below, which is real coverage for the recovery path and for the recipe
   #   take.
   #
-  # On the tz axis these jobs currently prove a negative, and that is the
-  # point: both hosts carry tz data materially different from the ubuntu
-  # runner's, and the suite is green regardless, because the gem depends on
-  # tzinfo-data and tzinfo prefers it — the host's database never reaches the
-  # suite. The matrix entries are named for that present-tense coverage — a
-  # red leg means a toolchain/build break, not tz handling — and #118
-  # renames them as it drops the dependency, points the suite at the host's
-  # database in jobs like these, and adds the environment contracts that pin
-  # what each state then means.
+  # Both legs carry two kinds of coverage at once, which is why they are
+  # named for both: the host's own tz database is the one under test
+  # (DUCKLING_TZINFO_DATA: none below, plus an environment contract each),
+  # and the extension is built from source against the image's toolchain.
+  # A red leg is therefore either a tz answer that changed or a
+  # toolchain/build break, and the contract step is what tells them apart.
   #
   # Gating: not merge-blocking (branch protection requires only the
   # `baseline` context), but release-blocking — release.yml runs this
@@ -103,7 +258,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "source build: Debian trixie + tzdata-legacy"
+          - name: "tz: Debian trixie + tzdata-legacy (source build)"
             image: ruby:3.4-trixie
             # trixie's rustc is frozen for the life of Debian 13 at 1.85.0 —
             # exactly the crate's edition-2024 floor, so this leg always runs
@@ -113,33 +268,42 @@ jobs:
             # a clean MSRV error from cargo instead of a confusing parse
             # error here while every other job stays green.
             setup: apt-get update -qq && apt-get install -y --no-install-recommends build-essential cargo rustc git tzdata tzdata-legacy libclang-dev
-          # tzdata carries the zoneinfo (Alpine's ruby image ships none).
-          # The clang22-* packages are for rb-sys's bindgen, which needs
-          # libclang; and Alpine splits clang's resource headers
-          # (stdckdint.h, which ruby-3.4's headers include) away from the
-          # library's default search path, so bindgen is pointed at them
-          # explicitly. Any musl consumer building the source gem needs the
-          # same three things. #118 adds tzdata-utils (zic) for its
-          # fixture-zone tests.
+            contract: test/environments/system_zoneinfo_links_test.rb
+          # tzdata carries the zoneinfo (Alpine's ruby image ships none) and
+          # tzdata-utils carries zic (the data package doesn't) — the
+          # fixture-zone tests shell out to it. The clang22-* packages are
+          # for rb-sys's bindgen, which needs libclang; and Alpine splits
+          # clang's resource headers (stdckdint.h, which ruby-3.4's headers
+          # include) away from the library's default search path, so bindgen
+          # is pointed at them explicitly. Any musl consumer building the
+          # source gem needs the same three things.
           #
           # The image is pinned by digest (consistent with the SHA-pinned
           # actions) because the floating `ruby:3.4-alpine` tag silently
           # rebases across Alpine releases, and Alpine drops older versioned
           # clang packages as it rolls — an unpinned tag landing on an
           # Alpine without clang22-* fails this leg at `apk add` with zero
-          # changes in this repo. Bump by resolving the tag's current digest
-          # (`docker buildx imagetools inspect ruby:3.4-alpine`) and
-          # re-verifying the clang package names against the new release.
-          - name: "source build: Alpine/musl"
+          # changes in this repo. A rebase also moves the host's tz data
+          # under a leg that asserts against it, which the environment
+          # contract is what catches. Bump by resolving the tag's current
+          # digest (`docker buildx imagetools inspect ruby:3.4-alpine`) and
+          # re-verifying both the clang package names and the contract
+          # against the new release.
+          - name: "tz: Alpine/musl vanguard zoneinfo (source build)"
             image: ruby:3.4-alpine@sha256:c5a5064d190055633011c03aa800170cc36945ff3afb5f6c915329f92d6f1e00 # ruby:3.4-alpine, 3.4.10-alpine3.24
             setup: |
-              apk add --no-cache build-base cargo rust git tzdata clang22-libclang clang22-headers
+              apk add --no-cache build-base cargo rust git tzdata tzdata-utils clang22-libclang clang22-headers
               headers="$(find /usr/lib/llvm* -name stdckdint.h -print -quit)"
               # find exits 0 on no matches, so without this the job would
               # export `-I.` (dirname "" is ".") and fail minutes later inside
               # bindgen with the very error this variable prevents.
               [ -n "$headers" ] || { echo "clang resource headers not found; check the clang*-headers package and the /usr/lib/llvm* layout" >&2; exit 1; }
               echo "BINDGEN_EXTRA_CLANG_ARGS=-I$(dirname "$headers")" >> "$GITHUB_ENV"
+            contract: test/environments/alpine_vanguard_test.rb
+
+    env:
+      DUCKLING_TZINFO_DATA: none
+      BUNDLE_LOCKFILE: Gemfile.containers.lock
 
     steps:
       - name: Install system packages
@@ -154,6 +318,8 @@ jobs:
         run: bundle install --jobs 4 --retry 3
       - name: Run the test suite
         run: bundle exec rake test
+      - name: Check the environment contract
+        run: bundle exec ruby -Ilib -Itest ${{ matrix.contract }}
 
   # Forward-compat signals only — not required to merge (see issue #29).
   # `needs: baseline` means GitHub Actions automatically skips this job when

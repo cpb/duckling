@@ -214,12 +214,18 @@ namespace :benchmark do
 end
 
 # The default suite exercises the extension compiled in this checkout.
-# test/gem/ exercises a *built* or *installed* gem instead — it needs one
-# handed to it, and the installed suite must not see this checkout's lib/ at
-# all — so both run on their own, as plain `ruby test/gem/<file>`. See each
-# file's header.
+# Three test subtrees run outside it:
+# - test/gem/ exercises a *built* or *installed* gem instead — it needs one
+#   handed to it, and the installed suite must not see this checkout's lib/
+#   at all — so both run on their own, as plain `ruby test/gem/<file>`.
+# - test/capabilities/ is loaded by test_helper itself, gated on the tz
+#   probes (see the bottom of test/test_helper.rb), so the files must not
+#   also be required unconditionally here.
+# - test/environments/ holds per-environment contracts, each invoked
+#   directly by the CI step that creates the environment it pins.
+# See each file's header, and "The tz-database axis" in AGENTS.md.
 Minitest::TestTask.create do |t|
-  t.test_globs = FileList["test/**/*_test.rb"].exclude("test/gem/**/*")
+  t.test_globs = FileList["test/**/*_test.rb"].exclude("test/gem/**/*", "test/capabilities/**/*", "test/environments/**/*")
 end
 
 # Minitest::TestTask has no built-in way to declare a task dependency, and
@@ -227,7 +233,7 @@ end
 # `bundle exec rake` itself — `bundle exec rake test` run directly has no
 # guarantee `compile` ran first, which would surface as a confusing
 # LoadError/stale-behavior failure unrelated to the code under test.
-task test: :compile
+task test: %i[compile]
 
 require "standard/rake"
 

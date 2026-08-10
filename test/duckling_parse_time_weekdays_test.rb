@@ -183,9 +183,11 @@ class DucklingParseTimeWeekdaysTest < Minitest::Test
   # Each case is documented as a pair of tests, mirroring the pattern in
   # test/duckling_comma_list_test.rb:
   #   - `test_current_actual_*` — passing, pins today's real (buggy) output.
-  #   - `test_*` (skipped) — asserts the semantically correct output (one
-  #     week past bare "monday"). Delete the `skip` line once
-  #     `test_current_actual_*` starts failing, to confirm a fix landed.
+  #   - `test_*` (expect_failure) — asserts the semantically correct output
+  #     (one week past bare "monday"). It runs for real: skipping while the
+  #     gap stands, flunking the moment the correct output appears — which,
+  #     together with `test_current_actual_*` failing, confirms a fix landed
+  #     and the wrapper can be dropped.
 
   def test_current_actual_next_monday_does_not_skip_past_bare_monday
     entity = time_entity("next monday")
@@ -194,11 +196,11 @@ class DucklingParseTimeWeekdaysTest < Minitest::Test
   end
 
   def test_next_monday_should_skip_to_the_following_monday
-    skip "known gap: 'next monday' does not skip past bare 'monday' the way 'next <other weekday>' does (see file comment above)"
-
-    entity = time_entity("next monday")
-    point = time_point(entity[:value][:Time][:Single][:value])
-    assert_equal Time.new(2013, 2, 25, 0, 0, 0, "-02:00"), point[:value]
+    expect_failure "known gap: 'next monday' does not skip past bare 'monday' the way 'next <other weekday>' does (see file comment above)" do
+      entity = time_entity("next monday")
+      point = time_point(entity[:value][:Time][:Single][:value])
+      assert_equal Time.new(2013, 2, 25, 0, 0, 0, "-02:00"), point[:value]
+    end
   end
 
   def test_current_actual_monday_after_next_does_not_skip_past_bare_monday
@@ -208,10 +210,10 @@ class DucklingParseTimeWeekdaysTest < Minitest::Test
   end
 
   def test_monday_after_next_should_skip_to_the_following_monday
-    skip "known gap: 'monday after next' does not skip past bare 'monday' the way '<other weekday> after next' does (see file comment above)"
-
-    entity = time_entity("monday after next")
-    point = time_point(entity[:value][:Time][:Single][:value])
-    assert_equal Time.new(2013, 2, 25, 0, 0, 0, "-02:00"), point[:value]
+    expect_failure "known gap: 'monday after next' does not skip past bare 'monday' the way '<other weekday> after next' does (see file comment above)" do
+      entity = time_entity("monday after next")
+      point = time_point(entity[:value][:Time][:Single][:value])
+      assert_equal Time.new(2013, 2, 25, 0, 0, 0, "-02:00"), point[:value]
+    end
   end
 end
