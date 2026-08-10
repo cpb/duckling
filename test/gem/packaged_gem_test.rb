@@ -42,6 +42,23 @@ class PackagedGemTest < Minitest::Test
       "or download a cross-gem.yml run's artifacts into pkg/"
   end
 
+  # The gemspec builds its file list from `git ls-files` inside the packaging
+  # container, so agent/tooling files tracked in git ship unless the gemspec
+  # keeps them out — .claude/settings.json, AGENTS.md and CLAUDE.md went out
+  # in 0.3.0–0.4.0. test/gemspec_files_test.rb checks the list from the
+  # checkout; this checks the artifact that actually got built, source gem
+  # included, since the container's git state is not the checkout's.
+  def test_no_built_gem_carries_agent_or_tooling_files
+    pattern = %r{(^|/)\.(claude|codex|agents|cursor|windsurf)(/|$)|(^|/)(AGENTS|CLAUDE|GEMINI)\.md$}i
+
+    Dir[File.join(ROOT, "pkg", "duckling-*.gem")].each do |gem|
+      offenders = Gem::Package.new(gem).spec.files.grep(pattern)
+
+      assert_empty offenders,
+        "#{File.basename(gem)} carries agent/tooling files: #{offenders.join(", ")}"
+    end
+  end
+
   # Every platform below is spelled out rather than looped over, so a failure
   # names the platform it belongs to. The cost is that adding one to
   # cross_targets.rb and forgetting to add its tests here leaves it built,

@@ -18,11 +18,17 @@ Gem::Specification.new do |spec|
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
-  gemspec = File.basename(__FILE__)
+  #
+  # Allow-list, not a reject-list: anything tracked in git that isn't named
+  # here stays out of the gem. A reject-list silently packages every newly
+  # tracked dotfile or tool directory — .claude/settings.json, AGENTS.md and
+  # CLAUDE.md all shipped in 0.3.0–0.4.0 that way (docs/benchmarks/ holds
+  # agent-session benchmark dumps, so it stays out too). New files join the
+  # gem deliberately, by editing this list.
   spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
-    ls.readlines("\x0", chomp: true).reject do |f|
-      (f == gemspec) ||
-        f.start_with?(*%w[bin/ Gemfile .gitignore .env.local.example test/ .github/ .standard.yml hk.pkl benchmark/ docs/benchmarks/ cross_targets.rb])
+    ls.readlines("\x0", chomp: true).select do |f|
+      (f.start_with?(*%w[lib/ ext/ docs/]) && !f.start_with?("docs/benchmarks/")) ||
+        %w[Brewfile CHANGELOG.md CODE_OF_CONDUCT.md Cargo.lock Cargo.toml LICENSE.txt README.md Rakefile].include?(f)
     end
   end
   spec.bindir = "exe"

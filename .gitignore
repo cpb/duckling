@@ -14,6 +14,12 @@ RESEARCH_CONTEXT.md
 lib/duckling/duckling.bundle
 lib/duckling/duckling.so
 
+# Agent tooling state — .claude/settings.json stays tracked deliberately, but
+# session worktrees and other agents' config never belong in the repo (and a
+# reject-list gemspec would have packaged whatever lands here).
+/.claude/worktrees/
+/.codex/
+
 # Per-environment bundles (BUNDLE_LOCKFILE) — never committed; the default
 # Gemfile.lock is. See docs/tz-database-axis.md.
 /Gemfile.*.lock
