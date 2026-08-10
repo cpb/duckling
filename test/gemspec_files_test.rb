@@ -26,12 +26,16 @@ class GemspecFilesTest < Minitest::Test
   AGENT_FILE_PATTERN = %r{(^|/)\.(claude|codex|agents|cursor|windsurf)(/|$)|(^|/)(AGENTS|CLAUDE|GEMINI)\.md$}i
 
   def test_no_agent_files_ship_in_the_gem
+    skip_unless_git_ls_files_works
+
     offenders = spec_files.grep(AGENT_FILE_PATTERN)
 
     assert_empty offenders, "gem would package agent files: #{offenders.join(", ")}"
   end
 
   def test_no_dotfiles_ship_in_the_gem
+    skip_unless_git_ls_files_works
+
     offenders = spec_files.select { |f| f.start_with?(".") || f.include?("/.") }
 
     assert_empty offenders, "gem would package dotfiles: #{offenders.join(", ")}"
@@ -41,6 +45,8 @@ class GemspecFilesTest < Minitest::Test
   # Rust sources out of the gem passes both tests above while shipping an
   # empty package. Pin the load-bearing entries so that mistake fails here.
   def test_gem_still_carries_what_it_needs
+    skip_unless_git_ls_files_works
+
     %w[
       lib/duckling.rb
       lib/duckling/version.rb
@@ -58,6 +64,22 @@ class GemspecFilesTest < Minitest::Test
   end
 
   private
+
+  # The gemspec's `git ls-files` can't answer everywhere this suite runs:
+  # the tz-container CI legs check out as a different uid than the container
+  # runs as, git refuses the repo, and the gemspec's popen comes back empty
+  # (RubyGems' Specification#files then reports just spec.extensions, which
+  # is how the empty answer shows up). Those legs never package the gem, so
+  # there is nothing to guard there — skip loudly instead of asserting
+  # vacuously against the degenerate list. packaged_gem_test.rb's
+  # gemspec_floor documents the same arrangement from the other side.
+  def skip_unless_git_ls_files_works
+    files = IO.popen(%w[git ls-files], chdir: ROOT, err: IO::NULL, &:read)
+
+    skip "git ls-files can't answer in this environment" if files.empty?
+  rescue Errno::ENOENT
+    skip "git is not on PATH in this environment"
+  end
 
   def spec_files
     @spec_files ||= begin
