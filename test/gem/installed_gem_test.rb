@@ -22,10 +22,10 @@ require "duckling"
 #     bash -c 'gem install --no-document ./pkg/duckling-*-x86_64-linux.gem &&
 #              ruby test/gem/installed_gem_test.rb'
 #
-# Run it with plain `ruby`, never through rake or bundler. This checkout's
-# Gemfile declares `gemspec` and Minitest::TestTask puts lib/ on the load path,
-# and either one shadows the installed gem with the source sitting next to this
-# file — which is the one thing this suite exists to rule out. It runs on the
+# Run it with plain `ruby`. Under rake or bundler, this checkout's Gemfile
+# (`gemspec`) and Minitest::TestTask's lib/ load path would each shadow the
+# installed gem with the source sitting next to this file — the one thing
+# this suite exists to rule out. It runs on the
 # minitest every CRuby bundles, so no `gem install minitest` either: minitest 6
 # pulls in prism, a native extension the container above cannot build.
 class InstalledGemTest < Minitest::Test
@@ -43,7 +43,7 @@ class InstalledGemTest < Minitest::Test
     assert_includes CrossTargets::PLATFORMS.keys, SPEC.platform.to_s
   end
 
-  # Gem::Platform#=~ rather than ==: the darwin gems are deliberately
+  # Gem::Platform#=~ because == would fail: the darwin gems are deliberately
   # unversioned, and Gem::Platform.local carries a Darwin major version.
   def test_the_resolved_gem_matches_this_machine
     assert Gem::Platform.local =~ SPEC.platform,
@@ -91,7 +91,16 @@ class InstalledGemTest < Minitest::Test
 
   # reference_zone: crosses back the other way, reading Time objects the native
   # call produced.
+  #
+  # Needs a tz database the host provides (the gem does not depend on
+  # tzinfo-data). A scratch or distroless container has none; skip there.
   def test_parse_with_reference_zone
+    begin
+      TZInfo::DataSource.get
+    rescue TZInfo::DataSourceNotFound
+      skip "no tz database on this host; reference_zone: needs zoneinfo files or the tzinfo-data gem"
+    end
+
     entity = Duckling.parse(
       "tomorrow at 3pm",
       dims: ["time"],
@@ -102,8 +111,8 @@ class InstalledGemTest < Minitest::Test
     refute_nil entity
   end
 
-  # A non-time dimension goes through serde_magnus rather than the hand-written
-  # Time patching, so it fails independently of the tests above.
+  # A non-time dimension goes through serde_magnus, so it fails independently
+  # of the tests above.
   def test_parse_a_non_time_dimension
     entity = Duckling.parse("42 dollars", dims: ["amount-of-money"]).first
     refute_nil entity

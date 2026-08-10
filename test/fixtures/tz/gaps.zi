@@ -1,0 +1,10 @@
+# Two synthetic spring-forward gaps. Fixture/HalfHourGap: Australia/Lord_Howe's
+# shape, a 30-minute gap — 2026-10-04 02:15 skips to 02:45. Fixture/LateGap:
+# America/Nuuk's shape, a gap late in the local day at negative offset — the
+# transition lands past the next UTC midnight. See docs/tz-database-axis.md.
+Rule	Half	2000	max	-	Oct	Sun>=1	2:00	0:30	D
+Rule	Half	2000	max	-	Apr	Sun>=1	2:00	0	S
+Zone	Fixture/HalfHourGap	10:30	Half	%s
+Rule	Late	2000	max	-	Mar	lastSat	23:00	1:00	D
+Rule	Late	2000	max	-	Oct	lastSat	23:00	0	S
+Zone	Fixture/LateGap	-2:00	Late	%s

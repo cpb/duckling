@@ -11,7 +11,7 @@ class DucklingTest < Minitest::Test
   # zone's real offset at that instant, which the offset-mismatch check
   # requires — every test that pairs a reference_time: with
   # reference_zone: "America/New_York" must use an anchor like this or it
-  # trips that ArgumentError instead of exercising its own assertion.
+  # trips that ArgumentError before exercising its own assertion.
   EST_REFERENCE_TIME = Time.new(2026, 3, 1, 9, 0, 0, "-05:00")
 
   def test_parse_returns_array
@@ -78,8 +78,8 @@ class DucklingTest < Minitest::Test
     assert_equal Time.new(2013, 2, 12, 15, 0, 0, "-02:00"), from[:value]
     to = time_point(interval[:to])
     assert_equal :hour, to[:grain]
-    # duckling represents interval :to as the exclusive hour boundary, not the
-    # literal named time — "5pm" (17:00) surfaces as 18:00. Verified against
+    # duckling represents interval :to as the exclusive hour boundary:
+    # "5pm" (17:00) surfaces as 18:00. Verified against
     # wafer-inc-duckling's own tests/time_corpus.rs (e.g. "3-4pm" -> to 17:00).
     assert_equal Time.new(2013, 2, 12, 18, 0, 0, "-02:00"), to[:value]
   end
@@ -91,8 +91,8 @@ class DucklingTest < Minitest::Test
     point = time_point(entity[:value][:Time][:Single][:value])
     assert_kind_of Time, point[:value]
     assert_equal REFERENCE_TIME + 3600, point[:value]
-    # Time#== only compares the instant, not utc_offset — assert this
-    # explicitly since preserving the offset is the whole point of this test.
+    # Time#== only compares the instant; utc_offset needs its own assertion,
+    # since preserving the offset is the whole point of this test.
     assert_equal(-7200, point[:value].utc_offset)
   end
 
@@ -115,13 +115,13 @@ class DucklingTest < Minitest::Test
 
   # `reference_zone:` makes a `:Naive`
   # (wall-clock) time result DST-aware by resolving its UTC offset against the
-  # real IANA zone for *that result's own date*, instead of the single fixed
-  # offset `reference_time:` provides today. US DST began 2026-03-08 02:00
+  # real IANA zone for *that result's own date*. `reference_time:` provides
+  # a single fixed offset. US DST began 2026-03-08 02:00
   # local (America/New_York): "spring forward" from EST (UTC-5) to EDT (UTC-4).
   # A naive result dated just before that transition must resolve to -18000
   # (EST); one dated just after must resolve to -14400 (EDT) — proving each
-  # result is resolved against its own date, not a single offset applied
-  # uniformly across both.
+  # result is resolved against its own date. A single offset applied
+  # uniformly across both would misresolve one of them.
   def test_reference_zone_resolves_naive_offset_per_date_across_dst_transition
     # America/New_York's real UTC offset at this instant (2026-03-01, before
     # the 03-08 spring-forward) is -18000 (EST) — matching the fixed offset
@@ -150,10 +150,9 @@ class DucklingTest < Minitest::Test
 
   # America/New_York springs forward from 2:00am straight to 3:00am on
   # 2026-03-08, so "2:30am" that day is a local time that never actually
-  # occurs. There's no benefit to raising over it just because this is a
-  # primary value the caller literally named rather than a generated
-  # recurrence entry — it resolves the same deterministic way either kind
-  # does (see test_reference_zone_resolves_recurrence_gap_entry_deterministically
+  # occurs. A caller-named primary value and a generated recurrence entry
+  # resolve the same deterministic way (see
+  # test_reference_zone_resolves_recurrence_gap_entry_deterministically
   # and local_time_in_zone): shifted forward past the gap to 3:30 EDT.
   def test_reference_zone_resolves_primary_gap_deterministically
     reference_time = EST_REFERENCE_TIME
@@ -179,7 +178,8 @@ class DucklingTest < Minitest::Test
   def test_reference_zone_leaves_instant_result_unaffected
     # See test_reference_zone_resolves_naive_offset_per_date_across_dst_transition
     # for why reference_time: must itself agree with America/New_York's real
-    # offset at this instant, rather than reusing REFERENCE_TIME's -02:00.
+    # offset at this instant. Reusing REFERENCE_TIME's -02:00 would fail that
+    # check.
     reference_time = EST_REFERENCE_TIME
     without_zone = entity_for("in 3 hours", :time, reference_time: reference_time)
     with_zone = entity_for("in 3 hours", :time,
@@ -210,10 +210,116 @@ class DucklingTest < Minitest::Test
     end
   end
 
+  # The backward-compat identifier case (US/Eastern) lives in
+  # test/capabilities/backward_compat_links_test.rb.
+
+  # Runs on every environment, ungated: the message must be right about
+  # whichever database is present. Expectations come from tzinfo itself, so
+  # the test cannot pass vacuously.
+  def test_reference_zone_error_names_the_tz_datasource
+    error = assert_raises(ArgumentError) do
+      Duckling.parse("in 3 hours", locale: "en", dims: ["time"], reference_zone: "Not/A/Real/Zone")
+    end
+
+    source = TZInfo::DataSource.get
+    if source.respond_to?(:zoneinfo_dir)
+      assert_includes error.message, "system zoneinfo",
+        "expected the error to name the zoneinfo datasource, got: #{error.message.inspect}"
+      assert_includes error.message, source.zoneinfo_dir,
+        "expected the error to name the directory the zones came from, got: #{error.message.inspect}"
+    elsif defined?(TZInfo::DataSources::RubyDataSource) && source.is_a?(TZInfo::DataSources::RubyDataSource)
+      assert_includes error.message, "tzinfo-data",
+        "expected the error to name the gem datasource, got: #{error.message.inspect}"
+      # Guarded as production guards it; unguarded it raises NameError.
+      if defined?(TZInfo::Data::Version::TZDATA)
+        assert_includes error.message, TZInfo::Data::Version::TZDATA,
+          "expected the error to name the bundled tzdata release, got: #{error.message.inspect}"
+      end
+    else
+      # A custom datasource is named by its own class.
+      assert_includes error.message, source.class.to_s,
+        "expected an unrecognized datasource to be named by its class, got: #{error.message.inspect}"
+    end
+
+    assert_match(/provides \d{3,} identifiers/, error.message,
+      "expected a plausible identifier count — both databases publish hundreds — " \
+      "got: #{error.message.inspect}")
+  end
+
+  # The remedy fires on the database having no links, so a typo and a real
+  # legacy name get the same conditional wording. See docs/tz-database-axis.md.
+  def test_reference_zone_error_offers_the_backward_compat_remedy_only_where_relevant
+    error = assert_raises(ArgumentError) do
+      Duckling.parse("in 3 hours", locale: "en", dims: ["time"], reference_zone: "Not/A/Real/Zone")
+    end
+
+    if TZCapabilities.backward_compat_links?
+      refute_includes error.message, "tzdata-legacy",
+        "expected no backward-compat remedy on a database that already has the links, " \
+        "got: #{error.message.inspect}"
+    else
+      assert_includes error.message, "tzinfo-data",
+        "expected the gem remedy for the missing backward-compat links, got: #{error.message.inspect}"
+      assert_includes error.message, "tzdata-legacy",
+        "expected the system-package remedy for the missing backward-compat links, " \
+        "got: #{error.message.inspect}"
+      # Pins the hedge positively: a refute on one claim-shaped phrasing
+      # would miss the others.
+      assert_includes error.message, "if that is what this is",
+        "expected the remedy phrased as a condition the reader evaluates ('...so if that is " \
+        "what this is, it needs...'), not as a claim that this identifier is a backward-compat " \
+        "name — it may just be a typo, as here. Got: #{error.message.inspect}"
+
+      # Naming the identifier in the remedy clause turns the condition into a claim.
+      remedy = error.message[/;.*/]
+      refute_includes remedy.to_s, "Not/A/Real/Zone",
+        "expected the remedy clause not to name the identifier the caller passed, " \
+        "got: #{remedy.inspect}"
+    end
+  end
+
+  # A host with no tz database (scratch, distroless) is a supported
+  # configuration. Stubbed: reproducing it needs a machine with no zoneinfo
+  # directory. Pins that timezone_for converts the error; where tzinfo raises
+  # it is assumed.
+  def test_reference_zone_without_any_tz_database_raises_a_diagnosable_error
+    error = without_any_tz_datasource do
+      assert_raises(Duckling::TZDataUnavailable) do
+        Duckling.parse("in 3 hours", locale: "en", dims: ["time"], reference_zone: "America/New_York")
+      end
+    end
+
+    assert_includes error.message, "reference_zone",
+      "expected the error to name the keyword the caller passed, got: #{error.message.inspect}"
+    assert_includes error.message, "tzinfo-data",
+      "expected the gem remedy, got: #{error.message.inspect}"
+    assert_includes error.message, "tzdata",
+      "expected the system-package remedy, got: #{error.message.inspect}"
+  end
+
+  # Reproduces tzinfo's no-data raise. Hand-rolled: minitest 6 ships no mock,
+  # and this is the suite's only one. $VERBOSE is silenced around the
+  # redefinitions because the suite runs with -w.
+  def without_any_tz_datasource
+    original = TZInfo::Timezone.method(:get)
+    swap = lambda do |implementation|
+      verbose, $VERBOSE = $VERBOSE, nil
+      TZInfo::Timezone.define_singleton_method(:get, implementation)
+      $VERBOSE = verbose
+    end
+
+    swap.call(->(_identifier) { raise TZInfo::DataSourceNotFound, "No source of timezone data could be found." })
+    begin
+      yield
+    ensure
+      swap.call(original)
+    end
+  end
+
   # An Interval-shaped time result's `from` and `to` legs must each be
   # reinterpreted against `reference_zone:` INDEPENDENTLY, using each leg's
-  # own date's real UTC offset — not a single offset borrowed from
-  # reference_time: or from just one of the two legs. "from March 7th 2026
+  # own date's real UTC offset. A single offset borrowed from reference_time:
+  # or from one leg cannot serve both. "from March 7th 2026
   # 3:00am to March 9th 2026 3:00am" straddles the US spring-forward
   # transition at 2:00am local on 2026-03-08: the `from` leg (March 7, still
   # standard time) must resolve to EST (UTC-5) while the `to` leg (March 9,
@@ -221,7 +327,8 @@ class DucklingTest < Minitest::Test
   def test_reference_zone_resolves_interval_legs_independently_across_dst_transition
     # See test_reference_zone_resolves_naive_offset_per_date_across_dst_transition
     # for why reference_time: must itself agree with America/New_York's real
-    # offset at this instant, rather than reusing REFERENCE_TIME's -02:00.
+    # offset at this instant. Reusing REFERENCE_TIME's -02:00 would fail that
+    # check.
     reference_time = EST_REFERENCE_TIME
     entity = entity_for("from March 7th 2026 3:00am to March 9th 2026 3:00am", :time,
       reference_time: reference_time, reference_zone: "America/New_York")
@@ -308,7 +415,7 @@ class DucklingTest < Minitest::Test
   end
 
   # A Single's `values` recurrence array — populated on essentially
-  # every parse, not only explicit recurrences — is reinterpreted per entry, so
+  # every parse, including non-recurring ones — is reinterpreted per entry, so
   # each occurrence picks up its own date's DST offset. "every monday at 3am"
   # anchored 2026-03-01 yields two Mondays straddling the 03-08 transition: the
   # earlier must resolve to EST (-18000), the later to EDT (-14400), wall clock
@@ -385,8 +492,8 @@ class DucklingTest < Minitest::Test
       "observes at that instant, got #{gap_entry.inspect} (real offset #{real_offset})"
   end
 
-  # A gap shifts forward by the transition's own width, not by a hardcoded
-  # hour. Australia/Lord_Howe springs forward only 30 minutes (02:00 → 02:30 on
+  # A gap shifts forward by the transition's own width.
+  # Australia/Lord_Howe springs forward only 30 minutes (02:00 → 02:30 on
   # 2026-10-04), so a skipped 02:15 resolves to 02:45 — where ActiveSupport's
   # `@time += 1.hour` retry would overshoot to 03:15. Exercises
   # local_time_in_zone directly: no English time expression reliably generates a
@@ -403,48 +510,12 @@ class DucklingTest < Minitest::Test
       "expected the resolved Time to carry the offset Lord Howe observes at its own instant"
   end
 
-  # A gap late in the local day has a transition instant past the *next* UTC
-  # midnight when the zone's offset is negative — America/Nuuk springs forward
-  # at 23:00 local while at UTC-2, putting the transition at 01:00 UTC the
-  # following day. gap_delta's scan window must therefore center on the
-  # skipped wall clock itself; anchoring it to the UTC midnight of the wall
-  # clock's date excluded such transitions, and the resulting nil made
-  # gap_delta crash with NoMethodError instead of resolving the gap.
-  def test_reference_zone_resolves_gap_late_in_local_day
-    reference_time = Time.new(2026, 3, 28, 12, 0, 0, "-02:00")
-    entity = entity_for("March 28 2026 11:30pm", :time,
-      reference_time: reference_time, reference_zone: "America/Nuuk")
-    resolved = single_point(entity)[:value]
-
-    assert_equal 0, resolved.hour,
-      "expected the skipped 23:30 wall clock to shift forward past the gap to 00:30, got #{resolved.inspect}"
-    assert_equal 30, resolved.min
-    assert_equal 29, resolved.day, "expected the shift to land on the next day, got #{resolved.inspect}"
-    assert_equal(-3600, resolved.utc_offset,
-      "expected the post-transition offset (UTC-1, -3600), got #{resolved.inspect}")
-  end
-
-  # The fall-back "first occurrence" is selected by position (periods.first in
-  # local_time_in_zone), not by tzinfo's dst flag: dst=true only means
-  # pre-transition where the earlier period observes DST, and negative-DST
-  # zones invert that — tzinfo models Europe/Dublin's winter GMT as its
-  # dst?==true period, so flag-based resolution there returns the
-  # post-transition occurrence, an hour off as an instant. Dublin's 2026-10-25
-  # fall-back makes 01:30 ambiguous; the first occurrence is IST (+3600).
-  def test_reference_zone_overlap_takes_first_occurrence_in_negative_dst_zones
-    reference_time = Time.new(2026, 9, 1, 12, 0, 0, "+01:00")
-    entity = entity_for("October 25 2026 1:30am", :time,
-      reference_time: reference_time, reference_zone: "Europe/Dublin")
-    resolved = single_point(entity)[:value]
-
-    assert_equal 1, resolved.hour, "expected the 1:30 wall clock preserved through the overlap, got #{resolved.inspect}"
-    assert_equal 30, resolved.min
-    assert_equal 3600, resolved.utc_offset,
-      "expected the first (pre-transition) occurrence (IST, +3600), got #{resolved.inspect}"
-  end
+  # The late-in-the-local-day gap case (America/Nuuk) and the negative-DST
+  # overlap case (Europe/Dublin) live in test/capabilities/ — both load only
+  # where the database can answer them. See docs/tz-database-axis.md.
 
   # Fall-back side: an ambiguous recurrence entry resolves to its
-  # first (pre-transition) occurrence rather than raising. "every sunday at
+  # first (pre-transition) occurrence; it does not raise. "every sunday at
   # 1:30am" anchored 2026-10-22 generates 2026-11-01 01:30, which the fall-back
   # overlap makes ambiguous; it resolves to the first occurrence (EDT, -14400).
   def test_reference_zone_resolves_recurrence_overlap_entry_deterministically
@@ -486,8 +557,8 @@ class DucklingTest < Minitest::Test
   # must be the zone's real offset for that date (EST, -18000).
   #
   # This does NOT test the "does not anchor the parse" edge: a relative
-  # expression like "tomorrow" anchors on the machine-local clock, not on
-  # "now in that zone", so Duckling.parse("tomorrow", reference_zone:
+  # expression like "tomorrow" anchors on the machine-local clock. It does
+  # not use "now in that zone", so Duckling.parse("tomorrow", reference_zone:
   # "Asia/Tokyo") on a US host can land on the wrong calendar day. That
   # behavior is documented in the comment block above Duckling.parse and in
   # AGENTS.md, but can't be pinned by a test without controlling the host

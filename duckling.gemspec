@@ -46,13 +46,12 @@ Gem::Specification.new do |spec|
   # Resolves reference_zone:'s per-date IANA offsets (lib/duckling.rb). The
   # wrapped Rust crate only knows a single FixedOffset, so DST-aware
   # resolution needs a real tz database on the Ruby side.
+  #
+  # Deliberately no tzinfo-data dependency: tzinfo prefers that gem when it
+  # is installed and falls back to the host's zoneinfo files otherwise, so a
+  # consumer who wants bundled tz data adds it themselves. The two databases
+  # are not interchangeable — see docs/tz-database-axis.md.
   spec.add_dependency "tzinfo", "~> 2.0"
-
-  # tzinfo falls back to the host's zoneinfo files, which are absent from slim
-  # container images and unpatchable at runtime when they are present. Bundling
-  # the IANA data keeps reference_zone: working everywhere, and lets a consumer
-  # pick up a tz-database revision by bumping this gem alone.
-  spec.add_dependency "tzinfo-data", "~> 1.2024"
 
   # only needed when developing or packaging your gem
   spec.add_development_dependency "rake-compiler", "~> 1.3.1"
@@ -61,7 +60,6 @@ Gem::Specification.new do |spec|
   # used by test/falcon_fiber_blocking_test.rb (empirically testing that
   # Duckling.parse doesn't block sibling Fibers sharing a Falcon/async-gem
   # reactor thread) and benchmark/parse_benchmark.rb (measuring thread-per-call
-  # dispatch overhead, which only manifests with a Fiber scheduler installed)
-  # — not a runtime dependency of the gem itself.
+  # dispatch overhead, which only manifests with a Fiber scheduler installed).
   spec.add_development_dependency "async", "~> 2.41"
 end
