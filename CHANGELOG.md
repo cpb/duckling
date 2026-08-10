@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-10
+
+## What's Changed
+* Run the suite in the tz-divergent container environments in CI by @cpb in https://github.com/cpb/duckling/pull/120
+* Issue 117/tz environment ci coverage by @cpb in https://github.com/cpb/duckling/pull/121
+
+
+**Full Changelog**: https://github.com/cpb/duckling/compare/v0.3.0...v0.4.0
+
+
 ### Changed
 
 - **On a stock Debian/Ubuntu host, roughly a hundred IANA zone identifiers
