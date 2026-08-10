@@ -1,0 +1,6 @@
+# A synthetic negative-DST zone, shaped like Europe/Dublin: winter carries
+# tzinfo's dst? flag. 2026-10-25 01:30 is the ambiguous wall clock; the first
+# occurrence is the +01:00 one. See docs/tz-database-axis.md.
+Rule	Duck	1981	max	-	Mar	lastSun	1:00u	0	STD
+Rule	Duck	1996	max	-	Oct	lastSun	1:00u	-1:00	WINT
+Zone	Fixture/NegativeDst	1:00	Duck	%s

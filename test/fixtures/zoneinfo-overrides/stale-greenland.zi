@@ -1,0 +1,8 @@
+# America/Nuuk with the pre-2023a rules: -03:00 standard, -02:00 in summer.
+# Under these rules 2026-03-28 23:30 local is an ordinary wall clock — no gap.
+# bin/build-stale-zoneinfo compiles this over a copy of the host's zoneinfo.
+# The Zone line replaces the zone's entire history; harmless, since the
+# contract only looks at 2026. See docs/tz-database-axis.md.
+Rule	StaleGl	1981	max	-	Mar	lastSun	1:00u	1:00	-02
+Rule	StaleGl	1996	max	-	Oct	lastSun	1:00u	0	-03
+Zone	America/Nuuk	-3:00	StaleGl	%s

@@ -1,0 +1,4 @@
+# Country index, required alongside iso3166.tab for the directory to be
+# recognized as zoneinfo.
+#codes	coordinates	TZ
+ZZ	+0000+00000	Fixture/NegativeDst

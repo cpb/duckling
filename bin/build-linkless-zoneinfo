@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Builds a zoneinfo directory without the backward-compatibility links: the
+# stock links-less host, where US/Eastern stops resolving. Built because no
+# runner is in that state. The keep-list is transcribed from a real
+# links-less host (497 identifiers). See docs/tz-database-axis.md.
+#
+# Usage: bin/build-linkless-zoneinfo <output-dir>
+#   ZONEINFO_DIR  source directory to copy (default /usr/share/zoneinfo)
+set -euo pipefail
+
+out="${1:?usage: bin/build-linkless-zoneinfo <output-dir>}"
+source_dir="${ZONEINFO_DIR:-/usr/share/zoneinfo}"
+
+if [ ! -d "$source_dir" ]; then
+  echo "build-linkless-zoneinfo: no zoneinfo directory at $source_dir" >&2
+  exit 1
+fi
+
+rm -rf "$out"
+mkdir -p "$out"
+
+# -L dereferences the alias symlinks, so removing an entry leaves no dangling
+# link and cannot follow one back into the host's directory.
+cp -RL "$source_dir/." "$out/"
+
+for entry in "$out"/*; do
+  case "$(basename "$entry")" in
+    # IANA region directories — every canonical zone lives under one.
+    Africa | America | Antarctica | Arctic | Asia | Atlantic | Australia | Etc | Europe | Indian | Pacific) ;;
+    # Top-level entries a stock links-less host still has. Every name was
+    # read off that host; none added defensively. The environment contract's
+    # identifier-count range catches this list going stale.
+    CET | CST6CDT | EET | EST | EST5EDT | Factory | HST | MET | MST | MST7MDT | PST8PDT | WET | UTC | GMT | localtime | posixrules) ;;
+    # Index and data files tzinfo needs to recognize the directory.
+    *.tab | *.zi | *.list | leapseconds) ;;
+    *) rm -rf "$entry" ;;
+  esac
+done
+
+# Checked postcondition; catches under-stripping only.
+if [ -e "$out/US/Eastern" ]; then
+  echo "build-linkless-zoneinfo: US/Eastern survived the strip in $out" >&2
+  exit 1
+fi
+
+echo "build-linkless-zoneinfo: wrote $out from $source_dir with backward-compat links removed"

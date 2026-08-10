@@ -8,6 +8,61 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **On a stock Debian/Ubuntu host, roughly a hundred IANA zone identifiers
+  stop resolving.** `reference_zone: "US/Eastern"` — and every other
+  backward-compatibility name, such as `"US/Pacific"`, `"Europe/Kiev"`, or
+  `"Japan"` — now raises `ArgumentError` there. Those names live in the
+  `tzdata-legacy` system package, which is not installed by default. Two ways
+  to get them back, either of which restores the previous behavior exactly:
+
+  ```ruby
+  gem "tzinfo-data"   # in your Gemfile
+  ```
+  ```bash
+  apt install tzdata-legacy   # on the host
+  ```
+
+  Canonical identifiers (`"America/New_York"`, `"Europe/Kyiv"`) are
+  unaffected. A host with no zoneinfo files at all — a scratch or distroless
+  container — needs the gem for `reference_zone:` to work at all.
+
+  The error message names the tz database that answered, how many identifiers
+  it has, and both remedies, so this is distinguishable from a typo. The
+  datasource and the count describe whichever database answered on your host,
+  so both differ from the example below:
+
+  ```
+  invalid reference_zone: "US/Eastern" (resolved against system zoneinfo at
+  /usr/share/zoneinfo, which provides 497 identifiers; this database has no
+  backward-compat names (US/Eastern and ~100 others), so if that is what this
+  is, it needs either the tzinfo-data gem or the tzdata-legacy system package)
+  ```
+
+  The remedy is worded as a condition rather than a claim about the name you
+  passed: whether a given identifier is one of the ~100 in IANA's `backward`
+  file isn't knowable without shipping that list, and asserting it would tell
+  every typo on such a host that `tzdata-legacy` will supply it.
+
+  A second, quieter difference comes with the same change: some distributions
+  compile tzdata in *rearguard* format, which strips negative DST, and on such
+  a host `Europe/Dublin` is modelled as an ordinary positive-DST zone rather
+  than a negative-DST one. Which distributions is not guessable — Ubuntu 24.04
+  is rearguard, Debian trixie is vanguard — so if you depend on tzinfo's
+  `dst?` flag, read it from the host rather than assuming. Resolved offsets
+  are the same either way, so no `Duckling.parse` result changes because of
+  it.
+
+- `tzinfo-data` is no longer a runtime dependency. `tzinfo` already prefers
+  that gem when it is installed and falls back to the host's zoneinfo files
+  otherwise, so depending on it forced bundled tz data on every consumer to
+  serve the ones who want it. This is the change that produces the identifier
+  behavior above. Consumers who add `gem "tzinfo-data"` themselves get exactly
+  the previous behavior with no code change, and can still pick up a
+  tz-database revision by bumping that one gem. Dropping it means the bundled
+  tz data is no longer loaded at boot, so the first zone lookup does less
+  work; steady-state parsing is unaffected either way, since `reference_zone:`
+  resolution goes through the same tzinfo call once a database is loaded.
+
 - **Breaking:** `reference_time:` now requires a Ruby `Time` object (or
   `nil`), not a Unix-seconds Integer. This lets the caller's `utc_offset` be
   preserved into offset-aware `Instant` results (e.g. `"in one hour"`),
@@ -39,6 +94,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   explicit `to: nil` (or `from: nil`) key instead of omitting the key
   entirely — check `interval[:to].nil?` rather than `interval.key?(:to)`
   to detect an unbounded endpoint.
+
+### Added
+
+- `Duckling::TZDataUnavailable`, raised when `reference_zone:` is given on a
+  host with no tz database at all — no zoneinfo files and no `tzinfo-data`
+  gem, as in a scratch or distroless container. Newly reachable because of the
+  dependency change above; previously a database always existed. It names both
+  fixes, where the underlying tzinfo error mentioned neither this gem nor
+  `reference_zone:`. Deliberately not an `ArgumentError`: it reports the
+  deployment's state, not a bad argument, so code rescuing `ArgumentError`
+  around caller-supplied zone names does not swallow it. Every other keyword
+  works without a tz database.
 
 ## [0.2.0] - 2026-07-01
 
