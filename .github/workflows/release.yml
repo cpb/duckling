@@ -35,7 +35,15 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
+      # The PAT credentials the CHANGELOG step's `git push` (via the
+      # credential checkout persists here). It must not be GITHUB_TOKEN in
+      # the end state: events caused by GITHUB_TOKEN don't trigger workflows,
+      # so the changelog PR would never get CI and auto-merge would stall
+      # BLOCKED. Without the secret, the fallback preserves that old behavior
+      # rather than failing the release.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.RELEASE_AUTOMATION_PAT || github.token }}
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
@@ -89,7 +97,9 @@ jobs:
 
       - name: Update CHANGELOG.md
         env:
-          GH_TOKEN: ${{ github.token }}
+          # PAT, not GITHUB_TOKEN, so the PR this opens triggers CI — see
+          # the checkout step above. Also covers this step's `gh release view`.
+          GH_TOKEN: ${{ secrets.RELEASE_AUTOMATION_PAT || github.token }}
         run: |
           branch="changelog/${{ github.ref_name }}"
           git fetch origin main

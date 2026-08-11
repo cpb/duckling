@@ -13,7 +13,17 @@ jobs:
     name: Record GitHub Actions benchmark results and open a PR
     runs-on: ubuntu-latest
     steps:
+      # The token credentials both the `git push` below (via the credential
+      # checkout persists) and the `gh` PR calls (via GH_TOKEN). It must not
+      # be GITHUB_TOKEN in the end state: events caused by GITHUB_TOKEN don't
+      # trigger workflows, so the PR this job opens would never get CI, the
+      # required check would never report, and auto-merge would stall BLOCKED
+      # (every release's benchmark PR from 0.3.0 through 0.4.2 stalled this
+      # way). Without the secret, the fallback preserves that old behavior
+      # rather than failing the job.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.RELEASE_AUTOMATION_PAT || github.token }}
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
@@ -30,7 +40,7 @@ jobs:
 
       - name: Record GitHub Actions benchmark results and open a PR
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_AUTOMATION_PAT || github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

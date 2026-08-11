@@ -27,7 +27,14 @@ jobs:
     name: Record github-actions benchmark on this branch
     runs-on: ubuntu-latest
     steps:
+      # The token credentials the `git push` below (via the credential
+      # checkout persists). A PAT rather than GITHUB_TOKEN means the push
+      # triggers CI on the branch's open PR; a GITHUB_TOKEN push would not
+      # (events it causes don't trigger workflows). Without the secret, the
+      # fallback preserves that old behavior rather than failing the job.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.RELEASE_AUTOMATION_PAT || github.token }}
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
