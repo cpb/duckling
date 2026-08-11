@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-08-11
+
+## What's Changed
+* Publish releases via RubyGems Trusted Publishing instead of a long-lived API key by @cpb in https://github.com/cpb/duckling/pull/131
+* Bump Duckling::VERSION to 0.4.2 by @cpb in https://github.com/cpb/duckling/pull/132
+
+
+**Full Changelog**: https://github.com/cpb/duckling/compare/v0.4.1...v0.4.2
+
+
 ## [0.4.1] - 2026-08-10
 
 ### Fixed
