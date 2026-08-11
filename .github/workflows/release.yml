@@ -28,6 +28,12 @@ jobs:
     name: Publish to RubyGems and create release
     needs: [ci, cross_gems]
     runs-on: ubuntu-latest
+    # A job-level block replaces the workflow-level one. It must restate
+    # contents and pull-requests, which the release and CHANGELOG steps need.
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -59,9 +65,13 @@ jobs:
           gem build duckling.gemspec
           mv duckling-*.gem pkg/
 
+      # Exchanges the GitHub OIDC token for a short-lived RubyGems token that
+      # can only push this gem. It needs a trusted publisher registered on
+      # RubyGems.org whose claims match this workflow file name exactly.
+      - name: Configure RubyGems credentials
+        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
+
       - name: Publish to RubyGems
-        env:
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: |
           for gem in pkg/*.gem; do
             gem push "$gem"
