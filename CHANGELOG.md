@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-08-11
+
+## What's Changed
+* Update CHANGELOG for v0.4.2 by @github-actions[bot] in https://github.com/cpb/duckling/pull/134
+* Benchmark results (github-actions, 0.3.0-0.4.2) by @cpb in https://github.com/cpb/duckling/pull/135
+* Bump actions/download-artifact from 7.0.0 to 8.0.1 by @dependabot[bot] in https://github.com/cpb/duckling/pull/116
+* Open release-automation PRs with a PAT so CI runs on them by @cpb in https://github.com/cpb/duckling/pull/136
+* Require MFA for RubyGems operations; release 0.4.3 by @cpb in https://github.com/cpb/duckling/pull/137
+
+
+**Full Changelog**: https://github.com/cpb/duckling/compare/v0.4.2...v0.4.3
+
+
 ## [0.4.2] - 2026-08-11
 
 ## What's Changed
