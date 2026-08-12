@@ -13,6 +13,42 @@ permissions:
   contents: read
 
 jobs:
+  # Docs-only PRs skip the suite. This job classifies the PR diff and
+  # `baseline` (and, through its `needs:`, every other job) runs only when a
+  # functional file changed. A skipped "Ruby 3.3.6" still satisfies branch
+  # protection — GitHub treats a skipped required check as passing — so
+  # docs-only PRs stay mergeable. Non-PR events (push to main, workflow_call
+  # from release.yml) always report functional: releases never skip, and the
+  # main-push run stays as the post-merge backstop.
+  changes:
+    runs-on: ubuntu-latest
+    name: Detect functional changes
+    outputs:
+      functional: ${{ steps.filter.outputs.functional }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: filter
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "functional=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD" | tee "$RUNNER_TEMP/changed.txt"
+          # Non-functional deny-list: docs and meta files only. Anything not
+          # listed runs the full suite — an unrecognized path fails toward
+          # testing, never toward skipping. Widen only with paths the suite
+          # cannot observe (note: bin/ IS functional — CI's tz legs run
+          # bin/build-stale-zoneinfo / bin/build-linkless-zoneinfo).
+          if grep -qvE '\.md$|^docs/|^LICENSE\.txt$|^\.gitignore$|^\.env\.local\.example$|^Brewfile$|^hk\.pkl$|^\.claude/|^\.codex/' "$RUNNER_TEMP/changed.txt"; then
+            echo "functional=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "functional=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # Baseline: matches the Claude Code Web sandbox exactly (see #28). This is
   # the only entry required by branch protection on `main` (context
   # "Ruby 3.3.6") — keep this job's `name` unchanged, or update branch
@@ -27,6 +63,8 @@ jobs:
   # merge. The remaining environments live in `timezones`/`tz-containers`,
   # where a red result only informs. See docs/tz-database-axis.md.
   baseline:
+    needs: changes
+    if: needs.changes.outputs.functional == 'true'
     runs-on: ubuntu-latest
     name: "Ruby 3.3.6"
     steps:
