@@ -246,6 +246,8 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/cpb/du
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
+The native extension statically links the [duckling](https://github.com/wafer-inc/duckling) Rust crate (a Rust port of Facebook's Duckling), which is licensed under the BSD 3-Clause License. Its copyright notice and disclaimer are reproduced in [NOTICES](NOTICES), as that license requires of binary redistributions.
+
 ## Code of Conduct
 
 Everyone interacting in the Duckling project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/cpb/duckling/blob/master/CODE_OF_CONDUCT.md).
