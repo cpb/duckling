@@ -102,6 +102,11 @@ class DucklingCiTest < Minitest::Test
       "RubyGems token, and gem push prefers that env var over --key — " \
       "without the unset, the GitHub Packages push sends the RubyGems token " \
       "and gets a 401 (v0.4.4's publish failed exactly this way)")
+
+    refute_match(/for gem in pkg\/\*\.gem/, gpr_step["run"],
+      "GitHub Packages keys uniqueness on name+version — pushing every " \
+      "platform gem dies on the second one as a duplicate (v0.4.5's " \
+      "publish failed that way); only the source gem goes to GPR")
   end
 
   # release.yml calls benchmark.yml as a reusable workflow, and reusable
