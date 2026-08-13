@@ -23,6 +23,13 @@ jobs:
     name: Record GitHub Actions benchmark results and open a PR
     needs: ci
     uses: ./.github/workflows/benchmark.yml
+    # Reusable-workflow calls receive none of the caller's secrets by
+    # default. Without this, benchmark.yml's RELEASE_AUTOMATION_PAT
+    # expression falls back to GITHUB_TOKEN and its PR lands as
+    # github-actions[bot] — whose CI runs sit at action_required awaiting
+    # maintainer approval, stalling auto-merge (the 0.4.4 benchmark PR,
+    # #146, even though the secret itself was set).
+    secrets: inherit
 
   publish:
     name: Publish to RubyGems and GitHub Packages and create release
@@ -112,6 +119,12 @@ jobs:
       # RubyGems (`gem fetch`) and pushing them here with the same flags.
       - name: Publish to GitHub Packages
         run: |
+          # configure-rubygems-credentials exports GEM_HOST_API_KEY job-wide
+          # holding the *RubyGems* token, and gem push checks that env var
+          # before any --key selection (Gem::GemcutterUtilities#api_key) —
+          # left set, this push sends the RubyGems token to GitHub Packages,
+          # which 401s it. v0.4.4's publish failed exactly this way.
+          unset GEM_HOST_API_KEY
           for gem in pkg/*.gem; do
             gem push --key github --host "https://rubygems.pkg.github.com/${{ github.repository_owner }}" "$gem"
           done

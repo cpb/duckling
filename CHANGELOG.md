@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-08-13
+
+## What's Changed
+* Benchmark results (github-actions, 0.4.3) by @github-actions[bot] in https://github.com/cpb/duckling/pull/138
+* Update CHANGELOG for v0.4.3 by @github-actions[bot] in https://github.com/cpb/duckling/pull/139
+* Benchmark results (github-actions, 0.4.3) by @cpb in https://github.com/cpb/duckling/pull/141
+* Default bin/worktree harness to Pi; add --pi/--claude/--gemini flags by @cpb in https://github.com/cpb/duckling/pull/142
+* Document Pi as the default bin/worktree harness by @cpb in https://github.com/cpb/duckling/pull/143
+* Skip the CI suite for docs-only PRs by @cpb in https://github.com/cpb/duckling/pull/144
+* Publish release gems to GitHub Packages as well as RubyGems; release 0.4.4 by @cpb in https://github.com/cpb/duckling/pull/145
+
+
+**Full Changelog**: https://github.com/cpb/duckling/compare/v0.4.3...v0.4.4
+
+
 ## [0.4.3] - 2026-08-11
 
 ## What's Changed
