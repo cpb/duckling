@@ -109,14 +109,23 @@ jobs:
             gem push "$gem"
           done
 
-      # The same gems go to GitHub Packages' RubyGems registry (#107). This
-      # runs after the RubyGems push on purpose: that push is the fragile one
-      # (its trusted-publisher registration lives on RubyGems.org, outside
-      # this repo), so a failure there leaves both registries untouched and
-      # the tag safe to delete and re-push. If this step fails after RubyGems
-      # succeeded, do not re-run the workflow — it would die on the RubyGems
-      # duplicate-version check. Recover by fetching the published gems from
-      # RubyGems (`gem fetch`) and pushing them here with the same flags.
+      # Only the source gem goes to GitHub Packages' RubyGems registry
+      # (#107): GPR keys uniqueness on name+version alone, so pushing the
+      # platform gems too dies on the second one as a duplicate — v0.4.5's
+      # publish failed exactly that way, after the first platform gem had
+      # registered. The precompiled gems stay RubyGems-only (and attached
+      # to the GitHub release); a GPR consumer compiles the extension at
+      # install time, same as any platform RubyGems has no precompiled gem
+      # for.
+      #
+      # This runs after the RubyGems push on purpose: that push is the
+      # fragile one (its trusted-publisher registration lives on
+      # RubyGems.org, outside this repo), so a failure there leaves both
+      # registries untouched and the tag safe to delete and re-push. If
+      # this step fails after RubyGems succeeded, do not re-run the
+      # workflow — it would die on the RubyGems duplicate-version check.
+      # Recover by fetching the source gem from RubyGems (`gem fetch`) and
+      # pushing it here with the same flags.
       - name: Publish to GitHub Packages
         run: |
           # configure-rubygems-credentials exports GEM_HOST_API_KEY job-wide
@@ -125,9 +134,8 @@ jobs:
           # left set, this push sends the RubyGems token to GitHub Packages,
           # which 401s it. v0.4.4's publish failed exactly this way.
           unset GEM_HOST_API_KEY
-          for gem in pkg/*.gem; do
-            gem push --key github --host "https://rubygems.pkg.github.com/${{ github.repository_owner }}" "$gem"
-          done
+          gem push --key github --host "https://rubygems.pkg.github.com/${{ github.repository_owner }}" \
+            "pkg/duckling-${GITHUB_REF_NAME#v}.gem"
 
       - name: Create GitHub Release
         env:

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-08-13
+
+## What's Changed
+* Benchmark results (github-actions, 0.4.4) by @github-actions[bot] in https://github.com/cpb/duckling/pull/146
+* Fix release-time credential wiring; release 0.4.5 by @cpb in https://github.com/cpb/duckling/pull/147
+
+
+**Full Changelog**: https://github.com/cpb/duckling/compare/v0.4.4...v0.4.5
+
+
 ## [0.4.4] - 2026-08-13
 
 ## What's Changed
