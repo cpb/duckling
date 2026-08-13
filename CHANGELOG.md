@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-08-13
+
+## What's Changed
+* Benchmark results (github-actions, 0.4.6) by @cpb in https://github.com/cpb/duckling/pull/150
+* Update CHANGELOG for v0.4.6 by @cpb in https://github.com/cpb/duckling/pull/151
+* Ship BSD-3-Clause notice for the bundled duckling crate; release 0.4.7 by @cpb in https://github.com/cpb/duckling/pull/152
+
+
+**Full Changelog**: https://github.com/cpb/duckling/compare/v0.4.6...v0.4.7
+
+
 ## [0.4.6] - 2026-08-13
 
 ## What's Changed
