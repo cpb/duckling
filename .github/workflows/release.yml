@@ -25,14 +25,17 @@ jobs:
     uses: ./.github/workflows/benchmark.yml
 
   publish:
-    name: Publish to RubyGems and create release
+    name: Publish to RubyGems and GitHub Packages and create release
     needs: [ci, cross_gems]
     runs-on: ubuntu-latest
     # A job-level block replaces the workflow-level one. It must restate
-    # contents and pull-requests, which the release and CHANGELOG steps need.
+    # contents and pull-requests, which the release and CHANGELOG steps need,
+    # plus packages for the GitHub Packages push and id-token for the
+    # RubyGems trusted-publishing exchange.
     permissions:
       contents: write
       pull-requests: write
+      packages: write
       id-token: write
     steps:
       # The PAT credentials the CHANGELOG step's `git push` (via the
@@ -79,10 +82,38 @@ jobs:
       - name: Configure RubyGems credentials
         uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
 
+      # GitHub Packages authenticates with the workflow's own GITHUB_TOKEN
+      # (packages: write above) — no out-of-repo registration, unlike the
+      # RubyGems push. This append must run after the step above:
+      # configure-rubygems-credentials rewrites ~/.gem/credentials wholesale,
+      # so a :github: key written before it would be lost. The leading
+      # newline guards against the file lacking a trailing one, and gem push
+      # refuses the file unless its mode is 0600.
+      - name: Configure GitHub Packages credentials
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          printf '\n:github: Bearer %s\n' "${GITHUB_TOKEN}" >> ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+
       - name: Publish to RubyGems
         run: |
           for gem in pkg/*.gem; do
             gem push "$gem"
+          done
+
+      # The same gems go to GitHub Packages' RubyGems registry (#107). This
+      # runs after the RubyGems push on purpose: that push is the fragile one
+      # (its trusted-publisher registration lives on RubyGems.org, outside
+      # this repo), so a failure there leaves both registries untouched and
+      # the tag safe to delete and re-push. If this step fails after RubyGems
+      # succeeded, do not re-run the workflow — it would die on the RubyGems
+      # duplicate-version check. Recover by fetching the published gems from
+      # RubyGems (`gem fetch`) and pushing them here with the same flags.
+      - name: Publish to GitHub Packages
+        run: |
+          for gem in pkg/*.gem; do
+            gem push --key github --host "https://rubygems.pkg.github.com/${{ github.repository_owner }}" "$gem"
           done
 
       - name: Create GitHub Release
