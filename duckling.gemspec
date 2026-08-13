@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
   spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
     ls.readlines("\x0", chomp: true).select do |f|
       (f.start_with?(*%w[lib/ ext/ docs/]) && !f.start_with?("docs/benchmarks/")) ||
-        %w[Brewfile CHANGELOG.md CODE_OF_CONDUCT.md Cargo.lock Cargo.toml LICENSE.txt README.md Rakefile].include?(f)
+        %w[Brewfile CHANGELOG.md CODE_OF_CONDUCT.md Cargo.lock Cargo.toml LICENSE.txt NOTICES README.md Rakefile].include?(f)
     end
   end
   spec.bindir = "exe"

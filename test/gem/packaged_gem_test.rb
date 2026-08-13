@@ -59,6 +59,34 @@ class PackagedGemTest < Minitest::Test
     end
   end
 
+  # The native extension statically links the wafer-inc/duckling crate
+  # (BSD-3-Clause), whose clause 2 requires binary redistributions to
+  # reproduce its copyright notice, conditions and disclaimer. NOTICES carries
+  # them, so every built gem must package it — the precompiled gems because
+  # they redistribute the crate's object code, the source gem because
+  # installing it builds the same linked binary. spec.files can't vouch for
+  # this — a listed-but-empty NOTICES passes — so extract each gem and read
+  # the file.
+  def test_every_built_gem_carries_the_wafer_inc_attribution
+    Dir[File.join(ROOT, "pkg", "duckling-*.gem")].each do |gem|
+      name = File.basename(gem)
+      notices = File.join(extracted_gem(gem), "NOTICES")
+
+      assert File.exist?(notices),
+        "#{name} carries no NOTICES — BSD-3-Clause requires the wafer-inc/duckling " \
+        "notice to ship with every gem"
+
+      contents = File.read(notices)
+
+      assert_includes contents, "https://github.com/wafer-inc/duckling",
+        "#{name}'s NOTICES doesn't attribute the wafer-inc/duckling crate"
+      assert_includes contents, "Copyright (c) 2014-present, Facebook, Inc.",
+        "#{name}'s NOTICES doesn't reproduce the crate's copyright notice"
+      assert_includes contents, "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS",
+        "#{name}'s NOTICES doesn't reproduce the crate's disclaimer"
+    end
+  end
+
   # Every platform below is spelled out rather than looped over, so a failure
   # names the platform it belongs to. The cost is that adding one to
   # cross_targets.rb and forgetting to add its tests here leaves it built,
@@ -292,11 +320,15 @@ class PackagedGemTest < Minitest::Test
     binaries(platform).map { |path| File.basename(File.dirname(path)) }.sort
   end
 
-  # The gems run 11-12.5 MB packed and unpack to roughly 40 MB, so extract each
-  # one once for the whole class rather than once per test.
   def extracted(platform)
-    EXTRACTED[platform] ||= Dir.mktmpdir("duckling-#{platform}").tap do |dir|
-      Gem::Package.new(gem_path(platform)).extract_files(dir)
+    extracted_gem(gem_path(platform))
+  end
+
+  # The precompiled gems run 11-12.5 MB packed and unpack to roughly 40 MB, so
+  # extract each gem once for the whole class rather than once per test.
+  def extracted_gem(gem)
+    EXTRACTED[gem] ||= Dir.mktmpdir(File.basename(gem, ".gem")).tap do |dir|
+      Gem::Package.new(gem).extract_files(dir)
     end
   end
 end
