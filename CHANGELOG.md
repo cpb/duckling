@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-08-13
+
+## What's Changed
+* Benchmark results (github-actions, 0.4.5) by @cpb in https://github.com/cpb/duckling/pull/148
+* Push only the source gem to GitHub Packages; release 0.4.6 by @cpb in https://github.com/cpb/duckling/pull/149
+
+
+**Full Changelog**: https://github.com/cpb/duckling/compare/v0.4.5...v0.4.6
+
+
 ## [0.4.5] - 2026-08-13
 
 ## What's Changed
