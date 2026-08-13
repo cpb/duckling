@@ -72,12 +72,16 @@ class DucklingCiTest < Minitest::Test
   # The GitHub Packages half of #107 lives only in release.yml — there is no
   # cross_targets.rb-style original for a test to hold it honest against.
   # What a test can pin is the wiring whose loss would otherwise surface only
-  # as a 403 during a real release: the push step itself, and the
+  # as an auth failure during a real release: the push step itself, the
   # `packages: write` permission its GITHUB_TOKEN authentication needs (the
   # publish job's permissions block replaces the workflow-level one, so a
-  # refactor that drops the key drops the authentication). AGENTS.md's
-  # "Publish credentials" section describes the RubyGems-side equivalent of
-  # this failure shape as uncatchable; this side is catchable.
+  # refactor that drops the key drops the authentication), and the
+  # `unset GEM_HOST_API_KEY` that stops the RubyGems token — exported
+  # job-wide by configure-rubygems-credentials — from shadowing the push's
+  # --key flag (gem push checks that env var first; v0.4.4's publish 401ed
+  # without it). AGENTS.md's "Publish credentials" section describes the
+  # RubyGems-side equivalent of this failure shape as uncatchable; this side
+  # is catchable.
   def test_release_publishes_to_github_packages_as_well_as_rubygems
     publish = release_workflow.fetch("jobs").fetch("publish")
 
@@ -86,12 +90,34 @@ class DucklingCiTest < Minitest::Test
       "authenticates with the job's GITHUB_TOKEN, and a job-level " \
       "permissions block replaces the workflow-level one"
 
-    pushes_to_github_packages = publish.fetch("steps").any? do |step|
+    gpr_step = publish.fetch("steps").find do |step|
       step["run"].to_s.match?(/gem push.*?rubygems\.pkg\.github\.com/m)
     end
-    assert pushes_to_github_packages,
+    refute_nil gpr_step,
       "no publish step pushes to rubygems.pkg.github.com — every built gem " \
       "must go to GitHub Packages as well as RubyGems (#107)"
+
+    assert_match(/unset\s+GEM_HOST_API_KEY/, gpr_step["run"],
+      "configure-rubygems-credentials exports GEM_HOST_API_KEY holding the " \
+      "RubyGems token, and gem push prefers that env var over --key — " \
+      "without the unset, the GitHub Packages push sends the RubyGems token " \
+      "and gets a 401 (v0.4.4's publish failed exactly this way)")
+  end
+
+  # release.yml calls benchmark.yml as a reusable workflow, and reusable
+  # calls receive none of the caller's secrets unless the job says
+  # `secrets: inherit`. Without it, benchmark.yml's
+  # `secrets.RELEASE_AUTOMATION_PAT || github.token` falls back to
+  # GITHUB_TOKEN, the benchmark PR is authored by github-actions[bot], and
+  # its CI run sits at action_required awaiting maintainer approval — zero
+  # checks, auto-merge BLOCKED. Exactly what happened to the 0.4.4
+  # benchmark PR (#146), with the secret itself set the whole time.
+  def test_benchmark_workflow_call_inherits_secrets
+    benchmark = release_workflow.fetch("jobs").fetch("benchmark")
+    assert_equal "inherit", benchmark["secrets"],
+      "the benchmark reusable-workflow call must declare `secrets: inherit` — " \
+      "without it RELEASE_AUTOMATION_PAT is empty inside benchmark.yml and " \
+      "its PR is opened with GITHUB_TOKEN, which needs approval to run CI"
   end
 
   private
