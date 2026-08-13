@@ -6,6 +6,7 @@ require_relative "../cross_targets"
 
 class DucklingCiTest < Minitest::Test
   CROSS_GEM_WORKFLOW = File.expand_path("../.github/workflows/cross-gem.yml", __dir__)
+  RELEASE_WORKFLOW = File.expand_path("../.github/workflows/release.yml", __dir__)
 
   def test_native_extension_infrastructure
     ext_dir = File.join(__dir__, "../ext/duckling")
@@ -68,12 +69,41 @@ class DucklingCiTest < Minitest::Test
       "the smoke job's runner labels disagree with CrossTargets::PLATFORMS"
   end
 
+  # The GitHub Packages half of #107 lives only in release.yml — there is no
+  # cross_targets.rb-style original for a test to hold it honest against.
+  # What a test can pin is the wiring whose loss would otherwise surface only
+  # as a 403 during a real release: the push step itself, and the
+  # `packages: write` permission its GITHUB_TOKEN authentication needs (the
+  # publish job's permissions block replaces the workflow-level one, so a
+  # refactor that drops the key drops the authentication). AGENTS.md's
+  # "Publish credentials" section describes the RubyGems-side equivalent of
+  # this failure shape as uncatchable; this side is catchable.
+  def test_release_publishes_to_github_packages_as_well_as_rubygems
+    publish = release_workflow.fetch("jobs").fetch("publish")
+
+    assert_equal "write", publish.fetch("permissions").fetch("packages"),
+      "the publish job needs `packages: write` — the GitHub Packages push " \
+      "authenticates with the job's GITHUB_TOKEN, and a job-level " \
+      "permissions block replaces the workflow-level one"
+
+    pushes_to_github_packages = publish.fetch("steps").any? do |step|
+      step["run"].to_s.match?(/gem push.*?rubygems\.pkg\.github\.com/m)
+    end
+    assert pushes_to_github_packages,
+      "no publish step pushes to rubygems.pkg.github.com — every built gem " \
+      "must go to GitHub Packages as well as RubyGems (#107)"
+  end
+
   private
 
   def workflow
     # No encoding argument needed, unlike the File.read above: Psych opens
     # with "r:bom|utf-8" regardless of the host locale.
     @workflow ||= YAML.load_file(CROSS_GEM_WORKFLOW)
+  end
+
+  def release_workflow
+    @release_workflow ||= YAML.load_file(RELEASE_WORKFLOW)
   end
 
   def job(name)
