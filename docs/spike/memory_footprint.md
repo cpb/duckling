@@ -169,3 +169,47 @@ The dominant cost is the Rust `regex` crate's compiled DFA/bytecode for
 leaked via `Box::leak` (`lang/mod.rs:21`) as `&'static [Rule]` for the
 process lifetime. This is a one-time cost: 100 steady-state parses across
 all locales add **zero** additional memory.
+
+## Ruby Regexp comparison: would this growth happen in pure Ruby?
+
+The `ruby_regexp_comparison.rb` probe extracts all 3,418 unique regex
+patterns from the duckling Rust crate source and compiles them as Ruby
+`Regexp` objects (pinned via an instance variable to mirror `Box::leak`),
+then runs 100 matches per pattern against a sample string.
+
+### Results (Linux x86_64, Ruby 3.3, PSS)
+
+| | Rust regex crate | Ruby Regexp (Onigmo) |
+|---|---|---|
+| Patterns compiled | 3,905 (per-locale, with duplicates) | 3,418 (unique, once) |
+| Compile memory | ~536 MB (Pss_Anon) | ~3.2 MB (PSS delta) |
+| Per-pattern cost | ~141 KB | ~1.6 KB |
+| 100 matches memory | +0.0 MB | +0.0 MB |
+| Match speed | — | ~1.0M matches/sec |
+
+| | Value |
+|---|---|
+| **Memory ratio** | **~100x less** for Ruby |
+| **Per-pattern ratio** | **~88x less** (normalized for duplicates) |
+
+### Why the difference
+
+**Rust `regex` crate** compiles each pattern into a hybrid DFA/NFA
+automaton. The DFA pre-computes all transition states for O(n) matching
+time, but the compiled representation is large — ~141 KB per pattern on
+average, dominated by the DFA state tables.
+
+**Ruby `Regexp`** (Onigmo) compiles patterns to bytecode that is
+interpreted at match time. The compiled bytecode is ~1.6 KB per pattern
+— much smaller, but matching is O(nm) worst case (backtracking).
+
+The Rust side also recompiles shared "common rules" per locale (3,905
+total compilations vs 3,418 unique patterns) because the `OnceLock`
+cache key includes the locale. Even normalizing for duplicates, the
+per-pattern cost differs by ~88x.
+
+The tradeoff is speed vs memory: the Rust DFA gives guaranteed linear-time
+matching at the cost of ~100x more memory per pattern. For a gem that
+compiles ~3,900 patterns on first use, this means 536 MB vs 3 MB — the
+difference between a deployment that fits in Heroku's 512 MB Eco dyno and
+one that doesn't, if all locales are exercised.
