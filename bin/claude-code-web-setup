@@ -1,7 +1,9 @@
 #!/bin/sh
 # Installs per-tool dependencies before Claude Code tool calls, using receipt
 # files in tmp/claude-web-receipts/ as a fast-path cache so only the first
-# call per session pays installation cost.
+# call per session pays installation cost. Ensures Ruby 3.4+ is active
+# before installing gems or compiling the extension, provisioning it by
+# the cheapest available route if the sandbox's default Ruby is older.
 #
 # Only reached in Claude Code web sessions — the hook command in settings.json
 # short-circuits on CLAUDE_CODE_REMOTE != true before exec'ing this script.
