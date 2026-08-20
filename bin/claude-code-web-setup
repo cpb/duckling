@@ -19,6 +19,7 @@ TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null || tr
 
 case "$TOOL_NAME" in
   Edit|Write)
+    ensure_ruby
     install_gems
     compile_extension
     ;;

@@ -22,6 +22,7 @@
 # compile` prerequisite.
 if [ "${CLAUDE_CODE_REMOTE:-}" = true ]; then
   . "$(dirname "$0")/claude-web-deps.sh"
+  ensure_ruby
   install_gems
 fi
 
