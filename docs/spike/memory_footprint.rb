@@ -2,10 +2,17 @@
 
 # Empirical memory measurement for the duckling gem.
 #
-# Measures RSS/PSS/USS at four points — bare Ruby, after `require "duckling"`,
-# after the first `Duckling.parse`, and after 100 steady-state parses — with
-# GC forced between each phase so deltas reflect committed memory, not
-# transient garbage.
+# Measures RSS/PSS/USS across the full lifecycle — bare Ruby, after
+# `require "duckling"`, after each locale's first parse (showing how the
+# Rust regex/rule cache grows per locale), and after 100 steady-state
+# parses — with GC forced between each phase so deltas reflect committed
+# memory, not transient garbage.
+#
+# The Rust `duckling` crate compiles grammar rules lazily per locale via
+# `OnceLock` and intentionally leaks them via `Box::leak` — each locale's
+# first parse is a permanent, one-time memory cost. This harness walks
+# all 49 supported locales (27 have time rules; the rest still compile
+# dependency-dimension rules) so the growth curve is visible.
 #
 # On Linux it reads /proc/self/status and /proc/self/smaps_rollup for
 # RSS/PSS/USS. On macOS it falls back to `ps -o rss` (RSS only; no PSS/USS).
@@ -24,6 +31,16 @@
 # platform gem carries a .so for each, so no compilation is needed.
 
 module MemoryFootprint
+  # All locales the gem accepts (ext/duckling/src/lib.rs lang_from_code).
+  # 27 of these have time-dimension rules; the rest still compile
+  # dependency-dimension rules (numeral, ordinal, duration, time-grain)
+  # on first parse, so they contribute to memory growth too.
+  LOCALES = %w[
+    af ar bg bn ca cs da de el en es et fa fi fr ga he hi hr hu id is
+    it ja ka km kn ko lo ml mn my nb ne nl pl pt ro ru sk sv sw ta te
+    th tr uk vi zh
+  ].freeze
+
   module_function
 
   def rss_kb
@@ -61,7 +78,7 @@ module MemoryFootprint
     parts = ["RSS=#{rss}KB (#{(rss / 1024.0).round(1)}MB)"]
     parts << "PSS=#{pss}KB (#{(pss / 1024.0).round(1)}MB)" if pss
     parts << "USS=#{uss}KB (#{(uss / 1024.0).round(1)}MB)" if uss
-    puts format("%-28s %s", label, parts.join("  "))
+    puts format("%-44s %s", label, parts.join("  "))
 
     {rss: rss, pss: pss, uss: uss}
   end
@@ -75,7 +92,7 @@ module MemoryFootprint
 
   def run
     puts "Ruby #{RUBY_VERSION} on #{RUBY_PLATFORM}"
-    puts "=" * 64
+    puts "=" * 80
 
     base = snapshot("Baseline (bare Ruby)")
 
@@ -85,22 +102,60 @@ module MemoryFootprint
     GC.start
     after_req_gc = snapshot("After require + GC")
 
-    Duckling.parse("tomorrow at 3pm", locale: "en", dims: ["time"])
-    after_parse = snapshot("After 1st parse")
+    # --- Per-locale first-parse growth -----------------------------------------
+
+    puts ""
+    puts "Per-locale first-parse growth (dims: [\"time\"]):"
+    puts format("%-6s  %8s  %8s  %8s  %s",
+      "locale", "RSS_KB", "dKB", "dMB", "entities")
+
+    prev = after_req_gc
+    locale_results = {}
+
+    LOCALES.each do |loc|
+      entities =
+        begin
+          Duckling.parse("tomorrow at 3pm", locale: loc, dims: ["time"]).size
+        rescue => e
+          "ERR:#{e.class}"
+        end
+
+      GC.start
+      cur = rss_kb
+      d_kb = cur - prev[:rss]
+      puts format("%-6s  %8d  %+8d  %+7.1f  %s",
+        loc, cur, d_kb, (d_kb / 1024.0), entities)
+      locale_results[loc] = {rss: cur, entities: entities}
+      prev = {rss: cur}
+    end
+
+    after_all_locales = snapshot("After all #{LOCALES.size} locales (1st parse each)")
+    GC.start
+    after_all_locales_gc = snapshot("After all locales + GC")
+
+    # --- Steady state: 100 parses across locales -------------------------------
+
+    # Cycle through locales that produced results (or all if none),
+    # 100 total parses, to verify zero growth at steady state.
+    locales_with_results = LOCALES.select { |l| locale_results[l][:entities].is_a?(Integer) }
+    cycle = locales_with_results.any? ? locales_with_results : LOCALES
+
+    100.times do |i|
+      loc = cycle[i % cycle.size]
+      Duckling.parse("next monday at noon", locale: loc, dims: ["time"])
+    end
 
     GC.start
-    after_parse_gc = snapshot("After 1st parse + GC")
+    after_100 = snapshot("After 100 steady-state parses + GC")
 
-    100.times { Duckling.parse("next monday at noon", locale: "en", dims: ["time"]) }
-    GC.start
-    after_100 = snapshot("After 100 parses + GC")
+    # --- Summary ---------------------------------------------------------------
 
     puts ""
     puts "=== Deltas (post-GC steady state) ==="
-    delta("require cost",  base,          after_req_gc)
-    delta("parse init",    after_req_gc,  after_parse_gc)
-    delta("100 parses",    after_parse_gc, after_100)
-    delta("TOTAL",         base,          after_100)
+    delta("require cost",     base,               after_req_gc)
+    delta("all locales init", after_req_gc,       after_all_locales_gc)
+    delta("100 steady parses", after_all_locales_gc, after_100)
+    delta("TOTAL",            base,               after_100)
 
     print_smaps_detail if File.exist?("/proc/self/smaps")
   end
