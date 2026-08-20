@@ -213,3 +213,67 @@ matching at the cost of ~100x more memory per pattern. For a gem that
 compiles ~3,900 patterns on first use, this means 536 MB vs 3 MB — the
 difference between a deployment that fits in Heroku's 512 MB Eco dyno and
 one that doesn't, if all locales are exercised.
+
+## Runtime performance: does the 100x memory cost buy speed?
+
+The `performance_benchmark.rb` script measures end-to-end throughput and
+text-length scaling for both engines.
+
+### Throughput (Linux x86_64, 56-byte text)
+
+| Benchmark | Ruby 3.3 | Ruby 3.4 |
+|-----------|----------|----------|
+| Duckling.parse (en, full NER pipeline) | 590 ops/sec | 513 ops/sec |
+| Duckling.parse (cycling 49 locales) | 916 ops/sec | 935 ops/sec |
+| Duckling.parse (cycling 27 time locales) | 527 ops/sec | 519 ops/sec |
+| Ruby Regexp.match? (3418 patterns) | 255 iter/sec | 268 iter/sec |
+| Ruby Regexp.match? (235 patterns, en) | 6,027 iter/sec | 5,847 iter/sec |
+| Ruby Regexp.match? (1 pattern) | 1.03M ops/sec | 1.04M ops/sec |
+
+The "cycling 49 locales" throughput is higher than "en only" because 22
+of the 49 locales have no time-dimension rules and parse nearly
+instantly, pulling the average down.
+
+### Text-length scaling (Linux x86_64, Ruby 3.3)
+
+| Text | Bytes | Duckling.parse µs | µs/byte | Ruby Regexp (235) µs | µs/byte |
+|------|-------|-------------------|---------|----------------------|---------|
+| short | 15 | 531 | 35.4 | 89 | 5.9 |
+| medium | 56 | 1,629 | 29.1 | 174 | 3.1 |
+| long | 173 | 3,120 | 18.0 | 414 | 2.4 |
+| xlong | 696 | 18,540 | 26.6 | 1,389 | 2.0 |
+
+Both engines scale roughly linearly with text length. The Rust DFA's
+µs/byte is roughly constant (18-35); Ruby's decreases for short text due to
+fixed per-iteration overhead (pattern loop setup) and stabilizes around
+~2.0 µs/byte for longer text. Neither shows superlinear growth because
+the duckling patterns are mostly simple alternations and character
+classes that don't trigger Onigmo's catastrophic-backtracking worst case.
+
+### What the numbers mean
+
+Duckling.parse (1,629 µs for en) includes regex matching (235 patterns)
+plus tokenization, rule engine, ranking, and Ruby serialization across
+the FFI boundary. Ruby Regexp matching (174 µs for 235 patterns) is just
+the regex matching — no extraction logic. The 10:1 ratio is not a
+regex-engine speed comparison; it's "full NER pipeline" vs "regex only."
+
+The Rust regex engine itself is likely **faster** per-pattern than
+Onigmo (DFA O(n) vs backtracking), but the NER pipeline overhead
+(Tokio task dispatch, tokenization, rule application, ranking,
+serde-magnus serialization) dominates Duckling.parse's wall time. The
+~1 µs/pattern from the single-pattern benchmark is Ruby's raw Onigmo
+matching speed; the Rust DFA is probably faster still, but it's buried
+under ~1,400 µs of pipeline work.
+
+### Bottom line
+
+The 100x memory cost buys a **guarantee** (O(n) matching, no
+pathological inputs) rather than proportional throughput. For the
+duckling patterns specifically — which are simple enough that Onigmo
+doesn't backtrack badly — the practical speed difference at the regex
+level is modest. The end-to-end throughput is dominated by the NER
+pipeline, not by regex matching, so a hypothetical pure-Ruby
+reimplementation using Onigmo would be slower (no O(n) guarantee, plus
+Ruby interpretation overhead for the pipeline logic) but would use ~100x
+less memory for the regex portion.
