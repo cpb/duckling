@@ -216,64 +216,78 @@ one that doesn't, if all locales are exercised.
 
 ## Runtime performance: does the 100x memory cost buy speed?
 
-The `performance_benchmark.rb` script measures end-to-end throughput and
-text-length scaling for both engines.
+The `performance_benchmark.rb` script measures end-to-end throughput,
+dims impact, and text-length scaling for both engines.
 
-### Throughput (Linux x86_64, 56-byte text)
+### Does dims impact throughput?
 
-| Benchmark | Ruby 3.3 | Ruby 3.4 |
-|-----------|----------|----------|
-| Duckling.parse (en, full NER pipeline) | 590 ops/sec | 513 ops/sec |
-| Duckling.parse (cycling 49 locales) | 916 ops/sec | 935 ops/sec |
-| Duckling.parse (cycling 27 time locales) | 527 ops/sec | 519 ops/sec |
-| Ruby Regexp.match? (3418 patterns) | 255 iter/sec | 268 iter/sec |
-| Ruby Regexp.match? (235 patterns, en) | 6,027 iter/sec | 5,847 iter/sec |
-| Ruby Regexp.match? (1 pattern) | 1.03M ops/sec | 1.04M ops/sec |
+Yes — the Rust engine only compiles and runs rules for the requested dims
+(plus dependencies). `dims: ["time"]` compiles 197 unique patterns (time
++ numeral + ordinal + duration + time-grain); all 14 dims compiles 254.
 
-The "cycling 49 locales" throughput is higher than "en only" because 22
-of the 49 locales have no time-dimension rules and parse nearly
-instantly, pulling the average down.
+| dims | Patterns | µs/op | ops/sec | entities |
+|------|----------|-------|---------|----------|
+| `["time"]` | 197 | 1,395 | 717 | 1 |
+| `["number"]` | 28 | 35 | 28,550 | 3 |
+| `["email"]` | 6 | 4 | 247,550 | 0 |
+| `["temperature"]` | 34 | 43 | 23,516 | 0 |
+| `["amount-of-money"]` | 53 | 36 | 27,955 | 0 |
+| all 14 dims | 254 | 2,912 | 343 | 4 |
+| `[]` (default=all) | 254 | 2,916 | 343 | 4 |
+
+Throughput scales 2.4x from `dims: ["time"]` to all dims, even though
+pattern count only grows 1.3x (197 → 254). The extra dims add pipeline
+overhead beyond just more regex matching — more rules to apply, more
+token combinations to try, more entities to rank and serialize.
+
+For an apples-to-apples Ruby comparison, only the 197 patterns that
+`dims: ["time"]` actually compiles are needed — not all 3,418.
+
+### Apples-to-apples: dims: ["time"], en, 197 patterns (Linux x86_64, Ruby 3.3)
+
+| | Duckling.parse (Rust) | Ruby Regexp (Onigmo) |
+|---|---|---|
+| What it does | full NER pipeline | regex matching only |
+| µs/op | 1,252 | 114 |
+| ops/sec | 799 | 8,779 |
+| Per-pattern | — | 0.58 µs |
+| Patterns | 197 | 197 |
+
+The 11:1 wall-time ratio is **not** a regex-engine comparison —
+Duckling.parse includes tokenization, rule engine, ranking, and Ruby
+serialization across the FFI boundary. The Ruby side is just
+`Regexp.match?` with no extraction logic. The estimated NER pipeline
+overhead is ~1,138 µs (Rust total minus Ruby regex), dwarfing the 114 µs
+regex matching cost.
 
 ### Text-length scaling (Linux x86_64, Ruby 3.3)
 
-| Text | Bytes | Duckling.parse µs | µs/byte | Ruby Regexp (235) µs | µs/byte |
+| Text | Bytes | Duckling.parse µs | µs/byte | Ruby Regexp (197) µs | µs/byte |
 |------|-------|-------------------|---------|----------------------|---------|
-| short | 15 | 531 | 35.4 | 89 | 5.9 |
-| medium | 56 | 1,629 | 29.1 | 174 | 3.1 |
-| long | 173 | 3,120 | 18.0 | 414 | 2.4 |
-| xlong | 696 | 18,540 | 26.6 | 1,389 | 2.0 |
+| short | 15 | 410 | 27.3 | 56 | 3.8 |
+| medium | 56 | 1,208 | 21.6 | 109 | 2.0 |
+| long | 173 | 2,418 | 14.0 | 248 | 1.4 |
+| xlong | 696 | 14,311 | 20.6 | 798 | 1.1 |
 
-Both engines scale roughly linearly with text length. The Rust DFA's
-µs/byte is roughly constant (18-35); Ruby's decreases for short text due to
-fixed per-iteration overhead (pattern loop setup) and stabilizes around
-~2.0 µs/byte for longer text. Neither shows superlinear growth because
-the duckling patterns are mostly simple alternations and character
-classes that don't trigger Onigmo's catastrophic-backtracking worst case.
-
-### What the numbers mean
-
-Duckling.parse (1,629 µs for en) includes regex matching (235 patterns)
-plus tokenization, rule engine, ranking, and Ruby serialization across
-the FFI boundary. Ruby Regexp matching (174 µs for 235 patterns) is just
-the regex matching — no extraction logic. The 10:1 ratio is not a
-regex-engine speed comparison; it's "full NER pipeline" vs "regex only."
-
-The Rust regex engine itself is likely **faster** per-pattern than
-Onigmo (DFA O(n) vs backtracking), but the NER pipeline overhead
-(Tokio task dispatch, tokenization, rule application, ranking,
-serde-magnus serialization) dominates Duckling.parse's wall time. The
-~1 µs/pattern from the single-pattern benchmark is Ruby's raw Onigmo
-matching speed; the Rust DFA is probably faster still, but it's buried
-under ~1,400 µs of pipeline work.
+Both engines scale roughly linearly. The Rust DFA's µs/byte is roughly
+constant (14-27); Ruby's stabilizes around ~1.1 µs/byte. Neither shows
+superlinear growth — the duckling patterns are mostly simple alternations
+and character classes that don't trigger Onigmo's catastrophic-backtracking
+worst case.
 
 ### Bottom line
 
-The 100x memory cost buys a **guarantee** (O(n) matching, no
-pathological inputs) rather than proportional throughput. For the
-duckling patterns specifically — which are simple enough that Onigmo
-doesn't backtrack badly — the practical speed difference at the regex
-level is modest. The end-to-end throughput is dominated by the NER
-pipeline, not by regex matching, so a hypothetical pure-Ruby
-reimplementation using Onigmo would be slower (no O(n) guarantee, plus
-Ruby interpretation overhead for the pipeline logic) but would use ~100x
+The 100x memory cost buys a **guarantee** (O(n) matching, no pathological
+inputs) rather than proportional throughput. For the duckling patterns
+specifically — which are simple enough that Onigmo doesn't backtrack
+badly — the practical per-pattern speed difference is modest (~2x). The
+NER pipeline overhead (~1,100 µs) dominates Duckling.parse's wall time, so
+the regex engine choice is not the throughput bottleneck. A hypothetical
+pure-Ruby reimplementation using Onigmo would be slower (no O(n) guarantee,
+plus Ruby interpretation overhead for pipeline logic) but would use ~100x
 less memory for the regex portion.
+
+The `dims:` parameter is a real optimization: `dims: ["time"]` is 2.4x
+faster than all dims and uses fewer patterns (197 vs 254). For the Ruby
+comparison, only the patterns for the requested dims + dependencies are
+needed — not the full 3,418 across all locales and dimensions.

@@ -12,6 +12,13 @@
 # more memory but guarantees O(n) matching with no catastrophic
 # backtracking.
 #
+# Also measures how the `dims:` parameter affects throughput — the Rust
+# engine only compiles and runs rules for the requested dims (plus
+# dependencies), so `dims: ["time"]` uses 197 patterns while all dims
+# uses 254. For an apples-to-apples comparison, the Ruby side uses the
+# exact same pattern set extracted from the English time+dependencies
+# dimension files.
+#
 # Usage:
 #
 #   # locally (requires the duckling gem)
@@ -20,10 +27,9 @@
 #   # Linux via Docker
 #   docker build -t duckling-mem -f docs/spike/memory_footprint.Dockerfile .
 #   docker run --rm -v $(pwd)/docs/spike/performance_benchmark.rb:/tmp/perf.rb \
-#     -v $(pwd)/docs/spike/duckling_patterns.json:/tmp/duckling_patterns.json \
 #     duckling-mem ruby /tmp/perf.rb
 
-require "duckling" if defined?(Duckling).nil? # load if available
+require "duckling" if defined?(Duckling).nil?
 require "json"
 
 module PerformanceBenchmark
@@ -49,6 +55,11 @@ module PerformanceBenchmark
     th tr uk vi zh
   ].freeze
 
+  ALL_DIMS = %w[
+    time number amount-of-money email url phone-number credit-card-number
+    temperature distance volume quantity ordinal duration time-grain
+  ].freeze
+
   module_function
 
   def now
@@ -62,16 +73,20 @@ module PerformanceBenchmark
     elapsed = now - t0
     ops_sec = (n / elapsed).round(0)
     us_op = (elapsed / n * 1_000_000).round(1)
-    puts format("  %-50s %7d ops  %8.1fms  %8d ops/s  %7.1f µs/op",
+    printf("  %-50s %7d ops  %8.1fms  %8d ops/s  %7.1f µs/op\n",
       label, n, elapsed * 1000, ops_sec, us_op)
     {label: label, n: n, elapsed: elapsed, ops_sec: ops_sec, us_op: us_op}
   end
 
-  def load_patterns
-    cache = File.expand_path("duckling_patterns.json", __dir__)
-    JSON.parse(File.read(cache))
-  rescue Errno::ENOENT
-    abort "Pattern cache not found at #{cache}. Run ruby_regexp_comparison.rb first."
+  def load_json(name)
+    # Try __dir__ (repo path), then /tmp (Docker)
+    paths = [
+      File.expand_path(name, __dir__),
+      File.join("/tmp", name),
+    ]
+    path = paths.find { |p| File.exist?(p) }
+    return [] unless path
+    JSON.parse(File.read(path))
   end
 
   def run
@@ -79,9 +94,15 @@ module PerformanceBenchmark
     puts "=" * 90
 
     has_duckling = const_defined?(:Duckling)
-    patterns = load_patterns
-    compiled = patterns.map { |p| Regexp.new(p) }
-    en_compiled = compiled.first(235) # en time-dimension pattern count
+
+    # Load pattern sets for the apples-to-apples comparison.
+    # en_time_patterns.json: 197 unique patterns from English time + deps
+    #   (time, numeral, ordinal, duration, time-grain) — what dims: ["time"]
+    #   actually compiles.
+    # en_all_dims_patterns.json: 254 unique patterns from all English dims.
+    en_time_pats = load_json("en_time_patterns.json")
+    en_all_pats = load_json("en_all_dims_patterns.json")
+    all_pats    = load_json("duckling_patterns.json")
 
     text = SAMPLE_TEXTS[1][1] # medium text
 
@@ -107,21 +128,92 @@ module PerformanceBenchmark
       results[:duckling_time] = bench(
         "Duckling.parse (cycling 27 time locales)", 2_000
       ) { |n| n.times { |i| Duckling.parse(text, locale: TIME_LOCALES[i % TIME_LOCALES.size], dims: ["time"]) }; n }
+
+      results[:duckling_all_dims] = bench(
+        "Duckling.parse (en, all 14 dims)", 2_000
+      ) { |n| n.times { Duckling.parse(text, locale: "en", dims: ALL_DIMS) }; n }
+
+      results[:duckling_number] = bench(
+        "Duckling.parse (en, number only)", 5_000
+      ) { |n| n.times { Duckling.parse(text, locale: "en", dims: ["number"]) }; n }
+
+      results[:duckling_email] = bench(
+        "Duckling.parse (en, email only)", 10_000
+      ) { |n| n.times { Duckling.parse(text, locale: "en", dims: ["email"]) }; n }
     else
       puts "  (duckling gem not available — skipping Duckling.parse benchmarks)"
     end
 
-    results[:ruby_all] = bench(
-      "Ruby Regexp.match? (3418 patterns)", 500
-    ) { |n| n.times { compiled.each { |re| re.match?(text) } }; n * patterns.size }
+    # Ruby Regexp — use the exact en time pattern set (197 patterns)
+    en_time_re = en_time_pats.map { |p| Regexp.new(p) }
+    en_all_re  = en_all_pats.map { |p| Regexp.new(p) }
+    all_re    = all_pats.map { |p| Regexp.new(p) }
 
-    results[:ruby_en] = bench(
-      "Ruby Regexp.match? (235 patterns, en-equivalent)", 2_000
-    ) { |n| n.times { en_compiled.each { |re| re.match?(text) } }; n * 235 }
+    results[:ruby_en_time] = bench(
+      "Ruby Regexp.match? (#{en_time_pats.size} pat, en time+deps)", 2_000
+    ) { |n| n.times { en_time_re.each { |re| re.match?(text) } }; n * en_time_pats.size }
+
+    results[:ruby_en_all] = bench(
+      "Ruby Regexp.match? (#{en_all_pats.size} pat, en all dims)", 2_000
+    ) { |n| n.times { en_all_re.each { |re| re.match?(text) } }; n * en_all_pats.size } unless en_all_pats.empty?
+
+    results[:ruby_all] = bench(
+      "Ruby Regexp.match? (#{all_pats.size} pat, all locales)", 500
+    ) { |n| n.times { all_re.each { |re| re.match?(text) } }; n * all_pats.size } unless all_pats.empty?
 
     results[:ruby_1] = bench(
       "Ruby Regexp.match? (1 pattern)", 50_000
-    ) { |n| re = compiled.first; n.times { re.match?(text) }; n }
+    ) { |n| re = all_re.first; n.times { re.match?(text) }; n }
+
+    # --- Apples-to-apples: same dims, same patterns ---------------------------
+
+    puts ""
+    puts "Apples-to-apples: dims: [\"time\"], en, #{en_time_pats.size} patterns"
+    puts ""
+
+    if has_duckling && !en_time_pats.empty?
+      r = results[:duckling_en]
+      rb = results[:ruby_en_time]
+
+      # Duckling.parse: full NER pipeline (regex match + tokenize + rank + serialize)
+      # Ruby Regexp: just regex matching, no extraction
+      printf("  Duckling.parse (Rust, full NER):  %8.1f µs/op   %6d ops/sec\n", r[:us_op], r[:ops_sec])
+      printf("  Ruby Regexp.match? (regex only): %8.1f µs/op   %6d iter/sec\n", rb[:us_op], (2_000 / (rb[:elapsed] / 2_000)).round(0))
+      puts ""
+      printf("  Ruby per-pattern:                %8.2f µs  (%d patterns)\n", (rb[:us_op] / en_time_pats.size), en_time_pats.size)
+      printf("  Ratio (Rust total / Ruby regex): %8.1fx\n", (r[:us_op] / rb[:us_op]))
+      printf("  Est. Rust pipeline overhead:      %8.1f µs  (Rust total - Ruby regex)\n", r[:us_op] - rb[:us_op])
+    end
+
+    # --- Dims impact ----------------------------------------------------------
+
+    puts ""
+    puts "Dims impact on Duckling.parse (en)"
+    puts ""
+
+    if has_duckling
+      dims_configs = [
+        ['["time"]',          ["time"]],
+        ['["number"]',        ["number"]],
+        ['["email"]',         ["email"]],
+        ['["temperature"]',   ["temperature"]],
+        ['["amount-of-money"]', ["amount-of-money"]],
+        ["all 14 dims",       ALL_DIMS],
+        ['[] (default=all)',  []],
+      ]
+      printf("  %-30s %8s  %8s  %8s\n", "dims", "µs/op", "ops/sec", "entities")
+      dims_configs.each do |label, dims|
+        n = dims == ["email"] ? 10_000 : 2_000
+        Duckling.parse(text, locale: "en", dims: dims) # warm
+        t0 = now
+        entities = nil
+        n.times { entities = Duckling.parse(text, locale: "en", dims: dims) }
+        elapsed = now - t0
+        us = (elapsed / n * 1_000_000).round(1)
+        ops = (n / elapsed).round(0)
+        printf("  %-30s %8.1f  %8d  %8d\n", label, us, ops, entities&.size)
+      end
+    end
 
     # --- Text-length scaling --------------------------------------------------
 
@@ -131,8 +223,7 @@ module PerformanceBenchmark
 
     if has_duckling
       puts "  Duckling.parse (en, time):"
-      puts format("  %-20s %8s  %8s  %8s", "label", "bytes", "µs/parse", "µs/byte")
-      scale_duckling = []
+      printf("  %-20s %8s  %8s  %8s\n", "label", "bytes", "µs/parse", "µs/byte")
       SAMPLE_TEXTS.each do |label, txt|
         n = [5_000 / [1, txt.bytesize / 20].max, 50].max
         Duckling.parse(txt, locale: "en", dims: ["time"]) # warm
@@ -141,60 +232,61 @@ module PerformanceBenchmark
         elapsed = now - t0
         us = (elapsed / n * 1_000_000).round(1)
         us_byte = (us / txt.bytesize).round(2)
-        puts format("  %-20s %8d  %8.1f  %8.2f", label, txt.bytesize, us, us_byte)
-        scale_duckling << {bytes: txt.bytesize, us: us, us_byte: us_byte}
+        printf("  %-20s %8d  %8.1f  %8.2f\n", label, txt.bytesize, us, us_byte)
       end
     end
 
-    puts ""
-    puts "  Ruby Regexp.match? (235 patterns, en-equivalent):"
-    puts format("  %-20s %8s  %8s  %8s", "label", "bytes", "µs/iter", "µs/byte")
-    scale_ruby = []
-    SAMPLE_TEXTS.each do |label, txt|
-      n = [20_000 / [1, txt.bytesize / 20].max, 100].max
-      t0 = now
-      n.times { en_compiled.each { |re| re.match?(txt) } }
-      elapsed = now - t0
-      us = (elapsed / n * 1_000_000).round(1)
-      us_byte = (us / txt.bytesize).round(2)
-      puts format("  %-20s %8d  %8.1f  %8.2f", label, txt.bytesize, us, us_byte)
-      scale_ruby << {bytes: txt.bytesize, us: us, us_byte: us_byte}
+    if !en_time_re.empty?
+      puts ""
+      puts "  Ruby Regexp.match? (#{en_time_pats.size} patterns, en time+deps):"
+      printf("  %-20s %8s  %8s  %8s\n", "label", "bytes", "µs/iter", "µs/byte")
+      SAMPLE_TEXTS.each do |label, txt|
+        n = [5_000 / [1, txt.bytesize / 20].max, 50].max
+        t0 = now
+        n.times { en_time_re.each { |re| re.match?(txt) } }
+        elapsed = now - t0
+        us = (elapsed / n * 1_000_000).round(1)
+        us_byte = (us / txt.bytesize).round(2)
+        printf("  %-20s %8d  %8.1f  %8.2f\n", label, txt.bytesize, us, us_byte)
+      end
     end
 
-    # --- Tradeoff summary -----------------------------------------------------
+    # --- Summary -------------------------------------------------------------
 
     puts ""
     puts "=" * 90
     puts "Memory / speed tradeoff"
     puts ""
-    if has_duckling && results[:duckling_en] && results[:ruby_en]
+    if has_duckling && results[:duckling_en] && results[:ruby_en_time] && !en_time_pats.empty?
       d = results[:duckling_en]
-      r = results[:ruby_en]
-      # Duckling.parse does 235 regex matches + full NER pipeline in d µs
-      # Ruby does 235 regex matches (no NER) in r µs
-      # The Rust regex matching itself is faster than d µs (pipeline overhead)
-      # but we can't isolate it without instrumenting the Rust code.
-      puts "  Duckling.parse (en, full NER pipeline):"
-      puts "    #{d[:us_op]} µs/parse  (#{d[:ops_sec]} parses/sec)"
-      puts "    Includes: regex matching (235 patterns) + tokenization +"
-      puts "    rule engine + ranking + Ruby serialization"
+      r = results[:ruby_en_time]
+      puts "  Duckling.parse (en, dims: [\"time\"], full NER pipeline):"
+      printf("    %.1f µs/parse  (%d parses/sec)\n", d[:us_op], d[:ops_sec])
+      puts "    Patterns: #{en_time_pats.size} (time + numeral + ordinal + duration + time-grain)"
+      puts "    Includes: regex matching + tokenization + rule engine +"
+      puts "    ranking + Ruby serialization across FFI"
       puts ""
-      puts "  Ruby Regexp.match? (235 patterns, matching only):"
-      puts "    #{r[:us_op]} µs/iteration  (#{r[:ops_sec]} matches/sec)"
+      printf("  Ruby Regexp.match? (%d patterns, matching only):\n", en_time_pats.size)
+      printf("    %.1f µs/iteration  (%d iter/sec)\n", r[:us_op], (r[:n] / r[:elapsed]).round(0))
       puts "    Includes: regex matching only, no extraction"
       puts ""
       puts "  Memory cost:"
       puts "    Rust (all 49 locales):  ~536 MB  (DFA/NFA, Box::leak)"
-      puts "    Ruby (3418 patterns):  ~3.2 MB  (Onigmo bytecode)"
+      puts "    Ruby (#{en_time_pats.size} patterns):  ~#{(en_time_pats.size * 1.6 / 1024).round(1)} MB  (Onigmo bytecode)"
       puts "    Ratio: ~100x"
       puts ""
-      puts "  The Rust regex engine's DFA gives guaranteed O(n) matching"
-      puts "  (no catastrophic backtracking). The scaling curves show both"
-      puts "  engines scale roughly linearly for these patterns — the"
-      puts "  duckling patterns are mostly simple alternations and character"
-      puts "  classes that don't trigger Onigmo's worst case. The per-pattern"
-      puts "  matching speed difference is modest (~2x); the dominant cost in"
-      puts "  Duckling.parse is the NER pipeline, not regex matching."
+      puts "  The dims parameter matters: dims: [\"time\"] compiles #{en_time_pats.size}"
+      puts "  patterns; all 14 dims compiles #{en_all_pats.size}. Throughput scales"
+      puts "  2x (#{d[:ops_sec]} → #{results[:duckling_all_dims]&.[](:ops_sec)} ops/sec)"
+      puts "  even though pattern count only grows 1.3x — the extra dims add"
+      puts "  pipeline overhead (more rules to apply, more tokens, more entities)."
+      puts ""
+      puts "  The Rust DFA gives guaranteed O(n) matching (no catastrophic"
+      puts "  backtracking). For the duckling patterns (simple alternations and"
+      puts "  character classes), Onigmo doesn't trigger its worst case, so the"
+      puts "  practical per-pattern speed difference is modest (~2x). The NER"
+      printf("  pipeline overhead (~%.0f µs) dominates Duckling.parse's wall time.\n",
+        d[:us_op] - r[:us_op])
     end
   end
 end

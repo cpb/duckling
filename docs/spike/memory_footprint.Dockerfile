@@ -33,6 +33,9 @@ RUN gem install duckling --version 0.4.7 --platform x86_64-linux --no-document
 # Rust crate source at docs/spike/duckling_patterns.json).
 COPY docs/spike/memory_footprint.rb              /tmp/memory_footprint.rb
 COPY docs/spike/ruby_regexp_comparison.rb        /tmp/ruby_regexp_comparison.rb
+COPY docs/spike/performance_benchmark.rb         /tmp/performance_benchmark.rb
 COPY docs/spike/duckling_patterns.json           /tmp/duckling_patterns.json
+COPY docs/spike/en_time_patterns.json            /tmp/en_time_patterns.json
+COPY docs/spike/en_all_dims_patterns.json       /tmp/en_all_dims_patterns.json
 
 CMD ["ruby", "/tmp/memory_footprint.rb"]
