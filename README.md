@@ -238,6 +238,13 @@ ahead of a release. `gh` needs to be installed (`bin/setup` does this via
 the `Brewfile` on macOS) and authenticated (`gh auth login`) for the
 `record-pr` variant.
 
+`rake test` includes a replay of the wrapped crate's own EN test corpora —
+1,656 expectations across all 13 dimensions, extracted from
+[wafer-inc/duckling](https://github.com/wafer-inc/duckling)'s
+`tests/*_corpus.rs` into `test/fixtures/wafer_corpus.json`. Refresh it against
+a newer upstream with `bundle exec rake corpus:refresh`. See
+[docs/wafer-corpus.md](docs/wafer-corpus.md).
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/cpb/duckling. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/cpb/duckling/blob/master/CODE_OF_CONDUCT.md).
@@ -246,7 +253,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/cpb/du
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
-The native extension statically links the [duckling](https://github.com/wafer-inc/duckling) Rust crate (a Rust port of Facebook's Duckling), which is licensed under the BSD 3-Clause License. Its copyright notice and disclaimer are reproduced in [NOTICES](NOTICES), as that license requires of binary redistributions.
+The native extension statically links the [duckling](https://github.com/wafer-inc/duckling) Rust crate (a Rust port of Facebook's Duckling), which is licensed under the BSD 3-Clause License. Its copyright notice and disclaimer are reproduced in [NOTICES](NOTICES), as that license requires of binary redistributions. The same notice covers `test/fixtures/wafer_corpus.json`, test data derived from that project's corpora and held in this repository only.
 
 ## Code of Conduct
 

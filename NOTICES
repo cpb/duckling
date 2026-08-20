@@ -3,9 +3,10 @@ Third-Party Notices
 
 The duckling gem's native extension (the compiled .bundle/.so — shipped
 precompiled in the platform gems, built at install time from the source
-gem) statically links the third-party component listed below. The gem
-itself remains MIT-licensed (see LICENSE.txt); this file exists because
-the component's BSD-3-Clause license requires binary redistributions to
+gem) statically links the first third-party component listed below. The
+second is derived test data held in this repository only. The gem itself
+remains MIT-licensed (see LICENSE.txt); this file exists because the
+BSD-3-Clause license of both components requires redistributions to
 reproduce its copyright notice, conditions, and disclaimer in the
 documentation and/or other materials provided with the distribution.
 
@@ -50,3 +51,17 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
 ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---------------------------------------------------------------------------
+
+Component: duckling EN test corpora (derived data)
+Upstream:  https://github.com/wafer-inc/duckling, tests/*_corpus.rs
+License:   BSD-3-Clause (the text reproduced above)
+
+test/fixtures/wafer_corpus.json holds the expected values of every check_*
+call site in those files, extracted mechanically by
+script/extract_wafer_corpus.rb. The upstream corpora are themselves ports of
+facebook/duckling's Haskell corpora, under the same license. The fixture
+records the upstream commit it was extracted from.
+
+This fixture is repository test data. It is not part of the packaged gem.
