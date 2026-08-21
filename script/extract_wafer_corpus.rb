@@ -50,14 +50,23 @@ module WaferCorpus
 
   RUST_ESCAPES = {"n" => "\n", "t" => "\t", "r" => "\r", "0" => "\0", "\\" => "\\", "\"" => "\"", "'" => "'"}.freeze
 
+  # Every escape Rust allows in a string literal, in one alternation. Rust
+  # caps \xNN at 0x7F in strings, so both numeric forms are codepoints.
+  ESCAPE = /\\(?:u\{([0-9a-fA-F]+)\}|x([0-9a-fA-F]{2})|(.))/m
+
   module_function
 
-  # Rust string literals in the corpus are one-line and use only simple
-  # escapes plus \u{...}.
+  # Rust string literals in the corpus are one line. Decoding is a single
+  # left-to-right pass: two chained gsubs would let the first one's output be
+  # re-read by the second, so the literal text `\u{41}` (written `\\u{41}`)
+  # would decode to `A`.
   def unquote(literal)
-    literal[1..-2]
-      .gsub(/\\u\{([0-9a-fA-F]+)\}/) { [$1.to_i(16)].pack("U") }
-      .gsub(/\\(.)/) { RUST_ESCAPES.fetch($1, $1) }
+    literal[1..-2].gsub(ESCAPE) do
+      if $1 then [$1.to_i(16)].pack("U")
+      elsif $2 then [$2.to_i(16)].pack("U")
+      else RUST_ESCAPES.fetch($3, $3)
+      end
+    end
   end
 
   # Splits a call's argument list on the commas that separate arguments,
@@ -136,10 +145,20 @@ module WaferCorpus
     when /\A"/ then unquote(argument)
     when /\Adt\((.*)\)\z/m then $1.split(",").map { |part| Integer(part.strip) }
     when /\Alocal_datetime\((.*)\)\z/m then $1.split(",").drop(1).map { |part| Integer(part.strip) }
-    when /\A-?\d+\z/ then Integer(argument)
-    when /\A-?\d+\.\d+\z/ then Float(argument)
-    else raise "Unrecognized corpus argument #{argument.inspect}"
+    else parse_number(argument) || raise("Unrecognized corpus argument #{argument.inspect}")
     end
+  end
+
+  # Rust numeric literals allow `_` separators, an exponent, and a type
+  # suffix. The corpus uses none of them today; accepting them keeps a refresh
+  # that introduces one from failing on a well-formed literal.
+  NUMBER = /\A-?\d[\d_]*(?<fraction>\.\d[\d_]*)?(?<exponent>[eE][+-]?\d+)?(?<suffix>[iu](?:8|16|32|64|size)|f32|f64)?\z/
+
+  def parse_number(argument)
+    match = NUMBER.match(argument) or return nil
+    digits = argument.delete("_").delete_suffix(match[:suffix].to_s)
+    float = match[:fraction] || match[:exponent] || match[:suffix]&.start_with?("f")
+    float ? Float(digits) : Integer(digits)
   end
 
   # The with-context checkers take `&ctx`, a local bound earlier in the same
@@ -152,16 +171,47 @@ module WaferCorpus
     name
   end
 
-  # True when the call site sits behind a `//` on its own line. The corpus
-  # has no block comments.
+  # True when a `//` earlier on the call site's own line comments it out. The
+  # scan tracks string literals, so a `//` inside one (a URL in a corpus case)
+  # does not read as a comment, and a genuine mid-line `//` still does. The
+  # corpus has no block comments.
   def commented_out?(src, offset)
     line_start = src.rindex("\n", offset)
     line_start = line_start ? line_start + 1 : 0
-    src[line_start...offset].include?("//")
+    !comment_index(src[line_start...offset]).nil?
   end
 
+  # Offset of the first `//` outside a string literal, or nil.
+  def comment_index(line)
+    in_string = false
+    escaped = false
+    index = 0
+
+    while index < line.length
+      char = line[index]
+      if in_string
+        if escaped then escaped = false
+        elsif char == "\\" then escaped = true
+        elsif char == "\"" then in_string = false
+        end
+      elsif char == "\""
+        in_string = true
+      elsif char == "/" && line[index + 1] == "/"
+        return index
+      end
+      index += 1
+    end
+
+    nil
+  end
+
+  # Every call site sits inside a `#[test] fn`, whose name becomes the
+  # generated method's. Falling back to a placeholder would make the generator
+  # merge every affected case into one method, so fail here instead.
   def enclosing_test(src, offset)
-    src[0...offset][/.*^\s*fn\s+(\w+)\s*\(/m, 1] || "unknown"
+    name = src[0...offset][/.*^\s*fn\s+(\w+)\s*\(/m, 1]
+    raise "No enclosing fn for the check_* call at offset #{offset}" unless name
+    name
   end
 
   def extract_file(path)

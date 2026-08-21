@@ -24,6 +24,18 @@ updates everything. The second stage stays offline and deterministic on
 purpose: it is what lets `test/wafer_corpus_generation_test.rb` detect a stale
 tree during an ordinary `rake test`, with no network and no subprocess.
 
+Deterministic here means host-independent, not merely repeatable. The
+generator writes each corpus text with `String#inspect`, which escapes any
+character it cannot render in `Encoding.default_external`. A host with no
+`LANG` set resolves that to US-ASCII, so it would write `"10\u00A2"` where a
+UTF-8 host writes `"10¢"` — and the staleness test would then report a correct
+tree as stale on one of the two. Worse, a contributor who followed that
+failure's advice and regenerated would break the tree for everyone else.
+`CorpusTests.render_all` therefore pins `Encoding.default_external` to UTF-8
+for the duration of the render. A UTF-8 host skips the assignment, so only a
+non-UTF-8 host sees Ruby's `setting Encoding.default_external` warning
+under `-w`.
+
 **Everything under `test/wafer/` is generated. Do not edit it by hand** — the
 staleness test will fail, and the next `corpus:generate` overwrites the change.
 Fix a wrong expectation in the fixture, or in the matcher it calls.

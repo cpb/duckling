@@ -17,8 +17,12 @@ module CorpusTests
   TEMPLATE = File.join(ROOT, "script/templates/corpus_test.rb.erb")
   OUTPUT_DIR = File.join(ROOT, "test/wafer")
 
+  # The fixture the extractor writes. The other one is hand-written, and the
+  # two get different provenance headers.
+  EXTRACTED_FIXTURE = "wafer_corpus.json"
+
   FIXTURES = {
-    "wafer_corpus.json" => nil,
+    EXTRACTED_FIXTURE => nil,
     "wafer_corpus_local.json" => "local"
   }.freeze
 
@@ -51,14 +55,31 @@ module CorpusTests
   # rather than straight to disk is what lets the staleness test compare
   # without writing anything.
   def render_all
-    template = ERB.new(File.read(TEMPLATE, encoding: "UTF-8"), trim_mode: "-")
+    with_utf8_external do
+      template = ERB.new(File.read(TEMPLATE, encoding: "UTF-8"), trim_mode: "-")
 
-    buckets(FIXTURES.flat_map { |name, dimension| annotate(load_fixture(name), dimension) })
-      .sort_by { |(dimension, check), _| [dimension, check] }
-      .to_h do |(dimension, check), cases|
-        path = File.join(OUTPUT_DIR, dimension, "#{file_stem(dimension, check)}_test.rb")
-        [path, render(template, dimension, check, cases)]
-      end
+      buckets(FIXTURES.flat_map { |name, dimension| annotate(load_fixture(name), name, dimension) })
+        .sort_by { |(dimension, check), _| [dimension, check] }
+        .to_h do |(dimension, check), cases|
+          path = File.join(OUTPUT_DIR, dimension, "#{file_stem(dimension, check)}_test.rb")
+          [path, render(template, dimension, check, cases)]
+        end
+    end
+  end
+
+  # Renders the same bytes whatever the host's locale is. `String#inspect`
+  # would otherwise escape non-ASCII on a US-ASCII host. Process-global state,
+  # hence the ensure. See docs/wafer-corpus.md.
+  def with_utf8_external
+    previous = Encoding.default_external
+    return yield if previous == Encoding::UTF_8
+
+    Encoding.default_external = Encoding::UTF_8
+    begin
+      yield
+    ensure
+      Encoding.default_external = previous
+    end
   end
 
   # Every *_test.rb under test/wafer/ is generated, with no hand-written file
@@ -80,11 +101,17 @@ module CorpusTests
     rendered.keys
   end
 
-  # Tags each case with the directory it belongs in. `dimension` is nil for the
-  # extracted fixture, whose cases carry a corpus file to derive it from.
-  def annotate(fixture, dimension)
+  # Tags each case with the fixture it came from and the directory it belongs
+  # in. `dimension` is nil for the extracted fixture, whose cases carry a
+  # corpus file to derive it from. The fixture name comes from the loader
+  # rather than from a case field, so a local case is labelled by where it
+  # lives and not by what its `file` happens to look like.
+  def annotate(fixture, name, dimension)
     fixture.fetch("cases").map do |kase|
-      kase.merge("dimension" => dimension || DIMENSIONS.fetch(kase.fetch("check")))
+      kase.merge(
+        "fixture" => name,
+        "dimension" => dimension || DIMENSIONS.fetch(kase.fetch("check"))
+      )
     end
   end
 
@@ -99,20 +126,31 @@ module CorpusTests
   end
 
   def render(template, dimension, check, cases)
-    groups = cases.group_by { |kase| kase.fetch("group") }
-      .map { |name, group_cases| build_group(name, group_cases) }
+    grouped = cases.group_by { |kase| kase.fetch("group") }
+
+    # Two upstream `#[test] fn`s in different corpus files can share a name and
+    # land in one bucket. `group_by` would merge them into a single method
+    # whose origin comment names only the first file, so refuse instead. A name
+    # cannot repeat inside one file, which makes spanning files the whole test.
+    spanning = grouped.select { |_, group_cases| files_in(group_cases).length > 1 }
+    if spanning.any?
+      detail = spanning.map { |name, group_cases| "#{name} (#{files_in(group_cases).join(", ")})" }
+      raise "Group name spans corpus files in #{dimension}/#{check}: #{detail.join("; ")}"
+    end
+
+    groups = grouped.map { |name, group_cases| build_group(name, group_cases) }
       .sort_by { |group| group.fetch(:sort_key) }
 
-    duplicates = groups.map { |group| group.fetch(:name) }.tally.select { |_, count| count > 1 }
-    raise "Duplicate method names in #{dimension}/#{check}: #{duplicates.keys.inspect}" if duplicates.any?
-
-    source = cases.first.fetch("file").end_with?(".rs") ? "test/fixtures/wafer_corpus.json" : "test/fixtures/wafer_corpus_local.json"
     template.result(binding_for(
-      source: source,
+      source: "test/fixtures/#{cases.first.fetch("fixture")}",
       provenance: provenance(cases),
       class_name: class_name(dimension, check),
       groups: groups
     ))
+  end
+
+  def files_in(cases)
+    cases.map { |kase| kase.fetch("file") }.uniq.sort
   end
 
   def build_group(name, cases)
@@ -127,11 +165,12 @@ module CorpusTests
   end
 
   def provenance(cases)
-    files = cases.map { |kase| kase.fetch("file") }.uniq.sort
-    return "hand-written local additions, not extracted from upstream" unless files.first.end_with?(".rs")
+    unless cases.first.fetch("fixture") == EXTRACTED_FIXTURE
+      return "hand-written local additions, not extracted from upstream"
+    end
 
-    sha = load_fixture("wafer_corpus.json").dig("upstream", "sha")
-    "wafer-inc/duckling @ #{sha[0, 7]}, tests/#{files.join(", tests/")}"
+    sha = load_fixture(EXTRACTED_FIXTURE).dig("upstream", "sha")
+    "wafer-inc/duckling @ #{sha[0, 7]}, tests/#{files_in(cases).join(", tests/")}"
   end
 
   def class_name(dimension, check)
