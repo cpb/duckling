@@ -241,9 +241,10 @@ the `Brewfile` on macOS) and authenticated (`gh auth login`) for the
 `rake test` includes a replay of the wrapped crate's own EN test corpora —
 1,656 expectations across all 13 dimensions, extracted from
 [wafer-inc/duckling](https://github.com/wafer-inc/duckling)'s
-`tests/*_corpus.rs` into `test/fixtures/wafer_corpus.json`. Refresh it against
-a newer upstream with `bundle exec rake corpus:refresh`. See
-[docs/wafer-corpus.md](docs/wafer-corpus.md).
+`tests/*_corpus.rs` into `test/fixtures/wafer_corpus.json`, then rendered into
+the committed tests under `test/wafer/`. Regenerate those with `bundle exec
+rake corpus:generate` (offline), or pull a newer upstream with `bundle exec
+rake corpus:refresh`. See [docs/wafer-corpus.md](docs/wafer-corpus.md).
 
 ## Contributing
 

@@ -167,7 +167,7 @@ UPSTREAM_CORPUS_REPO = "https://github.com/wafer-inc/duckling"
 CORPUS_CLONE_DIR = "tmp/wafer-duckling"
 
 namespace :corpus do
-  desc "Re-extract test/fixtures/wafer_corpus.json from wafer-inc/duckling (e.g. `rake 'corpus:refresh[c96b068]'`)"
+  desc "Re-extract test/fixtures/wafer_corpus.json from wafer-inc/duckling, then regenerate (e.g. `rake 'corpus:refresh[c96b068]'`)"
   task :refresh, [:ref] do |_task, ref: nil|
     rm_rf CORPUS_CLONE_DIR
     mkdir_p File.dirname(CORPUS_CLONE_DIR)
@@ -178,6 +178,12 @@ namespace :corpus do
     sh "git", "-C", CORPUS_CLONE_DIR, "checkout", "--detach", ref if ref
 
     ruby "script/extract_wafer_corpus.rb", "--upstream", CORPUS_CLONE_DIR
+    Rake::Task["corpus:generate"].invoke
+  end
+
+  desc "Regenerate test/wafer/ from the checked-in fixtures (offline; run after editing a fixture)"
+  task :generate do
+    ruby "script/generate_corpus_tests.rb"
   end
 end
 

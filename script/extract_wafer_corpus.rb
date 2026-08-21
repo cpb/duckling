@@ -179,8 +179,9 @@ module WaferCorpus
       # string literal as their first argument.
       next unless arguments.first&.start_with?('"')
 
-      # time_corpus.rs keeps 24 latent-mode cases commented out. They need
-      # with_latent, which no corpus checker passes, so they are not cases.
+      # time_corpus.rs keeps 24 call sites commented out: 22 need with_latent,
+      # which no corpus checker passes, and 2 need a third reference time
+      # (diffCorpus, 2013-02-15 04:30 -02:00). Neither is a case.
       next if commented_out?(src, match.begin(0))
 
       text = unquote(arguments.first)
