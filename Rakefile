@@ -161,6 +161,35 @@ task :native_gem, [:platform] do |_t, platform:|
   end
 end
 
+# The EN corpora vendored into test/fixtures/wafer_corpus.json come from this
+# repository. See docs/wafer-corpus.md.
+UPSTREAM_CORPUS_REPO = "https://github.com/wafer-inc/duckling"
+CORPUS_CLONE_DIR = "tmp/wafer-duckling"
+
+namespace :corpus do
+  desc "Re-extract test/fixtures/wafer_corpus.json from wafer-inc/duckling, then regenerate (e.g. `rake 'corpus:refresh[c96b068]'`)"
+  task :refresh, [:ref] do |_task, ref: nil|
+    rm_rf CORPUS_CLONE_DIR
+    mkdir_p File.dirname(CORPUS_CLONE_DIR)
+
+    # Clone from scratch every time. Reusing the directory would extract from
+    # whatever it holds — a stale HEAD when no ref is given, or a dirty tree —
+    # while the fixture records the sha as if it were clean. A blobless clone
+    # keeps the whole history reachable, so any ref can be checked out,
+    # without fetching every blob in it.
+    sh "git", "clone", "--filter=blob:none", UPSTREAM_CORPUS_REPO, CORPUS_CLONE_DIR
+    sh "git", "-C", CORPUS_CLONE_DIR, "checkout", "--detach", ref if ref
+
+    ruby "script/extract_wafer_corpus.rb", "--upstream", CORPUS_CLONE_DIR
+    Rake::Task["corpus:generate"].invoke
+  end
+
+  desc "Regenerate test/wafer/ from the checked-in fixtures (offline; run after editing a fixture)"
+  task :generate do
+    ruby "script/generate_corpus_tests.rb"
+  end
+end
+
 task :benchmark_env do
   # Force a realistic release-profile build regardless of .env.local's
   # RB_SYS_CARGO_PROFILE=dev (local dev checkouts only; CI never has it).

@@ -1,0 +1,12 @@
+{
+  "note": "Local additions to the extracted wafer-inc/duckling corpus. Hand-maintained: script/extract_wafer_corpus.rb never writes this file. Same case schema as test/fixtures/wafer_corpus.json.",
+  "case_count": 6,
+  "cases": [
+    {"file":"local_by_deadline","line":1,"group":"test_by_named_weekday","check":"time_interval","text":"by Friday","expected":{"from":[2013,2,12,4,30,0],"to":[2013,2,15,0,0,0],"grain":"second"}},
+    {"file":"local_by_deadline","line":2,"group":"test_by_named_weekday","check":"time_interval","text":"by next monday","expected":{"from":[2013,2,12,4,30,0],"to":[2013,2,18,0,0,0],"grain":"second"}},
+    {"file":"local_by_deadline","line":3,"group":"test_by_full_date","check":"time_interval","text":"by Friday July 3, 2026","expected":{"from":[2013,2,12,4,30,0],"to":[2026,7,3,0,0,0],"grain":"second"}},
+    {"file":"local_by_deadline","line":4,"group":"test_by_full_date","check":"time_interval","text":"by March 1st","expected":{"from":[2013,2,12,4,30,0],"to":[2013,3,1,0,0,0],"grain":"second"}},
+    {"file":"local_by_deadline","line":5,"group":"test_by_day_of_month","check":"time_interval","text":"by the 15th","expected":{"from":[2013,2,12,4,30,0],"to":[2013,2,15,0,0,0],"grain":"second"}},
+    {"file":"local_by_deadline","line":6,"group":"test_by_relative_day","check":"time_interval","text":"by tomorrow","expected":{"from":[2013,2,12,4,30,0],"to":[2013,2,13,0,0,0],"grain":"second"}}
+  ]
+}

@@ -15,6 +15,7 @@ require "minitest/autorun"
 
 require_relative "support/tz_capabilities"
 require_relative "support/tz_fixtures"
+require_relative "support/wafer_matchers"
 
 # Banner: which database this run got and which probes passed.
 begin
