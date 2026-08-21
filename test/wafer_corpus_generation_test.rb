@@ -19,6 +19,20 @@ class WaferCorpusGenerationTest < Minitest::Test
     end
   end
 
+  # `with_utf8_external` in the generator is what makes rendering
+  # locale-independent. Every CI host is UTF-8, so losing that pin would go
+  # unnoticed there and surface only for a contributor whose host is not.
+  # Driving one render from US-ASCII catches it in process.
+  def test_rendering_does_not_depend_on_the_host_locale
+    rendered = with_external_encoding(Encoding::US_ASCII) { CorpusTests.render_all }
+
+    rendered.each do |path, expected|
+      relative = path.delete_prefix("#{CorpusTests::ROOT}/")
+      assert_equal expected, File.read(path, encoding: "UTF-8"),
+        "#{relative} renders differently on a US-ASCII host. See with_utf8_external in script/generate_corpus_tests.rb."
+    end
+  end
+
   def test_no_orphaned_generated_files
     orphans = CorpusTests.existing_files - CorpusTests.render_all.keys
     assert_empty orphans.map { |path| path.delete_prefix("#{CorpusTests::ROOT}/") },
@@ -47,5 +61,19 @@ class WaferCorpusGenerationTest < Minitest::Test
       .uniq
 
     assert_empty checks - CorpusTests::ASSERTIONS.keys, "fixture cases use checks with no assertion"
+  end
+
+  private
+
+  # $VERBOSE is silenced because Ruby warns on every assignment to
+  # Encoding.default_external under the suite's -w.
+  def with_external_encoding(encoding)
+    previous = Encoding.default_external
+    verbose, $VERBOSE = $VERBOSE, nil
+    Encoding.default_external = encoding
+    yield
+  ensure
+    Encoding.default_external = previous
+    $VERBOSE = verbose
   end
 end

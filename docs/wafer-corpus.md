@@ -34,7 +34,15 @@ failure's advice and regenerated would break the tree for everyone else.
 `CorpusTests.render_all` therefore pins `Encoding.default_external` to UTF-8
 for the duration of the render. A UTF-8 host skips the assignment, so only a
 non-UTF-8 host sees Ruby's `setting Encoding.default_external` warning
-under `-w`.
+under `-w`. `test_rendering_does_not_depend_on_the_host_locale` drives one
+render from US-ASCII, so removing the pin fails on a UTF-8 host too.
+
+That assignment is safe only because the suite runs single-threaded. The
+encoding is process-global, so a render holds it for every thread, not only
+its own. A mutex around the assignment would not fix that: it would serialize
+two renders against each other, while any unrelated thread reading a file
+during the window still sees the flipped encoding. Turning on minitest
+parallelization is what would need care here, not the lock.
 
 **Everything under `test/wafer/` is generated. Do not edit it by hand** — the
 staleness test will fail, and the next `corpus:generate` overwrites the change.

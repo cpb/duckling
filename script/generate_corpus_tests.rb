@@ -69,7 +69,8 @@ module CorpusTests
 
   # Renders the same bytes whatever the host's locale is. `String#inspect`
   # would otherwise escape non-ASCII on a US-ASCII host. Process-global state,
-  # hence the ensure. See docs/wafer-corpus.md.
+  # hence the ensure, and safe only because the suite runs single-threaded.
+  # See docs/wafer-corpus.md.
   def with_utf8_external
     previous = Encoding.default_external
     return yield if previous == Encoding::UTF_8

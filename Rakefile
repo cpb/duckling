@@ -172,8 +172,11 @@ namespace :corpus do
     rm_rf CORPUS_CLONE_DIR
     mkdir_p File.dirname(CORPUS_CLONE_DIR)
 
-    # A blobless clone keeps the whole history reachable, so any ref can be
-    # checked out, without fetching every blob in it.
+    # Clone from scratch every time. Reusing the directory would extract from
+    # whatever it holds — a stale HEAD when no ref is given, or a dirty tree —
+    # while the fixture records the sha as if it were clean. A blobless clone
+    # keeps the whole history reachable, so any ref can be checked out,
+    # without fetching every blob in it.
     sh "git", "clone", "--filter=blob:none", UPSTREAM_CORPUS_REPO, CORPUS_CLONE_DIR
     sh "git", "-C", CORPUS_CLONE_DIR, "checkout", "--detach", ref if ref
 
