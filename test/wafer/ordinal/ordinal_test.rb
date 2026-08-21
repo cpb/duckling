@@ -42,7 +42,7 @@ class WaferOrdinalOrdinalTest < Minitest::Test
   # ordinal_corpus.rs:59
   def test_ordinal_twenty_fifth
     assert_ordinal "twenty-fifth", 25
-    assert_ordinal "twenty\u2014fifth", 25
+    assert_ordinal "twenty—fifth", 25
     assert_ordinal "twenty fifth", 25
     assert_ordinal "twentyfifth", 25
     assert_ordinal "25th", 25
@@ -51,7 +51,7 @@ class WaferOrdinalOrdinalTest < Minitest::Test
   # ordinal_corpus.rs:69
   def test_ordinal_thirty_first
     assert_ordinal "thirty-first", 31
-    assert_ordinal "thirty\u2014first", 31
+    assert_ordinal "thirty—first", 31
     assert_ordinal "thirty first", 31
     assert_ordinal "thirtyfirst", 31
     assert_ordinal "31st", 31
@@ -60,7 +60,7 @@ class WaferOrdinalOrdinalTest < Minitest::Test
   # ordinal_corpus.rs:79
   def test_ordinal_forty_second
     assert_ordinal "forty-second", 42
-    assert_ordinal "forty\u2014second", 42
+    assert_ordinal "forty—second", 42
     assert_ordinal "forty second", 42
     assert_ordinal "fortysecond", 42
     assert_ordinal "42nd", 42
@@ -69,7 +69,7 @@ class WaferOrdinalOrdinalTest < Minitest::Test
   # ordinal_corpus.rs:89
   def test_ordinal_seventy_third
     assert_ordinal "seventy-third", 73
-    assert_ordinal "seventy\u2014third", 73
+    assert_ordinal "seventy—third", 73
     assert_ordinal "seventy third", 73
     assert_ordinal "seventythird", 73
     assert_ordinal "73rd", 73

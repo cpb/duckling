@@ -11,8 +11,8 @@ class WaferTemperatureTemperatureTest < Minitest::Test
 
   # temperature_corpus.rs:43
   def test_temp_37_celsius
-    assert_temperature "37\u00B0C", 37.0, "celsius"
-    assert_temperature "37 \u00B0 celsius", 37.0, "celsius"
+    assert_temperature "37°C", 37.0, "celsius"
+    assert_temperature "37 ° celsius", 37.0, "celsius"
     assert_temperature "37 degrees Celsius", 37.0, "celsius"
     assert_temperature "thirty seven celsius", 37.0, "celsius"
     assert_temperature "37 degrees Celsius", 37.0, "celsius"
@@ -21,29 +21,29 @@ class WaferTemperatureTemperatureTest < Minitest::Test
 
   # temperature_corpus.rs:54
   def test_temp_70_fahrenheit
-    assert_temperature "70\u00B0F", 70.0, "fahrenheit"
-    assert_temperature "70 \u00B0 Fahrenheit", 70.0, "fahrenheit"
+    assert_temperature "70°F", 70.0, "fahrenheit"
+    assert_temperature "70 ° Fahrenheit", 70.0, "fahrenheit"
     assert_temperature "70 degrees F", 70.0, "fahrenheit"
     assert_temperature "seventy Fahrenheit", 70.0, "fahrenheit"
   end
 
   # temperature_corpus.rs:63
   def test_temp_98_6_fahrenheit
-    assert_temperature "98.6\u00B0F", 98.6, "fahrenheit"
-    assert_temperature "98.6 \u00B0 Fahrenheit", 98.6, "fahrenheit"
+    assert_temperature "98.6°F", 98.6, "fahrenheit"
+    assert_temperature "98.6 ° Fahrenheit", 98.6, "fahrenheit"
     assert_temperature "98.6 degrees F", 98.6, "fahrenheit"
   end
 
   # temperature_corpus.rs:71
   def test_temp_45_degree
-    assert_temperature "45\u00B0", 45.0, "degree"
+    assert_temperature "45°", 45.0, "degree"
     assert_temperature "45 degrees", 45.0, "degree"
     assert_temperature "45 deg.", 45.0, "degree"
   end
 
   # temperature_corpus.rs:79
   def test_temp_negative_2_degree
-    assert_temperature "-2\u00B0", -2.0, "degree"
+    assert_temperature "-2°", -2.0, "degree"
     assert_temperature "- 2 degrees", -2.0, "degree"
     assert_temperature "2 degrees below zero", -2.0, "degree"
     assert_temperature "2 below zero", -2.0, "degree"

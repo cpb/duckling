@@ -31,7 +31,7 @@ class WaferAmountOfMoneyMoneyTest < Minitest::Test
     assert_money "ten pennies", 10.0, "cent"
     assert_money "ten cents", 10.0, "cent"
     assert_money "10 c", 10.0, "cent"
-    assert_money "10\u00A2", 10.0, "cent"
+    assert_money "10¢", 10.0, "cent"
   end
 
   # amount_of_money_corpus.rs:76
@@ -51,19 +51,19 @@ class WaferAmountOfMoneyMoneyTest < Minitest::Test
 
   # amount_of_money_corpus.rs:93
   def test_money_20_euros
-    assert_money "20\u20AC", 20.0, "EUR"
+    assert_money "20€", 20.0, "EUR"
     assert_money "20 euros", 20.0, "EUR"
     assert_money "20 Euro", 20.0, "EUR"
     assert_money "20 Euros", 20.0, "EUR"
     assert_money "EUR 20", 20.0, "EUR"
     assert_money "EUR 20.0", 20.0, "EUR"
-    assert_money "20\u20AC", 20.0, "EUR"
-    assert_money "20 \u20ACur", 20.0, "EUR"
+    assert_money "20€", 20.0, "EUR"
+    assert_money "20 €ur", 20.0, "EUR"
   end
 
   # amount_of_money_corpus.rs:106
   def test_money_10_pounds
-    assert_money "\u00A310", 10.0, "GBP"
+    assert_money "£10", 10.0, "GBP"
     assert_money "ten pounds", 10.0, "GBP"
   end
 
@@ -246,9 +246,9 @@ class WaferAmountOfMoneyMoneyTest < Minitest::Test
   def test_money_under_7_eur
     assert_money "under seven euros", 7.0, "EUR"
     assert_money "less than 7 EUR", 7.0, "EUR"
-    assert_money "lower than 7\u20AC", 7.0, "EUR"
+    assert_money "lower than 7€", 7.0, "EUR"
     assert_money "no more than 7 euros", 7.0, "EUR"
-    assert_money "at most 7\u20AC", 7.0, "EUR"
+    assert_money "at most 7€", 7.0, "EUR"
   end
 
   # amount_of_money_corpus.rs:320
