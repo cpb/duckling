@@ -1,3 +1,11 @@
 # For available configuration options, see:
 #   https://github.com/standardrb/standard
 ruby_version: 3.3
+
+ignore:
+  # docs/plans/ archives the one-shot scripts that derived a large issue's
+  # decomposition, recorded exactly as they ran so the numbers stay auditable.
+  # They are provenance, not maintained code — reformatting them would edit a
+  # record of what was executed, and no future derivation should have to fight
+  # the linter to be filed here.
+  - "docs/plans/**/*.rb"

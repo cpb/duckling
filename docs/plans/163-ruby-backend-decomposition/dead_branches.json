@@ -1,0 +1,303 @@
+[
+  {
+    "name": "month name",
+    "line": 199,
+    "dimension": "time",
+    "dead_branches": [
+      "june",
+      "november",
+      "december",
+      "jun",
+      "nov"
+    ]
+  },
+  {
+    "name": "now",
+    "line": 238,
+    "dimension": "time",
+    "dead_branches": [
+      "immediately"
+    ]
+  },
+  {
+    "name": "season word",
+    "line": 462,
+    "dimension": "time",
+    "dead_branches": [
+      "spring",
+      "fall",
+      "autumn"
+    ]
+  },
+  {
+    "name": "time HMM-ish",
+    "line": 600,
+    "dimension": "time",
+    "dead_branches": [
+      "roughly"
+    ]
+  },
+  {
+    "name": "around <time>",
+    "line": 997,
+    "dimension": "time",
+    "dead_branches": [
+      "roughly"
+    ]
+  },
+  {
+    "name": "<time> approximately",
+    "line": 1011,
+    "dimension": "time",
+    "dead_branches": [
+      "roughly"
+    ]
+  },
+  {
+    "name": "date DD/Mon/YYYY",
+    "line": 1465,
+    "dimension": "time",
+    "dead_branches": [
+      "jun",
+      "nov"
+    ]
+  },
+  {
+    "name": "after lunch/work/school",
+    "line": 2942,
+    "dimension": "time",
+    "dead_branches": [
+      "work"
+    ]
+  },
+  {
+    "name": "digit<month> (no space)",
+    "line": 3698,
+    "dimension": "time",
+    "dead_branches": [
+      "june",
+      "november",
+      "december",
+      "jun",
+      "nov"
+    ]
+  },
+  {
+    "name": "<time> timezone",
+    "line": 3723,
+    "dimension": "time",
+    "dead_branches": [
+      "cest",
+      "utc",
+      "edt",
+      "cdt",
+      "mst",
+      "mdt",
+      "pdt",
+      "eest",
+      "wet",
+      "west",
+      "jst",
+      "kst",
+      "hkt",
+      "sgt",
+      "aest",
+      "aedt",
+      "acst",
+      "acdt",
+      "awst",
+      "nzst",
+      "nzdt"
+    ]
+  },
+  {
+    "name": "<time> (timezone)",
+    "line": 3744,
+    "dimension": "time",
+    "dead_branches": [
+      "cest",
+      "utc",
+      "edt",
+      "cdt",
+      "mst",
+      "mdt",
+      "pdt",
+      "eest",
+      "wet",
+      "west",
+      "jst",
+      "kst",
+      "hkt",
+      "sgt",
+      "aest",
+      "aedt",
+      "acst",
+      "acdt",
+      "awst",
+      "nzst",
+      "nzdt"
+    ]
+  },
+  {
+    "name": "<time> - <time> timezone",
+    "line": 3766,
+    "dimension": "time",
+    "dead_branches": [
+      "cest",
+      "utc",
+      "edt",
+      "cdt",
+      "mst",
+      "mdt",
+      "pdt",
+      "eest",
+      "wet",
+      "west",
+      "jst",
+      "kst",
+      "hkt",
+      "sgt",
+      "aest",
+      "aedt",
+      "acst",
+      "acdt",
+      "awst",
+      "nzst",
+      "nzdt"
+    ]
+  },
+  {
+    "name": "<datetime> - <datetime> (interval) timezone",
+    "line": 3812,
+    "dimension": "time",
+    "dead_branches": [
+      "cest",
+      "utc",
+      "edt",
+      "cdt",
+      "mst",
+      "mdt",
+      "pdt",
+      "eest",
+      "wet",
+      "west",
+      "jst",
+      "kst",
+      "hkt",
+      "sgt",
+      "aest",
+      "aedt",
+      "acst",
+      "acdt",
+      "awst",
+      "nzst",
+      "nzdt"
+    ]
+  },
+  {
+    "name": "<time-of-day> sharp|exactly",
+    "line": 4178,
+    "dimension": "time",
+    "dead_branches": [
+      "sharp"
+    ]
+  },
+  {
+    "name": "integer (0..9)",
+    "line": 20,
+    "dimension": "numeral",
+    "dead_branches": [
+      "none",
+      "zilch"
+    ]
+  },
+  {
+    "name": "integer (10..19)",
+    "line": 52,
+    "dimension": "numeral",
+    "dead_branches": [
+      "thirteen"
+    ]
+  },
+  {
+    "name": "integer (20..90)",
+    "line": 79,
+    "dimension": "numeral",
+    "dead_branches": [
+      "eighty",
+      "ninety"
+    ]
+  },
+  {
+    "name": "one eleven (skip hundreds)",
+    "line": 167,
+    "dimension": "numeral",
+    "dead_branches": [
+      "thirteen",
+      "eighty",
+      "ninety"
+    ]
+  },
+  {
+    "name": "one twenty two (skip hundreds)",
+    "line": 192,
+    "dimension": "numeral",
+    "dead_branches": [
+      "eighty",
+      "ninety"
+    ]
+  },
+  {
+    "name": "powers of tens",
+    "line": 306,
+    "dimension": "numeral",
+    "dead_branches": [
+      "trillion"
+    ]
+  },
+  {
+    "name": "ordinals (first..nineteenth)",
+    "line": 8,
+    "dimension": "ordinal",
+    "dead_branches": [
+      "sixth",
+      "seventh",
+      "ninth",
+      "eleventh",
+      "twelfth",
+      "thirteenth",
+      "fourteenth",
+      "fifteenth",
+      "sixteenth",
+      "seventeenth",
+      "eighteenth",
+      "nineteenth"
+    ]
+  },
+  {
+    "name": "ordinals (twentieth..ninetieth)",
+    "line": 43,
+    "dimension": "ordinal",
+    "dead_branches": [
+      "twentieth",
+      "thirtieth",
+      "fortieth",
+      "fiftieth",
+      "sixtieth",
+      "seventieth",
+      "eightieth"
+    ]
+  },
+  {
+    "name": "ordinals (composite, e.g. twenty-fifth)",
+    "line": 68,
+    "dimension": "ordinal",
+    "dead_branches": [
+      "eighty",
+      "ninety",
+      "sixth",
+      "seventh",
+      "ninth"
+    ]
+  }
+]

@@ -1,0 +1,2145 @@
+{
+  "DayOfWeek": [
+    {
+      "i": 0,
+      "name": "this|next <day-of-week>",
+      "line": 171,
+      "built": [
+        "DayOfWeek"
+      ],
+      "mods": []
+    }
+  ],
+  "Month": [
+    {
+      "i": 1,
+      "name": "month name",
+      "line": 199,
+      "built": [
+        "Month"
+      ],
+      "mods": []
+    }
+  ],
+  "Now": [
+    {
+      "i": 2,
+      "name": "now",
+      "line": 238,
+      "built": [
+        "Now"
+      ],
+      "mods": []
+    },
+    {
+      "i": 3,
+      "name": "as soon as possible",
+      "line": 243,
+      "built": [
+        "Now"
+      ],
+      "mods": [
+        "open_interval_direction"
+      ]
+    }
+  ],
+  "Today": [
+    {
+      "i": 4,
+      "name": "today",
+      "line": 255,
+      "built": [
+        "Today"
+      ],
+      "mods": []
+    }
+  ],
+  "Tomorrow": [
+    {
+      "i": 5,
+      "name": "tomorrow",
+      "line": 260,
+      "built": [
+        "Tomorrow"
+      ],
+      "mods": []
+    }
+  ],
+  "Yesterday": [
+    {
+      "i": 6,
+      "name": "yesterday",
+      "line": 265,
+      "built": [
+        "Yesterday"
+      ],
+      "mods": []
+    }
+  ],
+  "DayAfterTomorrow": [
+    {
+      "i": 7,
+      "name": "day after tomorrow",
+      "line": 273,
+      "built": [
+        "DayAfterTomorrow"
+      ],
+      "mods": []
+    }
+  ],
+  "DayBeforeYesterday": [
+    {
+      "i": 8,
+      "name": "day before yesterday",
+      "line": 280,
+      "built": [
+        "DayBeforeYesterday"
+      ],
+      "mods": []
+    }
+  ],
+  "Hour": [
+    {
+      "i": 9,
+      "name": "noon|midnight|EOD|end of day",
+      "line": 290,
+      "built": [
+        "Hour"
+      ],
+      "mods": []
+    },
+    {
+      "i": 10,
+      "name": "midnight",
+      "line": 297,
+      "built": [
+        "Hour"
+      ],
+      "mods": []
+    },
+    {
+      "i": 33,
+      "name": "H ampm",
+      "line": 684,
+      "built": [
+        "Hour"
+      ],
+      "mods": []
+    },
+    {
+      "i": 34,
+      "name": "H a/p (latent)",
+      "line": 709,
+      "built": [
+        "Hour"
+      ],
+      "mods": []
+    },
+    {
+      "i": 37,
+      "name": "time-of-day (latent)",
+      "line": 790,
+      "built": [
+        "Hour"
+      ],
+      "mods": []
+    },
+    {
+      "i": 42,
+      "name": "<time-of-day> o'clock",
+      "line": 908,
+      "built": [
+        "Hour"
+      ],
+      "mods": []
+    },
+    {
+      "i": 220,
+      "name": "Mid-day",
+      "line": 4754,
+      "built": [
+        "HourMinute",
+        "Hour",
+        "HourMinuteSecond",
+        "Hour/HourMinute(ampm)"
+      ],
+      "mods": []
+    }
+  ],
+  "PartOfDay": [
+    {
+      "i": 11,
+      "name": "morning (latent)",
+      "line": 307,
+      "built": [
+        "PartOfDay"
+      ],
+      "mods": [
+        "early_late"
+      ]
+    },
+    {
+      "i": 12,
+      "name": "afternoon (latent)",
+      "line": 322,
+      "built": [
+        "PartOfDay"
+      ],
+      "mods": []
+    },
+    {
+      "i": 13,
+      "name": "evening (latent)",
+      "line": 331,
+      "built": [
+        "PartOfDay"
+      ],
+      "mods": []
+    },
+    {
+      "i": 14,
+      "name": "night (latent)",
+      "line": 340,
+      "built": [
+        "PartOfDay"
+      ],
+      "mods": []
+    },
+    {
+      "i": 15,
+      "name": "lunch (latent)",
+      "line": 349,
+      "built": [
+        "PartOfDay"
+      ],
+      "mods": []
+    },
+    {
+      "i": 202,
+      "name": "part of days",
+      "line": 4410,
+      "built": [
+        "PartOfDay"
+      ],
+      "mods": []
+    },
+    {
+      "i": 203,
+      "name": "early morning",
+      "line": 4428,
+      "built": [
+        "PartOfDay"
+      ],
+      "mods": [
+        "early_late"
+      ]
+    }
+  ],
+  "Composed": [
+    {
+      "i": 16,
+      "name": "tonight",
+      "line": 361,
+      "built": [
+        "Composed",
+        "Today",
+        "PartOfDay"
+      ],
+      "mods": []
+    },
+    {
+      "i": 17,
+      "name": "this <part-of-day>",
+      "line": 374,
+      "built": [
+        "Composed",
+        "Today"
+      ],
+      "mods": []
+    },
+    {
+      "i": 19,
+      "name": "last night",
+      "line": 397,
+      "built": [
+        "Composed",
+        "Yesterday"
+      ],
+      "mods": []
+    },
+    {
+      "i": 20,
+      "name": "tomorrow <part-of-day>",
+      "line": 409,
+      "built": [
+        "Composed",
+        "Tomorrow"
+      ],
+      "mods": []
+    },
+    {
+      "i": 40,
+      "name": "<time> <part-of-day>",
+      "line": 852,
+      "built": [
+        "Hour",
+        "HourMinute",
+        "Composed",
+        "PartOfDay"
+      ],
+      "mods": []
+    },
+    {
+      "i": 52,
+      "name": "<duration> from right now",
+      "line": 1078,
+      "built": [
+        "Composed",
+        "RelativeGrain",
+        "Now"
+      ],
+      "mods": []
+    },
+    {
+      "i": 53,
+      "name": "<duration> from today",
+      "line": 1096,
+      "built": [
+        "Composed",
+        "Today",
+        "RelativeGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 62,
+      "name": "mm/yyyy",
+      "line": 1308,
+      "built": [
+        "Composed",
+        "Month",
+        "Year"
+      ],
+      "mods": []
+    },
+    {
+      "i": 63,
+      "name": "iso8601 datetime with T separator (en extension)",
+      "line": 1332,
+      "built": [
+        "DateMDY",
+        "HourMinuteSecond",
+        "HourMinute",
+        "Composed"
+      ],
+      "mods": [
+        "timezone"
+      ]
+    },
+    {
+      "i": 64,
+      "name": "yyyy-mm-dd",
+      "line": 1377,
+      "built": [
+        "DateMDY",
+        "Composed",
+        "Month",
+        "Year"
+      ],
+      "mods": []
+    },
+    {
+      "i": 65,
+      "name": "yyyy-mm",
+      "line": 1415,
+      "built": [
+        "Composed",
+        "Month",
+        "Year"
+      ],
+      "mods": []
+    },
+    {
+      "i": 73,
+      "name": "<month> <year>",
+      "line": 1582,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 99,
+      "name": "the <day-of-month> (ordinal or number) of <named-month>",
+      "line": 2153,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 100,
+      "name": "<named-month>|<named-day> <day-of-month> (ordinal)",
+      "line": 2179,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 101,
+      "name": "<named-month> <day-of-month> (non ordinal)",
+      "line": 2201,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 102,
+      "name": "<dow> <month> <day>",
+      "line": 2220,
+      "built": [
+        "DayOfWeek",
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 103,
+      "name": "the <day-of-month> (number)",
+      "line": 2258,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 104,
+      "name": "<integer> <month>",
+      "line": 2279,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 105,
+      "name": "<ordinal> <month>",
+      "line": 2297,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 107,
+      "name": "the ides of <named-month>",
+      "line": 2365,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 109,
+      "name": "<numeral> of <grain-offset-month>",
+      "line": 2404,
+      "built": [
+        "Composed",
+        "DayOfMonth"
+      ],
+      "mods": []
+    },
+    {
+      "i": 137,
+      "name": "<latent-time> <time> compose",
+      "line": 3073,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 138,
+      "name": "intersect",
+      "line": 3091,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 139,
+      "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\", \\\"'s\\\"",
+      "line": 3120,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 159,
+      "name": "ISO interval",
+      "line": 3647,
+      "built": [
+        "Composed",
+        "HourMinuteSecond",
+        "DateMDY",
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 167,
+      "name": "<day-of-month> (ordinal or number) of <named-month>",
+      "line": 3856,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 168,
+      "name": "<day-of-month> (ordinal or number) <named-month>",
+      "line": 3872,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 183,
+      "name": "<part-of-day> at <time-of-day>",
+      "line": 4149,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 184,
+      "name": "<part-of-day> <latent-time-of-day> (latent)",
+      "line": 4158,
+      "built": [
+        "Composed"
+      ],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 185,
+      "name": "<time-of-day> <part-of-day>",
+      "line": 4169,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 188,
+      "name": "<part-of-day> of <time>",
+      "line": 4196,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 191,
+      "name": "in <duration> at <time-of-day>",
+      "line": 4242,
+      "built": [
+        "Composed",
+        "RelativeGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 197,
+      "name": "<day-of-month> (ordinal or number) of <month>",
+      "line": 4359,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 198,
+      "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\" for year",
+      "line": 4371,
+      "built": [
+        "Composed"
+      ],
+      "mods": []
+    }
+  ],
+  "Modifiers": [
+    {
+      "i": 18,
+      "name": "in|during the <part-of-day>",
+      "line": 386,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 21,
+      "name": "late/early/mid <time>",
+      "line": 421,
+      "built": [],
+      "mods": [
+        "latent",
+        "early_late"
+      ]
+    },
+    {
+      "i": 23,
+      "name": "this past weekend",
+      "line": 449,
+      "built": [],
+      "mods": [
+        "direction"
+      ]
+    },
+    {
+      "i": 43,
+      "name": "at <time-of-day>",
+      "line": 940,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 44,
+      "name": "on <day>",
+      "line": 953,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 45,
+      "name": "on a <named-day>",
+      "line": 963,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 46,
+      "name": "in|during <named-month>|year",
+      "line": 974,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 47,
+      "name": "around <time>",
+      "line": 997,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 48,
+      "name": "<time> approximately",
+      "line": 1011,
+      "built": [],
+      "mods": []
+    },
+    {
+      "i": 70,
+      "name": "in <year>",
+      "line": 1525,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 74,
+      "name": "last <time>",
+      "line": 1604,
+      "built": [],
+      "mods": [
+        "latent",
+        "direction"
+      ]
+    },
+    {
+      "i": 75,
+      "name": "next <time>",
+      "line": 1619,
+      "built": [],
+      "mods": [
+        "latent",
+        "direction"
+      ]
+    },
+    {
+      "i": 76,
+      "name": "this <time>",
+      "line": 1635,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 77,
+      "name": "<time> before last|after next",
+      "line": 1650,
+      "built": [],
+      "mods": [
+        "latent",
+        "direction"
+      ]
+    },
+    {
+      "i": 129,
+      "name": "until <time>",
+      "line": 2873,
+      "built": [],
+      "mods": [
+        "latent",
+        "open_interval_direction"
+      ]
+    },
+    {
+      "i": 130,
+      "name": "from|since|after <time>",
+      "line": 2905,
+      "built": [],
+      "mods": [
+        "latent",
+        "open_interval_direction"
+      ]
+    },
+    {
+      "i": 131,
+      "name": "after <part-of-day>",
+      "line": 2922,
+      "built": [],
+      "mods": [
+        "latent",
+        "open_interval_direction"
+      ]
+    },
+    {
+      "i": 161,
+      "name": "<time> timezone",
+      "line": 3723,
+      "built": [],
+      "mods": [
+        "latent",
+        "timezone"
+      ]
+    },
+    {
+      "i": 162,
+      "name": "<time> (timezone)",
+      "line": 3744,
+      "built": [],
+      "mods": [
+        "latent",
+        "timezone"
+      ]
+    },
+    {
+      "i": 186,
+      "name": "<time-of-day> sharp|exactly",
+      "line": 4178,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 187,
+      "name": "about|exactly <time-of-day>",
+      "line": 4187,
+      "built": [],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 201,
+      "name": "absorption of , after named day",
+      "line": 4405,
+      "built": [],
+      "mods": []
+    },
+    {
+      "i": 204,
+      "name": "part of <named-month>",
+      "line": 4437,
+      "built": [],
+      "mods": [
+        "latent",
+        "early_late"
+      ]
+    }
+  ],
+  "Weekend": [
+    {
+      "i": 22,
+      "name": "week-end",
+      "line": 443,
+      "built": [
+        "Weekend"
+      ],
+      "mods": []
+    }
+  ],
+  "Season": [
+    {
+      "i": 24,
+      "name": "season word",
+      "line": 462,
+      "built": [
+        "Season"
+      ],
+      "mods": []
+    },
+    {
+      "i": 25,
+      "name": "last|this|next <season>",
+      "line": 482,
+      "built": [
+        "Season"
+      ],
+      "mods": [
+        "direction"
+      ]
+    }
+  ],
+  "HourMinute": [
+    {
+      "i": 26,
+      "name": "hh:mm",
+      "line": 505,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 28,
+      "name": "hhhmm",
+      "line": 548,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 29,
+      "name": "hhmm (latent)",
+      "line": 578,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 30,
+      "name": "time HMM-ish",
+      "line": 600,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 32,
+      "name": "HH:MM ampm",
+      "line": 656,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 35,
+      "name": "hhmm (military) am|pm",
+      "line": 736,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 36,
+      "name": "HMM in the <pod>",
+      "line": 764,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 38,
+      "name": "<time-of-day> am|pm",
+      "line": 812,
+      "built": [
+        "Hour/HourMinute(ampm)"
+      ],
+      "mods": []
+    },
+    {
+      "i": 39,
+      "name": "<time> a/p suffix",
+      "line": 829,
+      "built": [
+        "Hour/HourMinute(ampm)"
+      ],
+      "mods": []
+    },
+    {
+      "i": 41,
+      "name": "<time> in the AM/PM",
+      "line": 892,
+      "built": [
+        "Hour/HourMinute(ampm)"
+      ],
+      "mods": []
+    },
+    {
+      "i": 153,
+      "name": "half after|past <hour-of-day>",
+      "line": 3525,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 154,
+      "name": "quarter after|past <hour-of-day>",
+      "line": 3538,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 155,
+      "name": "quarter to|till|before <hour-of-day>",
+      "line": 3554,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 156,
+      "name": "integer after|past <hour-of-day>",
+      "line": 3574,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 157,
+      "name": "<integer> to <time>",
+      "line": 3596,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 158,
+      "name": "<time:hour> <integer:minute>",
+      "line": 3619,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 178,
+      "name": "<hour-of-day> <integer>",
+      "line": 4067,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 179,
+      "name": "<hour-of-day> half",
+      "line": 4085,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 180,
+      "name": "<hour-of-day> quarter",
+      "line": 4100,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 181,
+      "name": "<integer> to|till|before <hour-of-day>",
+      "line": 4115,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 182,
+      "name": "<integer> minutes to|till|before <hour-of-day>",
+      "line": 4132,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 212,
+      "name": "<hour-of-day> zero <integer>",
+      "line": 4567,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 213,
+      "name": "<hour-of-day> - <integer-as-word>",
+      "line": 4587,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 214,
+      "name": "<hour-of-day> - zero - <integer>",
+      "line": 4607,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 215,
+      "name": "half to|till|before <hour-of-day>",
+      "line": 4629,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    },
+    {
+      "i": 216,
+      "name": "half <integer> (UK style hour-of-day)",
+      "line": 4648,
+      "built": [
+        "HourMinute"
+      ],
+      "mods": []
+    }
+  ],
+  "HourMinuteSecond": [
+    {
+      "i": 27,
+      "name": "hh:mm:ss",
+      "line": 527,
+      "built": [
+        "HourMinuteSecond"
+      ],
+      "mods": []
+    },
+    {
+      "i": 31,
+      "name": "HH:MM:SS ampm",
+      "line": 625,
+      "built": [
+        "HourMinuteSecond"
+      ],
+      "mods": []
+    }
+  ],
+  "RelativeGrain": [
+    {
+      "i": 49,
+      "name": "in|within|after <duration>",
+      "line": 1025,
+      "built": [
+        "RelativeGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 50,
+      "name": "in <number> (implicit minutes)",
+      "line": 1040,
+      "built": [
+        "RelativeGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 51,
+      "name": "<duration> hence|ago",
+      "line": 1051,
+      "built": [
+        "RelativeGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 54,
+      "name": "<duration> from now",
+      "line": 1114,
+      "built": [
+        "RelativeGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 55,
+      "name": "<duration> back",
+      "line": 1128,
+      "built": [
+        "RelativeGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 56,
+      "name": "after <duration>",
+      "line": 1143,
+      "built": [
+        "RelativeGrain"
+      ],
+      "mods": [
+        "open_interval_direction"
+      ]
+    },
+    {
+      "i": 190,
+      "name": "last|past|next <duration>",
+      "line": 4223,
+      "built": [
+        "RelativeGrain"
+      ],
+      "mods": []
+    }
+  ],
+  "Interval": [
+    {
+      "i": 57,
+      "name": "within <duration>",
+      "line": 1160,
+      "built": [
+        "Now",
+        "RelativeGrain",
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 125,
+      "name": "EOM/BOM/EOY/BOY/EOD",
+      "line": 2750,
+      "built": [
+        "Interval",
+        "Now",
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 128,
+      "name": "by <time>",
+      "line": 2858,
+      "built": [
+        "Interval",
+        "Now"
+      ],
+      "mods": []
+    },
+    {
+      "i": 132,
+      "name": "after lunch/work/school",
+      "line": 2942,
+      "built": [
+        "Hour",
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 140,
+      "name": "<datetime> - <datetime> (interval)",
+      "line": 3143,
+      "built": [
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 141,
+      "name": "<time-of-day> - <time-of-day> (interval)",
+      "line": 3178,
+      "built": [
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 142,
+      "name": "hh(:mm) - <time-of-day> am|pm",
+      "line": 3203,
+      "built": [
+        "Interval",
+        "Hour/HourMinute(ampm)"
+      ],
+      "mods": []
+    },
+    {
+      "i": 143,
+      "name": "dd-dd <month> (interval)",
+      "line": 3249,
+      "built": [
+        "Interval",
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 144,
+      "name": "<month> dd-dd (interval)",
+      "line": 3283,
+      "built": [
+        "Interval",
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 145,
+      "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) <named-month> (interval)",
+      "line": 3316,
+      "built": [
+        "Interval",
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 146,
+      "name": "from <month> dd-dd (interval)",
+      "line": 3352,
+      "built": [
+        "Interval",
+        "Composed"
+      ],
+      "mods": []
+    },
+    {
+      "i": 147,
+      "name": "later than <tod> before <tod>",
+      "line": 3386,
+      "built": [
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 148,
+      "name": "from <datetime> - <datetime> (interval)",
+      "line": 3405,
+      "built": [
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 149,
+      "name": "between <time> and <time>",
+      "line": 3424,
+      "built": [
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 150,
+      "name": "from <time> for <duration>",
+      "line": 3443,
+      "built": [
+        "DurationAfter",
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 151,
+      "name": "for <duration> from <time>",
+      "line": 3469,
+      "built": [
+        "DurationAfter",
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 152,
+      "name": "<time> for <duration>",
+      "line": 3496,
+      "built": [
+        "DurationAfter",
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 163,
+      "name": "<time> - <time> timezone",
+      "line": 3766,
+      "built": [
+        "Interval"
+      ],
+      "mods": [
+        "timezone"
+      ]
+    },
+    {
+      "i": 164,
+      "name": "<datetime>/<datetime> (interval)",
+      "line": 3795,
+      "built": [
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 165,
+      "name": "<datetime> - <datetime> (interval) timezone",
+      "line": 3812,
+      "built": [
+        "Interval"
+      ],
+      "mods": [
+        "timezone"
+      ]
+    },
+    {
+      "i": 166,
+      "name": "<year> (latent) - <year> (latent) (interval)",
+      "line": 3838,
+      "built": [
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 189,
+      "name": "from <time-of-day> - <time-of-day> (interval)",
+      "line": 4205,
+      "built": [
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 199,
+      "name": "by the end of <time>",
+      "line": 4380,
+      "built": [
+        "Interval",
+        "Now"
+      ],
+      "mods": []
+    },
+    {
+      "i": 200,
+      "name": "between <time-of-day> and <time-of-day> (interval)",
+      "line": 4392,
+      "built": [
+        "Interval"
+      ],
+      "mods": []
+    },
+    {
+      "i": 209,
+      "name": "end of month",
+      "line": 4511,
+      "built": [
+        "Interval",
+        "Now"
+      ],
+      "mods": []
+    },
+    {
+      "i": 211,
+      "name": "end of year",
+      "line": 4543,
+      "built": [
+        "Interval",
+        "Now"
+      ],
+      "mods": []
+    },
+    {
+      "i": 219,
+      "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) of <named-month> (interval)",
+      "line": 4723,
+      "built": [
+        "Interval",
+        "Composed"
+      ],
+      "mods": []
+    }
+  ],
+  "DateMDY": [
+    {
+      "i": 58,
+      "name": "date MM/DD(/YYYY)",
+      "line": 1183,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 59,
+      "name": "date DD/MM(/YY)",
+      "line": 1220,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 60,
+      "name": "date MM DD YYYY",
+      "line": 1256,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 61,
+      "name": "date DD MM YYYY",
+      "line": 1282,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 66,
+      "name": "date DD.MM.YYYY",
+      "line": 1435,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 67,
+      "name": "date DD/Mon/YYYY",
+      "line": 1465,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 106,
+      "name": "<ordinal> <month> <short-year>",
+      "line": 2322,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 112,
+      "name": "<date> <year>",
+      "line": 2465,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 160,
+      "name": "digit<month> (no space)",
+      "line": 3698,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 169,
+      "name": "<day-of-month>(ordinal or number)/<named-month>/year",
+      "line": 3887,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    },
+    {
+      "i": 170,
+      "name": "<day-of-month>(ordinal) <named-month> year",
+      "line": 3913,
+      "built": [
+        "DateMDY"
+      ],
+      "mods": []
+    }
+  ],
+  "Year": [
+    {
+      "i": 68,
+      "name": "year (latent)",
+      "line": 1501,
+      "built": [
+        "Year"
+      ],
+      "mods": []
+    },
+    {
+      "i": 69,
+      "name": "spelled-out year (numeral)",
+      "line": 1515,
+      "built": [
+        "Year"
+      ],
+      "mods": []
+    },
+    {
+      "i": 71,
+      "name": "<year> (bc|ad)",
+      "line": 1541,
+      "built": [
+        "Year"
+      ],
+      "mods": [
+        "latent"
+      ]
+    },
+    {
+      "i": 72,
+      "name": "in <integer> AD",
+      "line": 1562,
+      "built": [
+        "Year"
+      ],
+      "mods": []
+    }
+  ],
+  "NthDOWOfTime": [
+    {
+      "i": 78,
+      "name": "first|second|third|fourth|fifth <day-of-week> of <time>",
+      "line": 1667,
+      "built": [
+        "NthDOWOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 217,
+      "name": "nth <day-of-week> of <month-or-greater>",
+      "line": 4666,
+      "built": [
+        "NthDOWOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 218,
+      "name": "the nth <day-of-week> of <month-or-greater>",
+      "line": 4694,
+      "built": [
+        "NthDOWOfTime"
+      ],
+      "mods": []
+    }
+  ],
+  "LastDOWOfTime": [
+    {
+      "i": 79,
+      "name": "last <day-of-week> of <time>",
+      "line": 1698,
+      "built": [
+        "LastDOWOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 82,
+      "name": "last weekend of <named-month>",
+      "line": 1776,
+      "built": [
+        "LastDOWOfTime"
+      ],
+      "mods": []
+    }
+  ],
+  "LastCycleOfTime": [
+    {
+      "i": 80,
+      "name": "last <cycle> of <time>",
+      "line": 1724,
+      "built": [
+        "LastCycleOfTime"
+      ],
+      "mods": []
+    }
+  ],
+  "NthLastCycleOfTime": [
+    {
+      "i": 81,
+      "name": "the <ordinal> last <cycle> of <time>",
+      "line": 1746,
+      "built": [
+        "NthLastCycleOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 173,
+      "name": "<ordinal> last <cycle> of <time>",
+      "line": 3979,
+      "built": [
+        "NthLastCycleOfTime"
+      ],
+      "mods": []
+    }
+  ],
+  "NDOWsFromTime": [
+    {
+      "i": 83,
+      "name": "<integer> <day-of-week> from <time>",
+      "line": 1792,
+      "built": [
+        "NDOWsFromTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 84,
+      "name": "<integer> <named-day> ago|back",
+      "line": 1820,
+      "built": [
+        "NDOWsFromTime",
+        "Now"
+      ],
+      "mods": []
+    },
+    {
+      "i": 85,
+      "name": "nth <time> after <time>",
+      "line": 1846,
+      "built": [
+        "NDOWsFromTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 196,
+      "name": "the nth <time> after <time>",
+      "line": 4338,
+      "built": [
+        "NDOWsFromTime"
+      ],
+      "mods": []
+    }
+  ],
+  "NthClosestToTime": [
+    {
+      "i": 86,
+      "name": "the closest <day> to <time>",
+      "line": 1874,
+      "built": [
+        "NthClosestToTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 87,
+      "name": "the <ordinal> closest <day> to <time>",
+      "line": 1893,
+      "built": [
+        "NthClosestToTime"
+      ],
+      "mods": []
+    }
+  ],
+  "NthGrainOfTime": [
+    {
+      "i": 88,
+      "name": "the <ordinal> <cycle> of <time>",
+      "line": 1918,
+      "built": [
+        "NthGrainOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 91,
+      "name": "<ordinal> day of <time>",
+      "line": 1979,
+      "built": [
+        "NthGrainOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 93,
+      "name": "the week of <time>",
+      "line": 2030,
+      "built": [
+        "NthGrainOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 171,
+      "name": "<cycle> after|before <time>",
+      "line": 3939,
+      "built": [
+        "NthGrainOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 172,
+      "name": "<ordinal> <cycle> of <time>",
+      "line": 3963,
+      "built": [
+        "NthGrainOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 192,
+      "name": "<ordinal> <cycle> after <time>",
+      "line": 4260,
+      "built": [
+        "NthGrainOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 193,
+      "name": "<ordinal> <cycle> after <time>",
+      "line": 4280,
+      "built": [
+        "NthGrainOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 194,
+      "name": "the <cycle> after|before <time>",
+      "line": 4300,
+      "built": [
+        "NthGrainOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 195,
+      "name": "the <cycle> of <time>",
+      "line": 4322,
+      "built": [
+        "NthGrainOfTime"
+      ],
+      "mods": []
+    }
+  ],
+  "NthLastDayOfTime": [
+    {
+      "i": 89,
+      "name": "last day of <time>",
+      "line": 1944,
+      "built": [
+        "NthLastDayOfTime"
+      ],
+      "mods": []
+    },
+    {
+      "i": 90,
+      "name": "(the) <ordinal> last day of <time>",
+      "line": 1958,
+      "built": [
+        "NthLastDayOfTime"
+      ],
+      "mods": []
+    }
+  ],
+  "GrainOffset": [
+    {
+      "i": 92,
+      "name": "this|last|next <cycle>",
+      "line": 2003,
+      "built": [
+        "GrainOffset"
+      ],
+      "mods": []
+    },
+    {
+      "i": 94,
+      "name": "the <cycle> of the <time grain>",
+      "line": 2043,
+      "built": [
+        "GrainOffset"
+      ],
+      "mods": []
+    }
+  ],
+  "NthGrain": [
+    {
+      "i": 95,
+      "name": "last <integer> <grain>",
+      "line": 2064,
+      "built": [
+        "NthGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 96,
+      "name": "next <integer> <grain>",
+      "line": 2085,
+      "built": [
+        "NthGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 97,
+      "name": "upcoming <integer> <cycle>",
+      "line": 2107,
+      "built": [
+        "NthGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 98,
+      "name": "<integer> upcoming <grain>",
+      "line": 2129,
+      "built": [
+        "NthGrain"
+      ],
+      "mods": []
+    },
+    {
+      "i": 174,
+      "name": "<integer> upcoming <cycle>",
+      "line": 3995,
+      "built": [
+        "NthGrain"
+      ],
+      "mods": []
+    }
+  ],
+  "DayOfMonth": [
+    {
+      "i": 108,
+      "name": "<day-of-month> (ordinal)",
+      "line": 2388,
+      "built": [
+        "DayOfMonth"
+      ],
+      "mods": []
+    },
+    {
+      "i": 110,
+      "name": "the <day-of-month> (ordinal)",
+      "line": 2433,
+      "built": [
+        "DayOfMonth"
+      ],
+      "mods": []
+    },
+    {
+      "i": 111,
+      "name": "on the <ordinal-word>",
+      "line": 2449,
+      "built": [
+        "DayOfMonth"
+      ],
+      "mods": []
+    }
+  ],
+  "Quarter": [
+    {
+      "i": 113,
+      "name": "<ordinal> quarter",
+      "line": 2493,
+      "built": [
+        "Quarter"
+      ],
+      "mods": []
+    },
+    {
+      "i": 114,
+      "name": "the <ordinal> quarter",
+      "line": 2509,
+      "built": [
+        "Quarter"
+      ],
+      "mods": []
+    }
+  ],
+  "QuarterYear": [
+    {
+      "i": 115,
+      "name": "<ordinal> quarter <year>",
+      "line": 2529,
+      "built": [
+        "QuarterYear"
+      ],
+      "mods": []
+    },
+    {
+      "i": 116,
+      "name": "<quarter> of <year>",
+      "line": 2560,
+      "built": [
+        "QuarterYear"
+      ],
+      "mods": []
+    },
+    {
+      "i": 117,
+      "name": "yyyyqq",
+      "line": 2592,
+      "built": [
+        "QuarterYear"
+      ],
+      "mods": []
+    }
+  ],
+  "AllGrain": [
+    {
+      "i": 118,
+      "name": "week",
+      "line": 2612,
+      "built": [
+        "AllGrain"
+      ],
+      "mods": []
+    }
+  ],
+  "RestOfGrain": [
+    {
+      "i": 119,
+      "name": "rest of the week",
+      "line": 2624,
+      "built": [
+        "RestOfGrain"
+      ],
+      "mods": []
+    }
+  ],
+  "BeginEnd": [
+    {
+      "i": 120,
+      "name": "beginning of <grain>",
+      "line": 2639,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 121,
+      "name": "end of <grain>",
+      "line": 2657,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 122,
+      "name": "beginning of <modifier> <grain>",
+      "line": 2676,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 123,
+      "name": "end of <modifier> <grain>",
+      "line": 2700,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 124,
+      "name": "beginning of <time>",
+      "line": 2725,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 126,
+      "name": "end/beginning of the day/month/year",
+      "line": 2822,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 127,
+      "name": "the beginning/end of the day/year",
+      "line": 2840,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 205,
+      "name": "at the beginning|end of <named-month>",
+      "line": 4455,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 206,
+      "name": "at the beginning|end of <year>",
+      "line": 4470,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 207,
+      "name": "at the beginning|end of <week>",
+      "line": 4485,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 208,
+      "name": "beginning of month",
+      "line": 4503,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    },
+    {
+      "i": 210,
+      "name": "beginning of year",
+      "line": 4535,
+      "built": [
+        "BeginEnd"
+      ],
+      "mods": []
+    }
+  ],
+  "Holiday": [
+    {
+      "i": 133,
+      "name": "holidays",
+      "line": 2969,
+      "built": [
+        "Holiday"
+      ],
+      "mods": []
+    },
+    {
+      "i": 134,
+      "name": "<holiday> <year>",
+      "line": 2984,
+      "built": [
+        "Holiday"
+      ],
+      "mods": []
+    },
+    {
+      "i": 135,
+      "name": "<holiday> in <year>",
+      "line": 3016,
+      "built": [
+        "Holiday"
+      ],
+      "mods": []
+    }
+  ],
+  "DurationAfter": [
+    {
+      "i": 136,
+      "name": "<duration> after <time>",
+      "line": 3050,
+      "built": [
+        "DurationAfter"
+      ],
+      "mods": []
+    },
+    {
+      "i": 175,
+      "name": "<duration> after|before|from|past <time>",
+      "line": 4007,
+      "built": [
+        "DurationAfter"
+      ],
+      "mods": []
+    },
+    {
+      "i": 176,
+      "name": "<day> <duration> hence|ago",
+      "line": 4030,
+      "built": [
+        "DurationAfter"
+      ],
+      "mods": []
+    },
+    {
+      "i": 177,
+      "name": "<day> in <duration>",
+      "line": 4050,
+      "built": [
+        "DurationAfter"
+      ],
+      "mods": []
+    }
+  ]
+}
