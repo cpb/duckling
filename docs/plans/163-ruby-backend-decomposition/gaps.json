@@ -1,0 +1,739 @@
+[
+  {
+    "slice": "Modifiers",
+    "p2": 204,
+    "p3": 247,
+    "score": 51,
+    "dead_rules": [
+      "on a <named-day>",
+      "<time-of-day> sharp|exactly"
+    ],
+    "branch_rules": [
+      [
+        "around <time>",
+        [
+          "roughly"
+        ]
+      ],
+      [
+        "<time> approximately",
+        [
+          "roughly"
+        ]
+      ],
+      [
+        "<time> timezone",
+        [
+          "cest",
+          "utc",
+          "edt",
+          "cdt",
+          "mst",
+          "mdt",
+          "pdt",
+          "eest",
+          "wet",
+          "west",
+          "jst",
+          "kst",
+          "hkt",
+          "sgt",
+          "aest",
+          "aedt",
+          "acst",
+          "acdt",
+          "awst",
+          "nzst",
+          "nzdt"
+        ]
+      ],
+      [
+        "<time> (timezone)",
+        [
+          "cest",
+          "utc",
+          "edt",
+          "cdt",
+          "mst",
+          "mdt",
+          "pdt",
+          "eest",
+          "wet",
+          "west",
+          "jst",
+          "kst",
+          "hkt",
+          "sgt",
+          "aest",
+          "aedt",
+          "acst",
+          "acdt",
+          "awst",
+          "nzst",
+          "nzdt"
+        ]
+      ],
+      [
+        "<time-of-day> sharp|exactly",
+        [
+          "sharp"
+        ]
+      ]
+    ],
+    "opaque": [],
+    "branches": 45
+  },
+  {
+    "slice": "Interval",
+    "p2": 201,
+    "p3": 244,
+    "score": 43,
+    "dead_rules": [],
+    "branch_rules": [
+      [
+        "after lunch/work/school",
+        [
+          "work"
+        ]
+      ],
+      [
+        "<time> - <time> timezone",
+        [
+          "cest",
+          "utc",
+          "edt",
+          "cdt",
+          "mst",
+          "mdt",
+          "pdt",
+          "eest",
+          "wet",
+          "west",
+          "jst",
+          "kst",
+          "hkt",
+          "sgt",
+          "aest",
+          "aedt",
+          "acst",
+          "acdt",
+          "awst",
+          "nzst",
+          "nzdt"
+        ]
+      ],
+      [
+        "<datetime> - <datetime> (interval) timezone",
+        [
+          "cest",
+          "utc",
+          "edt",
+          "cdt",
+          "mst",
+          "mdt",
+          "pdt",
+          "eest",
+          "wet",
+          "west",
+          "jst",
+          "kst",
+          "hkt",
+          "sgt",
+          "aest",
+          "aedt",
+          "acst",
+          "acdt",
+          "awst",
+          "nzst",
+          "nzdt"
+        ]
+      ]
+    ],
+    "opaque": [],
+    "branches": 43
+  },
+  {
+    "slice": "dim:ordinal",
+    "p2": 207,
+    "p3": 250,
+    "score": 24,
+    "dead_rules": [],
+    "branch_rules": [
+      [
+        "ordinals (first..nineteenth)",
+        [
+          "sixth",
+          "seventh",
+          "ninth",
+          "eleventh",
+          "twelfth",
+          "thirteenth",
+          "fourteenth",
+          "fifteenth",
+          "sixteenth",
+          "seventeenth",
+          "eighteenth",
+          "nineteenth"
+        ]
+      ],
+      [
+        "ordinals (twentieth..ninetieth)",
+        [
+          "twentieth",
+          "thirtieth",
+          "fortieth",
+          "fiftieth",
+          "sixtieth",
+          "seventieth",
+          "eightieth"
+        ]
+      ],
+      [
+        "ordinals (composite, e.g. twenty-fifth)",
+        [
+          "eighty",
+          "ninety",
+          "sixth",
+          "seventh",
+          "ninth"
+        ]
+      ]
+    ],
+    "opaque": [],
+    "branches": 24
+  },
+  {
+    "slice": "Composed",
+    "p2": 202,
+    "p3": 245,
+    "score": 23,
+    "dead_rules": [
+      "iso8601 datetime with T separator (en extension)"
+    ],
+    "branch_rules": [],
+    "opaque": [
+      "<month> <year>",
+      "<named-month>|<named-day> <day-of-month> (ordinal)",
+      "<named-month> <day-of-month> (non ordinal)",
+      "<integer> <month>",
+      "<ordinal> <month>",
+      "<latent-time> <time> compose",
+      "intersect",
+      "<day-of-month> (ordinal or number) <named-month>",
+      "<part-of-day> <latent-time-of-day> (latent)",
+      "<time-of-day> <part-of-day>"
+    ],
+    "branches": 0
+  },
+  {
+    "slice": "DateMDY",
+    "p2": 181,
+    "p3": 224,
+    "score": 21,
+    "dead_rules": [
+      "date MM DD YYYY",
+      "date DD MM YYYY"
+    ],
+    "branch_rules": [
+      [
+        "date DD/Mon/YYYY",
+        [
+          "jun",
+          "nov"
+        ]
+      ],
+      [
+        "digit<month> (no space)",
+        [
+          "june",
+          "november",
+          "december",
+          "jun",
+          "nov"
+        ]
+      ]
+    ],
+    "opaque": [
+      "<ordinal> <month> <short-year>",
+      "<date> <year>",
+      "<day-of-month>(ordinal or number)/<named-month>/year",
+      "<day-of-month>(ordinal) <named-month> year"
+    ],
+    "branches": 7
+  },
+  {
+    "slice": "dim:duration",
+    "p2": 206,
+    "p3": 249,
+    "score": 19,
+    "dead_rules": [
+      "quarter of an hour",
+      "three-quarters of an hour",
+      "fortnight",
+      "<integer> and a half hour",
+      "about|exactly <duration>"
+    ],
+    "branch_rules": [],
+    "opaque": [
+      "<integer> <unit-of-duration>",
+      "composite <duration>"
+    ],
+    "branches": 0
+  },
+  {
+    "slice": "dim:numeral",
+    "p2": 205,
+    "p3": 248,
+    "score": 17,
+    "dead_rules": [],
+    "branch_rules": [
+      [
+        "integer (0..9)",
+        [
+          "none",
+          "zilch"
+        ]
+      ],
+      [
+        "integer (10..19)",
+        [
+          "thirteen"
+        ]
+      ],
+      [
+        "integer (20..90)",
+        [
+          "eighty",
+          "ninety"
+        ]
+      ],
+      [
+        "one eleven (skip hundreds)",
+        [
+          "thirteen",
+          "eighty",
+          "ninety"
+        ]
+      ],
+      [
+        "one twenty two (skip hundreds)",
+        [
+          "eighty",
+          "ninety"
+        ]
+      ],
+      [
+        "powers of tens",
+        [
+          "trillion"
+        ]
+      ]
+    ],
+    "opaque": [
+      "integer compose (tens + units)",
+      "compose by multiplication",
+      "intersect 2 numbers"
+    ],
+    "branches": 11
+  },
+  {
+    "slice": "HourMinute",
+    "p2": 171,
+    "p3": 214,
+    "score": 8,
+    "dead_rules": [
+      "half to|till|before <hour-of-day>"
+    ],
+    "branch_rules": [
+      [
+        "time HMM-ish",
+        [
+          "roughly"
+        ]
+      ]
+    ],
+    "opaque": [
+      "<time:hour> <integer:minute>",
+      "<hour-of-day> <integer>"
+    ],
+    "branches": 1
+  },
+  {
+    "slice": "Month",
+    "p2": 168,
+    "p3": 211,
+    "score": 5,
+    "dead_rules": [],
+    "branch_rules": [
+      [
+        "month name",
+        [
+          "june",
+          "november",
+          "december",
+          "jun",
+          "nov"
+        ]
+      ]
+    ],
+    "opaque": [],
+    "branches": 5
+  },
+  {
+    "slice": "Holiday",
+    "p2": 185,
+    "p3": 228,
+    "score": 4,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [
+      "holidays",
+      "<holiday> <year>"
+    ],
+    "branches": 0
+  },
+  {
+    "slice": "Season",
+    "p2": 184,
+    "p3": 227,
+    "score": 3,
+    "dead_rules": [],
+    "branch_rules": [
+      [
+        "season word",
+        [
+          "spring",
+          "fall",
+          "autumn"
+        ]
+      ]
+    ],
+    "opaque": [],
+    "branches": 3
+  },
+  {
+    "slice": "QuarterYear",
+    "p2": 189,
+    "p3": 232,
+    "score": 2,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [
+      "<ordinal> quarter <year>"
+    ],
+    "branches": 0
+  },
+  {
+    "slice": "DayOfMonth",
+    "p2": 169,
+    "p3": 212,
+    "score": 2,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [
+      "<day-of-month> (ordinal)"
+    ],
+    "branches": 0
+  },
+  {
+    "slice": "Hour",
+    "p2": 170,
+    "p3": 213,
+    "score": 2,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [
+      "time-of-day (latent)"
+    ],
+    "branches": 0
+  },
+  {
+    "slice": "Year",
+    "p2": 173,
+    "p3": 216,
+    "score": 2,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [
+      "spelled-out year (numeral)"
+    ],
+    "branches": 0
+  },
+  {
+    "slice": "Now",
+    "p2": 174,
+    "p3": 217,
+    "score": 1,
+    "dead_rules": [],
+    "branch_rules": [
+      [
+        "now",
+        [
+          "immediately"
+        ]
+      ]
+    ],
+    "opaque": [],
+    "branches": 1
+  },
+  {
+    "slice": "Quarter",
+    "p2": 188,
+    "p3": 231,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "NthGrain",
+    "p2": 187,
+    "p3": 230,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "GrainOffset",
+    "p2": 186,
+    "p3": 229,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "NthLastDayOfTime",
+    "p2": 198,
+    "p3": 241,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "NthGrainOfTime",
+    "p2": 197,
+    "p3": 240,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "AllGrain",
+    "p2": 190,
+    "p3": 233,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "RestOfGrain",
+    "p2": 191,
+    "p3": 234,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "BeginEnd",
+    "p2": 192,
+    "p3": 235,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "DurationAfter",
+    "p2": 200,
+    "p3": 243,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "dim:time_grain",
+    "p2": 208,
+    "p3": 251,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "NthClosestToTime",
+    "p2": 203,
+    "p3": 246,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "NDOWsFromTime",
+    "p2": 196,
+    "p3": 239,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "NthLastCycleOfTime",
+    "p2": 199,
+    "p3": 242,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "LastCycleOfTime",
+    "p2": 195,
+    "p3": 238,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "LastDOWOfTime",
+    "p2": 194,
+    "p3": 237,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "NthDOWOfTime",
+    "p2": 193,
+    "p3": 236,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "RelativeGrain",
+    "p2": 180,
+    "p3": 223,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "HourMinuteSecond",
+    "p2": 172,
+    "p3": 215,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "Weekend",
+    "p2": 183,
+    "p3": 226,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "PartOfDay",
+    "p2": 182,
+    "p3": 225,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "DayBeforeYesterday",
+    "p2": 179,
+    "p3": 222,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "DayAfterTomorrow",
+    "p2": 178,
+    "p3": 221,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "Yesterday",
+    "p2": 177,
+    "p3": 220,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "Tomorrow",
+    "p2": 176,
+    "p3": 219,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "Today",
+    "p2": 175,
+    "p3": 218,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  },
+  {
+    "slice": "DayOfWeek",
+    "p2": 167,
+    "p3": 210,
+    "score": 0,
+    "dead_rules": [],
+    "branch_rules": [],
+    "opaque": [],
+    "branches": 0
+  }
+]

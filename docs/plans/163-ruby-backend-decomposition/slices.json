@@ -1,0 +1,1341 @@
+[
+  {
+    "key": "DayOfWeek",
+    "slug": "day_of_week",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DayOfWeek(u32),             // 0=Monday .. 6=Sunday",
+    "mod_hits": 14,
+    "rules": [
+      {
+        "name": "this|next <day-of-week>",
+        "line": 171
+      }
+    ]
+  },
+  {
+    "key": "Month",
+    "slug": "month",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Month(u32),                 // 1..12",
+    "mod_hits": 19,
+    "rules": [
+      {
+        "name": "month name",
+        "line": 199
+      }
+    ]
+  },
+  {
+    "key": "DayOfMonth",
+    "slug": "day_of_month",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DayOfMonth(u32),            // 1..31",
+    "mod_hits": 14,
+    "rules": [
+      {
+        "name": "<day-of-month> (ordinal)",
+        "line": 2388
+      },
+      {
+        "name": "the <day-of-month> (ordinal)",
+        "line": 2433
+      },
+      {
+        "name": "on the <ordinal-word>",
+        "line": 2449
+      }
+    ]
+  },
+  {
+    "key": "Hour",
+    "slug": "hour",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Hour(u32, bool),            // hour, is_12h_ambiguous",
+    "mod_hits": 12,
+    "rules": [
+      {
+        "name": "noon|midnight|EOD|end of day",
+        "line": 290
+      },
+      {
+        "name": "midnight",
+        "line": 297
+      },
+      {
+        "name": "H ampm",
+        "line": 684
+      },
+      {
+        "name": "H a/p (latent)",
+        "line": 709
+      },
+      {
+        "name": "time-of-day (latent)",
+        "line": 790
+      },
+      {
+        "name": "<time-of-day> o'clock",
+        "line": 908
+      },
+      {
+        "name": "Mid-day",
+        "line": 4754
+      }
+    ]
+  },
+  {
+    "key": "HourMinute",
+    "slug": "hour_minute",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    HourMinute(u32, u32, bool), // hour, minute, is_12h_ambiguous",
+    "mod_hits": 14,
+    "rules": [
+      {
+        "name": "hh:mm",
+        "line": 505
+      },
+      {
+        "name": "hhhmm",
+        "line": 548
+      },
+      {
+        "name": "hhmm (latent)",
+        "line": 578
+      },
+      {
+        "name": "time HMM-ish",
+        "line": 600
+      },
+      {
+        "name": "HH:MM ampm",
+        "line": 656
+      },
+      {
+        "name": "hhmm (military) am|pm",
+        "line": 736
+      },
+      {
+        "name": "HMM in the <pod>",
+        "line": 764
+      },
+      {
+        "name": "<time-of-day> am|pm",
+        "line": 812
+      },
+      {
+        "name": "<time> a/p suffix",
+        "line": 829
+      },
+      {
+        "name": "<time> in the AM/PM",
+        "line": 892
+      },
+      {
+        "name": "half after|past <hour-of-day>",
+        "line": 3525
+      },
+      {
+        "name": "quarter after|past <hour-of-day>",
+        "line": 3538
+      },
+      {
+        "name": "quarter to|till|before <hour-of-day>",
+        "line": 3554
+      },
+      {
+        "name": "integer after|past <hour-of-day>",
+        "line": 3574
+      },
+      {
+        "name": "<integer> to <time>",
+        "line": 3596
+      },
+      {
+        "name": "<time:hour> <integer:minute>",
+        "line": 3619
+      },
+      {
+        "name": "<hour-of-day> <integer>",
+        "line": 4067
+      },
+      {
+        "name": "<hour-of-day> half",
+        "line": 4085
+      },
+      {
+        "name": "<hour-of-day> quarter",
+        "line": 4100
+      },
+      {
+        "name": "<integer> to|till|before <hour-of-day>",
+        "line": 4115
+      },
+      {
+        "name": "<integer> minutes to|till|before <hour-of-day>",
+        "line": 4132
+      },
+      {
+        "name": "<hour-of-day> zero <integer>",
+        "line": 4567
+      },
+      {
+        "name": "<hour-of-day> - <integer-as-word>",
+        "line": 4587
+      },
+      {
+        "name": "<hour-of-day> - zero - <integer>",
+        "line": 4607
+      },
+      {
+        "name": "half to|till|before <hour-of-day>",
+        "line": 4629
+      },
+      {
+        "name": "half <integer> (UK style hour-of-day)",
+        "line": 4648
+      }
+    ]
+  },
+  {
+    "key": "HourMinuteSecond",
+    "slug": "hour_minute_second",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    HourMinuteSecond(u32, u32, u32),",
+    "mod_hits": 6,
+    "rules": [
+      {
+        "name": "hh:mm:ss",
+        "line": 527
+      },
+      {
+        "name": "HH:MM:SS ampm",
+        "line": 625
+      }
+    ]
+  },
+  {
+    "key": "Year",
+    "slug": "year",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Year(i32),",
+    "mod_hits": 7,
+    "rules": [
+      {
+        "name": "year (latent)",
+        "line": 1501
+      },
+      {
+        "name": "spelled-out year (numeral)",
+        "line": 1515
+      },
+      {
+        "name": "<year> (bc|ad)",
+        "line": 1541
+      },
+      {
+        "name": "in <integer> AD",
+        "line": 1562
+      }
+    ]
+  },
+  {
+    "key": "Now",
+    "slug": "now",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Now,",
+    "mod_hits": 6,
+    "rules": [
+      {
+        "name": "now",
+        "line": 238
+      },
+      {
+        "name": "as soon as possible",
+        "line": 243
+      }
+    ]
+  },
+  {
+    "key": "Today",
+    "slug": "today",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Today,",
+    "mod_hits": 5,
+    "rules": [
+      {
+        "name": "today",
+        "line": 255
+      }
+    ]
+  },
+  {
+    "key": "Tomorrow",
+    "slug": "tomorrow",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Tomorrow,",
+    "mod_hits": 4,
+    "rules": [
+      {
+        "name": "tomorrow",
+        "line": 260
+      }
+    ]
+  },
+  {
+    "key": "Yesterday",
+    "slug": "yesterday",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Yesterday,",
+    "mod_hits": 4,
+    "rules": [
+      {
+        "name": "yesterday",
+        "line": 265
+      }
+    ]
+  },
+  {
+    "key": "DayAfterTomorrow",
+    "slug": "day_after_tomorrow",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DayAfterTomorrow,",
+    "mod_hits": 4,
+    "rules": [
+      {
+        "name": "day after tomorrow",
+        "line": 273
+      }
+    ]
+  },
+  {
+    "key": "DayBeforeYesterday",
+    "slug": "day_before_yesterday",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DayBeforeYesterday,",
+    "mod_hits": 4,
+    "rules": [
+      {
+        "name": "day before yesterday",
+        "line": 280
+      }
+    ]
+  },
+  {
+    "key": "RelativeGrain",
+    "slug": "relative_grain",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    RelativeGrain {\n        n: i64,\n        grain: Grain,\n    },",
+    "mod_hits": 5,
+    "rules": [
+      {
+        "name": "in|within|after <duration>",
+        "line": 1025
+      },
+      {
+        "name": "in <number> (implicit minutes)",
+        "line": 1040
+      },
+      {
+        "name": "<duration> hence|ago",
+        "line": 1051
+      },
+      {
+        "name": "<duration> from now",
+        "line": 1114
+      },
+      {
+        "name": "<duration> back",
+        "line": 1128
+      },
+      {
+        "name": "after <duration>",
+        "line": 1143
+      },
+      {
+        "name": "last|past|next <duration>",
+        "line": 4223
+      }
+    ]
+  },
+  {
+    "key": "DateMDY",
+    "slug": "date_mdy",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DateMDY {\n        month: u32,\n        day: u32,\n        year: Option<i32>,\n    },",
+    "mod_hits": 12,
+    "rules": [
+      {
+        "name": "date MM/DD(/YYYY)",
+        "line": 1183
+      },
+      {
+        "name": "date DD/MM(/YY)",
+        "line": 1220
+      },
+      {
+        "name": "date MM DD YYYY",
+        "line": 1256
+      },
+      {
+        "name": "date DD MM YYYY",
+        "line": 1282
+      },
+      {
+        "name": "date DD.MM.YYYY",
+        "line": 1435
+      },
+      {
+        "name": "date DD/Mon/YYYY",
+        "line": 1465
+      },
+      {
+        "name": "<ordinal> <month> <short-year>",
+        "line": 2322
+      },
+      {
+        "name": "<date> <year>",
+        "line": 2465
+      },
+      {
+        "name": "digit<month> (no space)",
+        "line": 3698
+      },
+      {
+        "name": "<day-of-month>(ordinal or number)/<named-month>/year",
+        "line": 3887
+      },
+      {
+        "name": "<day-of-month>(ordinal) <named-month> year",
+        "line": 3913
+      }
+    ]
+  },
+  {
+    "key": "PartOfDay",
+    "slug": "part_of_day",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    PartOfDay(PartOfDay),",
+    "mod_hits": 19,
+    "rules": [
+      {
+        "name": "morning (latent)",
+        "line": 307
+      },
+      {
+        "name": "afternoon (latent)",
+        "line": 322
+      },
+      {
+        "name": "evening (latent)",
+        "line": 331
+      },
+      {
+        "name": "night (latent)",
+        "line": 340
+      },
+      {
+        "name": "lunch (latent)",
+        "line": 349
+      },
+      {
+        "name": "part of days",
+        "line": 4410
+      },
+      {
+        "name": "early morning",
+        "line": 4428
+      }
+    ]
+  },
+  {
+    "key": "Weekend",
+    "slug": "weekend",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Weekend,",
+    "mod_hits": 4,
+    "rules": [
+      {
+        "name": "week-end",
+        "line": 443
+      }
+    ]
+  },
+  {
+    "key": "Season",
+    "slug": "season",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Season(u32),                  // 0=spring, 1=summer, 2=fall, 3=winter",
+    "mod_hits": 4,
+    "rules": [
+      {
+        "name": "season word",
+        "line": 462
+      },
+      {
+        "name": "last|this|next <season>",
+        "line": 482
+      }
+    ]
+  },
+  {
+    "key": "Holiday",
+    "slug": "holiday",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Holiday(String, Option<i32>), // name, optional year",
+    "mod_hits": 14,
+    "rules": [
+      {
+        "name": "holidays",
+        "line": 2969
+      },
+      {
+        "name": "<holiday> <year>",
+        "line": 2984
+      },
+      {
+        "name": "<holiday> in <year>",
+        "line": 3016
+      }
+    ]
+  },
+  {
+    "key": "GrainOffset",
+    "slug": "grain_offset",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    GrainOffset {\n        grain: Grain,\n        offset: i32,\n    },",
+    "mod_hits": 13,
+    "rules": [
+      {
+        "name": "this|last|next <cycle>",
+        "line": 2003
+      },
+      {
+        "name": "the <cycle> of the <time grain>",
+        "line": 2043
+      }
+    ]
+  },
+  {
+    "key": "NthGrain",
+    "slug": "nth_grain",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    NthGrain {\n        n: i64,\n        grain: Grain,\n        past: bool,\n        interval: bool,\n    },",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "last <integer> <grain>",
+        "line": 2064
+      },
+      {
+        "name": "next <integer> <grain>",
+        "line": 2085
+      },
+      {
+        "name": "upcoming <integer> <cycle>",
+        "line": 2107
+      },
+      {
+        "name": "<integer> upcoming <grain>",
+        "line": 2129
+      },
+      {
+        "name": "<integer> upcoming <cycle>",
+        "line": 3995
+      }
+    ]
+  },
+  {
+    "key": "Quarter",
+    "slug": "quarter",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Quarter(u32),",
+    "mod_hits": 3,
+    "rules": [
+      {
+        "name": "<ordinal> quarter",
+        "line": 2493
+      },
+      {
+        "name": "the <ordinal> quarter",
+        "line": 2509
+      }
+    ]
+  },
+  {
+    "key": "QuarterYear",
+    "slug": "quarter_year",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    QuarterYear(u32, i32),",
+    "mod_hits": 3,
+    "rules": [
+      {
+        "name": "<ordinal> quarter <year>",
+        "line": 2529
+      },
+      {
+        "name": "<quarter> of <year>",
+        "line": 2560
+      },
+      {
+        "name": "yyyyqq",
+        "line": 2592
+      }
+    ]
+  },
+  {
+    "key": "AllGrain",
+    "slug": "all_grain",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    AllGrain(Grain),",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "week",
+        "line": 2612
+      }
+    ]
+  },
+  {
+    "key": "RestOfGrain",
+    "slug": "rest_of_grain",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    RestOfGrain(Grain),",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "rest of the week",
+        "line": 2624
+      }
+    ]
+  },
+  {
+    "key": "BeginEnd",
+    "slug": "begin_end",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    BeginEnd {\n        begin: bool,\n        target: Box<TimeForm>,\n    },",
+    "mod_hits": 4,
+    "rules": [
+      {
+        "name": "beginning of <grain>",
+        "line": 2639
+      },
+      {
+        "name": "end of <grain>",
+        "line": 2657
+      },
+      {
+        "name": "beginning of <modifier> <grain>",
+        "line": 2676
+      },
+      {
+        "name": "end of <modifier> <grain>",
+        "line": 2700
+      },
+      {
+        "name": "beginning of <time>",
+        "line": 2725
+      },
+      {
+        "name": "end/beginning of the day/month/year",
+        "line": 2822
+      },
+      {
+        "name": "the beginning/end of the day/year",
+        "line": 2840
+      },
+      {
+        "name": "at the beginning|end of <named-month>",
+        "line": 4455
+      },
+      {
+        "name": "at the beginning|end of <year>",
+        "line": 4470
+      },
+      {
+        "name": "at the beginning|end of <week>",
+        "line": 4485
+      },
+      {
+        "name": "beginning of month",
+        "line": 4503
+      },
+      {
+        "name": "beginning of year",
+        "line": 4535
+      }
+    ]
+  },
+  {
+    "key": "NthDOWOfTime",
+    "slug": "nth_dow_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"first Monday of March\", \"second Tuesday of last month\"\n    NthDOWOfTime {\n        n: i32,\n        dow: u32,\n        base: Box<TimeData>,\n    },",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "first|second|third|fourth|fifth <day-of-week> of <time>",
+        "line": 1667
+      },
+      {
+        "name": "nth <day-of-week> of <month-or-greater>",
+        "line": 4666
+      },
+      {
+        "name": "the nth <day-of-week> of <month-or-greater>",
+        "line": 4694
+      }
+    ]
+  },
+  {
+    "key": "LastDOWOfTime",
+    "slug": "last_dow_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"last Friday of October\"\n    LastDOWOfTime {\n        dow: u32,\n        base: Box<TimeData>,\n    },",
+    "mod_hits": 3,
+    "rules": [
+      {
+        "name": "last <day-of-week> of <time>",
+        "line": 1698
+      },
+      {
+        "name": "last weekend of <named-month>",
+        "line": 1776
+      }
+    ]
+  },
+  {
+    "key": "LastCycleOfTime",
+    "slug": "last_cycle_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"last week of September\", \"last weekend of July\"\n    LastCycleOfTime {\n        grain: Grain,\n        base: Box<TimeData>,\n    },",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "last <cycle> of <time>",
+        "line": 1724
+      }
+    ]
+  },
+  {
+    "key": "NDOWsFromTime",
+    "slug": "ndo_ws_from_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"2 Sundays from now\", \"3 Fridays from now\"\n    NDOWsFromTime {\n        n: i32,\n        dow: u32,\n        base: Box<TimeData>,\n    },",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "<integer> <day-of-week> from <time>",
+        "line": 1792
+      },
+      {
+        "name": "<integer> <named-day> ago|back",
+        "line": 1820
+      },
+      {
+        "name": "nth <time> after <time>",
+        "line": 1846
+      },
+      {
+        "name": "the nth <time> after <time>",
+        "line": 4338
+      }
+    ]
+  },
+  {
+    "key": "NthGrainOfTime",
+    "slug": "nth_grain_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"Nth week of month\" (e.g., \"first week of October 2014\")\n    NthGrainOfTime {\n        n: i32,\n        grain: Grain,\n        base: Box<TimeData>,\n    },",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "the <ordinal> <cycle> of <time>",
+        "line": 1918
+      },
+      {
+        "name": "<ordinal> day of <time>",
+        "line": 1979
+      },
+      {
+        "name": "the week of <time>",
+        "line": 2030
+      },
+      {
+        "name": "<cycle> after|before <time>",
+        "line": 3939
+      },
+      {
+        "name": "<ordinal> <cycle> of <time>",
+        "line": 3963
+      },
+      {
+        "name": "<ordinal> <cycle> after <time>",
+        "line": 4260
+      },
+      {
+        "name": "<ordinal> <cycle> after <time>",
+        "line": 4280
+      },
+      {
+        "name": "the <cycle> after|before <time>",
+        "line": 4300
+      },
+      {
+        "name": "the <cycle> of <time>",
+        "line": 4322
+      }
+    ]
+  },
+  {
+    "key": "NthLastDayOfTime",
+    "slug": "nth_last_day_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"last day of October\", \"5th last day of May\"\n    NthLastDayOfTime {\n        n: i32,\n        base: Box<TimeData>,\n    },",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "last day of <time>",
+        "line": 1944
+      },
+      {
+        "name": "(the) <ordinal> last day of <time>",
+        "line": 1958
+      }
+    ]
+  },
+  {
+    "key": "NthLastCycleOfTime",
+    "slug": "nth_last_cycle_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // Haskell: cycleNthAfter with negative n — \"<ordinal> last <grain> of <time>\"\n    NthLastCycleOfTime {\n        n: i32,\n        grain: Grain,\n        base: Box<TimeData>,\n    },",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "the <ordinal> last <cycle> of <time>",
+        "line": 1746
+      },
+      {
+        "name": "<ordinal> last <cycle> of <time>",
+        "line": 3979
+      }
+    ]
+  },
+  {
+    "key": "DurationAfter",
+    "slug": "duration_after",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // Haskell: durationAfter — \"<duration> after <time>\"\n    // Shifts each occurrence of base by n grains, picks nearest future\n    DurationAfter {\n        n: i64,\n        grain: Grain,\n        base: Box<TimeData>,\n    },",
+    "mod_hits": 4,
+    "rules": [
+      {
+        "name": "<duration> after <time>",
+        "line": 3050
+      },
+      {
+        "name": "<duration> after|before|from|past <time>",
+        "line": 4007
+      },
+      {
+        "name": "<day> <duration> hence|ago",
+        "line": 4030
+      },
+      {
+        "name": "<day> in <duration>",
+        "line": 4050
+      }
+    ]
+  },
+  {
+    "key": "Interval",
+    "slug": "interval",
+    "wave": "C",
+    "kind": "time_form",
+    "excerpt": "    Interval(Box<TimeData>, Box<TimeData>, bool), // from, to, open (true=don't adjust end)",
+    "mod_hits": 7,
+    "rules": [
+      {
+        "name": "within <duration>",
+        "line": 1160
+      },
+      {
+        "name": "EOM/BOM/EOY/BOY/EOD",
+        "line": 2750
+      },
+      {
+        "name": "by <time>",
+        "line": 2858
+      },
+      {
+        "name": "after lunch/work/school",
+        "line": 2942
+      },
+      {
+        "name": "<datetime> - <datetime> (interval)",
+        "line": 3143
+      },
+      {
+        "name": "<time-of-day> - <time-of-day> (interval)",
+        "line": 3178
+      },
+      {
+        "name": "hh(:mm) - <time-of-day> am|pm",
+        "line": 3203
+      },
+      {
+        "name": "dd-dd <month> (interval)",
+        "line": 3249
+      },
+      {
+        "name": "<month> dd-dd (interval)",
+        "line": 3283
+      },
+      {
+        "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) <named-month> (interval)",
+        "line": 3316
+      },
+      {
+        "name": "from <month> dd-dd (interval)",
+        "line": 3352
+      },
+      {
+        "name": "later than <tod> before <tod>",
+        "line": 3386
+      },
+      {
+        "name": "from <datetime> - <datetime> (interval)",
+        "line": 3405
+      },
+      {
+        "name": "between <time> and <time>",
+        "line": 3424
+      },
+      {
+        "name": "from <time> for <duration>",
+        "line": 3443
+      },
+      {
+        "name": "for <duration> from <time>",
+        "line": 3469
+      },
+      {
+        "name": "<time> for <duration>",
+        "line": 3496
+      },
+      {
+        "name": "<time> - <time> timezone",
+        "line": 3766
+      },
+      {
+        "name": "<datetime>/<datetime> (interval)",
+        "line": 3795
+      },
+      {
+        "name": "<datetime> - <datetime> (interval) timezone",
+        "line": 3812
+      },
+      {
+        "name": "<year> (latent) - <year> (latent) (interval)",
+        "line": 3838
+      },
+      {
+        "name": "from <time-of-day> - <time-of-day> (interval)",
+        "line": 4205
+      },
+      {
+        "name": "by the end of <time>",
+        "line": 4380
+      },
+      {
+        "name": "between <time-of-day> and <time-of-day> (interval)",
+        "line": 4392
+      },
+      {
+        "name": "end of month",
+        "line": 4511
+      },
+      {
+        "name": "end of year",
+        "line": 4543
+      },
+      {
+        "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) of <named-month> (interval)",
+        "line": 4723
+      }
+    ]
+  },
+  {
+    "key": "Composed",
+    "slug": "composed",
+    "wave": "C",
+    "kind": "time_form",
+    "excerpt": "    Composed(Box<TimeData>, Box<TimeData>),",
+    "mod_hits": 20,
+    "rules": [
+      {
+        "name": "tonight",
+        "line": 361
+      },
+      {
+        "name": "this <part-of-day>",
+        "line": 374
+      },
+      {
+        "name": "last night",
+        "line": 397
+      },
+      {
+        "name": "tomorrow <part-of-day>",
+        "line": 409
+      },
+      {
+        "name": "<time> <part-of-day>",
+        "line": 852
+      },
+      {
+        "name": "<duration> from right now",
+        "line": 1078
+      },
+      {
+        "name": "<duration> from today",
+        "line": 1096
+      },
+      {
+        "name": "mm/yyyy",
+        "line": 1308
+      },
+      {
+        "name": "iso8601 datetime with T separator (en extension)",
+        "line": 1332
+      },
+      {
+        "name": "yyyy-mm-dd",
+        "line": 1377
+      },
+      {
+        "name": "yyyy-mm",
+        "line": 1415
+      },
+      {
+        "name": "<month> <year>",
+        "line": 1582
+      },
+      {
+        "name": "the <day-of-month> (ordinal or number) of <named-month>",
+        "line": 2153
+      },
+      {
+        "name": "<named-month>|<named-day> <day-of-month> (ordinal)",
+        "line": 2179
+      },
+      {
+        "name": "<named-month> <day-of-month> (non ordinal)",
+        "line": 2201
+      },
+      {
+        "name": "<dow> <month> <day>",
+        "line": 2220
+      },
+      {
+        "name": "the <day-of-month> (number)",
+        "line": 2258
+      },
+      {
+        "name": "<integer> <month>",
+        "line": 2279
+      },
+      {
+        "name": "<ordinal> <month>",
+        "line": 2297
+      },
+      {
+        "name": "the ides of <named-month>",
+        "line": 2365
+      },
+      {
+        "name": "<numeral> of <grain-offset-month>",
+        "line": 2404
+      },
+      {
+        "name": "<latent-time> <time> compose",
+        "line": 3073
+      },
+      {
+        "name": "intersect",
+        "line": 3091
+      },
+      {
+        "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\", \\\"'s\\\"",
+        "line": 3120
+      },
+      {
+        "name": "ISO interval",
+        "line": 3647
+      },
+      {
+        "name": "<day-of-month> (ordinal or number) of <named-month>",
+        "line": 3856
+      },
+      {
+        "name": "<day-of-month> (ordinal or number) <named-month>",
+        "line": 3872
+      },
+      {
+        "name": "<part-of-day> at <time-of-day>",
+        "line": 4149
+      },
+      {
+        "name": "<part-of-day> <latent-time-of-day> (latent)",
+        "line": 4158
+      },
+      {
+        "name": "<time-of-day> <part-of-day>",
+        "line": 4169
+      },
+      {
+        "name": "<part-of-day> of <time>",
+        "line": 4196
+      },
+      {
+        "name": "in <duration> at <time-of-day>",
+        "line": 4242
+      },
+      {
+        "name": "<day-of-month> (ordinal or number) of <month>",
+        "line": 4359
+      },
+      {
+        "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\" for year",
+        "line": 4371
+      }
+    ]
+  },
+  {
+    "key": "NthClosestToTime",
+    "slug": "nth_closest_to_time",
+    "wave": "C",
+    "kind": "time_form",
+    "excerpt": "    // \"closest Monday to Oct 5th\", \"closest xmas to today\"\n    NthClosestToTime {\n        n: i32,\n        target: Box<TimeData>,\n        base: Box<TimeData>,\n    },",
+    "mod_hits": 2,
+    "rules": [
+      {
+        "name": "the closest <day> to <time>",
+        "line": 1874
+      },
+      {
+        "name": "the <ordinal> closest <day> to <time>",
+        "line": 1893
+      }
+    ]
+  },
+  {
+    "key": "Modifiers",
+    "slug": "modifiers",
+    "wave": "A",
+    "kind": "modifiers",
+    "excerpt": null,
+    "mod_hits": 0,
+    "rules": [
+      {
+        "name": "in|during the <part-of-day>",
+        "line": 386,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "late/early/mid <time>",
+        "line": 421,
+        "mods": [
+          "latent",
+          "early_late"
+        ]
+      },
+      {
+        "name": "this past weekend",
+        "line": 449,
+        "mods": [
+          "direction"
+        ]
+      },
+      {
+        "name": "at <time-of-day>",
+        "line": 940,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "on <day>",
+        "line": 953,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "on a <named-day>",
+        "line": 963,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "in|during <named-month>|year",
+        "line": 974,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "around <time>",
+        "line": 997,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "<time> approximately",
+        "line": 1011,
+        "mods": []
+      },
+      {
+        "name": "in <year>",
+        "line": 1525,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "last <time>",
+        "line": 1604,
+        "mods": [
+          "latent",
+          "direction"
+        ]
+      },
+      {
+        "name": "next <time>",
+        "line": 1619,
+        "mods": [
+          "latent",
+          "direction"
+        ]
+      },
+      {
+        "name": "this <time>",
+        "line": 1635,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "<time> before last|after next",
+        "line": 1650,
+        "mods": [
+          "latent",
+          "direction"
+        ]
+      },
+      {
+        "name": "until <time>",
+        "line": 2873,
+        "mods": [
+          "latent",
+          "open_interval_direction"
+        ]
+      },
+      {
+        "name": "from|since|after <time>",
+        "line": 2905,
+        "mods": [
+          "latent",
+          "open_interval_direction"
+        ]
+      },
+      {
+        "name": "after <part-of-day>",
+        "line": 2922,
+        "mods": [
+          "latent",
+          "open_interval_direction"
+        ]
+      },
+      {
+        "name": "<time> timezone",
+        "line": 3723,
+        "mods": [
+          "latent",
+          "timezone"
+        ]
+      },
+      {
+        "name": "<time> (timezone)",
+        "line": 3744,
+        "mods": [
+          "latent",
+          "timezone"
+        ]
+      },
+      {
+        "name": "<time-of-day> sharp|exactly",
+        "line": 4178,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "about|exactly <time-of-day>",
+        "line": 4187,
+        "mods": [
+          "latent"
+        ]
+      },
+      {
+        "name": "absorption of , after named day",
+        "line": 4405,
+        "mods": []
+      },
+      {
+        "name": "part of <named-month>",
+        "line": 4437,
+        "mods": [
+          "latent",
+          "early_late"
+        ]
+      }
+    ]
+  }
+]
