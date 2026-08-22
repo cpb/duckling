@@ -93,10 +93,13 @@ against a corpus that is still growing.
 - PR #255 is still unmerged after you have reported it twice — the tree cannot
   start.
 - /cpb:heal-ci escalates on any PR.
-- A corpus audit finds a NATIVE-backend divergence. That is an upstream bug in
-  wafer-inc/duckling, and whether to pin it, fix it or file it is not yours to
-  decide. NEVER let an agent pin surprising native behaviour as golden without
-  flagging it — the corpus becomes the Ruby backend's spec, so a pinned bug
-  becomes a required behaviour.
+- A corpus audit finds a NATIVE-backend divergence. The agent opens an
+  `upstream-divergence` issue on THIS repo — never against wafer-inc/duckling
+  (see "Upstream divergences" in AGENTS.md). You do not triage it, fix it, or
+  decide whether it goes upstream; that is a human call taken later on the
+  accumulated batch. What you DO enforce: never let an agent pin surprising
+  native behaviour as golden without opening that issue. The corpus becomes the
+  Ruby backend's specification, so a silently pinned bug stops being a bug and
+  becomes a required behaviour of this gem.
 - #254's forecast comes back "stop". That is the whole point of the test-drive;
   do not start Milestone 2 on your own.
