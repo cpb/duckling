@@ -1,0 +1,40 @@
+Parent: #<%= parent %> · **Corpus audit — <%= slice_count %> slices, running BEFORE the Ruby port.**
+
+Blocked by #<%= glob_split_issue %>. Runs in parallel with the spine (#<%= spine_issue %>), the ranking layer, and the three corpus tickets. **Blocks Phase 1 fixture capture (#<%= fixture_capture_issue %>)**, and through it all of Phase 2.
+
+## What changed
+
+This was Phase 3: a swarm that ran *after* Phase 2, comparing a finished Ruby backend against the native one. It now runs first, and it is a corpus stage rather than a port stage.
+
+The corpus-growing half of the audit never needed the Ruby backend. It needs the Rust and the native backend, both of which exist today. Running it first inverts the economics:
+
+| | Audit after the port | Audit before the port |
+|---|---|---|
+| A gap in the corpus | found after agents already ported against a spec missing it | never reaches the porting agent |
+| Fixing it | means re-opening a merged slice | means the slice was right the first time |
+| An upstream bug | surfaces as a confusing three-way disagreement | surfaces cleanly against one backend |
+
+What is lost is the third outcome — "fails on Ruby, so it is a port gap". That outcome only exists because the case arrived too late. Preventing it is strictly better than diagnosing it.
+
+## The residual differential still happens
+
+It just is not a <%= slice_count %>-way swarm any more. Running the grown corpus against both backends is #<%= reduce_ci_issue %>, which was always going to do exactly that in CI. A slice that mis-ports something the corpus now covers fails there.
+
+## What the sweep already found
+
+A regex sweep over all 276 EN rules against #255's <%= corpus_size %> texts, before any of these agents start:
+
+- **<%= total_branches %> unexercised literal alternation branches** across <%= branch_rules %> rules
+- **<%= unreached %> rules no corpus text reaches at all**
+- **zero `with_latent:` coverage** against 12 latent-producing rules
+- **<%= opaque %> rules with no regex item**, which no sweep can measure — the swarm's primary target, listed per-slice in each sub-issue
+
+Each sub-issue carries its own slice's findings so no agent redoes that work.
+
+## Definition of done
+
+- [ ] All <%= slice_count %> sub-issues closed
+- [ ] Cases live in `test/fixtures/wafer_corpus_local/<slice>.json`, one file per slice
+- [ ] Native divergences recorded as `<%= divergence_label %>` issues on this repo
+- [ ] Full suite green, `rake corpus:generate` clean
+- [ ] The grown corpus is what #<%= fixture_capture_issue %> then captures fixtures from

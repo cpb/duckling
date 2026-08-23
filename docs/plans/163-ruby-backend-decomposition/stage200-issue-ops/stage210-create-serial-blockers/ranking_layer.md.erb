@@ -1,0 +1,27 @@
+Parent: #<%= parent %> · **Phase 0 · blocked by #<%= spine_issue %> · runs in parallel with Phase 1 and Wave A.**
+
+## Scope
+
+Port `src/ranking/mod.rs` (398 lines) and load the six trained Naive-Bayes classifier JSONs as-is. `en_xx.json` is 167 KB; the six total 468 KB.
+
+Ranking is **independent of the rules** — it scores whatever the engine produced. That is why it is broken out of #<%= spine_issue %> rather than bundled with the spine: once the base classes land, this can run alongside the whole of Wave A.
+
+## Why it is not optional
+
+Without ranking, overlapping-rule cases resolve differently and time parity is unreachable. It is not a tie-break nicety; it decides which of several competing parses wins.
+
+## Definition of done
+
+- [ ] `src/ranking/mod.rs`'s scoring ported to Ruby
+- [ ] The six upstream trained classifier JSONs load as-is — **not retrained**; `ranking/train.rs` is explicitly out of scope per #<%= parent %>
+- [ ] Classifier data vendored with its BSD-3-Clause notice preserved, as the corpus fixture is
+- [ ] A test pins the ranker's output ordering on a case with overlapping rule matches, against the native backend's ordering
+- [ ] The `require`-time delta of loading 468 KB of JSON is recorded, so the reduce stage can attribute it
+
+## Files you own
+
+- `lib/duckling/ruby/ranking.rb` (or a small directory under it)
+- the vendored classifier JSONs
+- `test/ruby_backend/ranking_test.rb`
+
+Do not edit the spine, the base classes, or the fixture format — frozen #<%= spine_issue %> output.

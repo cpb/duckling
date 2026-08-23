@@ -23,12 +23,14 @@ Gem::Specification.new do |spec|
   # Allow-list, not a reject-list: anything tracked in git that isn't named
   # here stays out of the gem. A reject-list silently packages every newly
   # tracked dotfile or tool directory — .claude/settings.json, AGENTS.md and
-  # CLAUDE.md all shipped in 0.3.0–0.4.0 that way (docs/benchmarks/ holds
-  # agent-session benchmark dumps, so it stays out too). New files join the
-  # gem deliberately, by editing this list.
+  # CLAUDE.md all shipped in 0.3.0–0.4.0 that way. Two docs/ subtrees are
+  # agent working material rather than documentation for consumers, so they
+  # stay out too: docs/benchmarks/ holds agent-session benchmark dumps, and
+  # docs/plans/ holds issue-decomposition derivations and their scripts. New
+  # files join the gem deliberately, by editing this list.
   spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
     ls.readlines("\x0", chomp: true).select do |f|
-      (f.start_with?(*%w[lib/ ext/ docs/]) && !f.start_with?("docs/benchmarks/")) ||
+      (f.start_with?(*%w[lib/ ext/ docs/]) && !f.start_with?("docs/benchmarks/", "docs/plans/")) ||
         %w[Brewfile CHANGELOG.md CODE_OF_CONDUCT.md Cargo.lock Cargo.toml LICENSE.txt NOTICES README.md Rakefile].include?(f)
     end
   end

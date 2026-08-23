@@ -1,0 +1,39 @@
+Parent: #<%= parent %> · **Phase 4 — reduce.** Blocked by #<%= reduce_ci_issue %> — measurement runs *after* parity, never instead of it.
+
+## Why this is not the gate
+
+Decision 6 of #<%= parent %>: **the gate is corpus parity.** Memory and throughput are measured after parity is reached, to inform the forecast. A Ruby backend that is fast and small but wrong proves nothing. Do not open this until #<%= reduce_ci_issue %> is closed.
+
+## Scope
+
+Re-run PR #162's harness against the Ruby backend so the numbers are directly comparable. Use the same harness — a different measurement method makes the comparison worthless.
+
+### The native baseline (PR #162, Linux x86_64, PSS)
+
+| Phase | Single locale (en) | All 49 locales |
+|---|---|---|
+| `require` | +6.2 MB | +6.2 MB |
+| First parse (regex compilation, `Box::leak`, permanent) | +23.9 MB | +535.8 MB |
+| 100 steady-state parses | +0.0 MB | +0.0 MB |
+| **Total over baseline** | **+30.1 MB** | **+542.0 MB** |
+
+Plus ~43 MB of slug, of which ~30 MB is three unused ABI `.so` files that ship and never load (#159 owns that half).
+
+### The prediction to test
+
+PR #162 compiled all 3,418 extracted patterns as Ruby `Regexp` objects: ~3.2 MB total, ~1.6 KB per pattern, against the Rust `regex` crate's ~141 KB — **~100x less**. The throughput probe found the practical per-pattern difference is only ~2x, and NER pipeline overhead dominates `Duckling.parse`'s wall time anyway. So the 100x memory cost buys a *guarantee* (O(n) matching), not proportional throughput.
+
+That is the hypothesis. This issue is where it meets a real backend rather than a bare pattern-compilation probe.
+
+## Definition of done
+
+Measured and published for the Ruby backend, using PR #162's harness:
+
+- [ ] `require` delta
+- [ ] first-parse delta
+- [ ] all-locale delta
+- [ ] steady-state growth over 100 parses
+- [ ] throughput, against the native backend on the same machine
+- [ ] the ranking layer's own contribution broken out — 468 KB of classifier JSON, `en_xx.json` alone is 167 KB
+- [ ] **Adversarial input check.** Onigmo's O(nm) worst case is the one thing the native backend structurally cannot suffer. Run the Ruby backend against `extreme_inputs_regression.rs`-style adversarial inputs and record what happens. Those files are out of scope as *correctness* coverage, but this is a pathology check, and it is the finding most likely to change the recommendation
+- [ ] Results recorded under `docs/benchmarks/` following the existing per-environment convention

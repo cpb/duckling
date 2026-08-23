@@ -1,0 +1,44 @@
+## Decomposed into <%= total_issues %> subtasks
+
+The phases and slices of this issue are sub-issues, so the orchestrating agent picks work off a list instead of re-deriving the slicing. Everything below was derived from the pinned crate (<%= crate_name %> <%= crate_version %>) and PR #255's corpus, not restated from this issue. The derivation is in `docs/plans/163-ruby-backend-decomposition/`.
+
+### Pick order
+
+| Stage | Issues | Gate |
+|---|---|---|
+| Corpus root | PR #255 | closes #157; carries the spec. Nothing starts until it merges |
+| Glob split | #<%= ids["corpus:glob-split"] %> | serial; 42 audits would otherwise append to one JSON file |
+| Corpus growth | #<%= ids["corpus:unexercised-branches"] %> · #<%= ids["corpus:unreached-rules"] %> · #<%= ids["corpus:with-latent"] %> | parallel, after the glob split |
+| Corpus audit | #<%= ids["audit:parent"] %> + <%= slice_count %> slices, `label:corpus-audit` | parallel; **blocks fixture capture** |
+| Phase 0 spine | #<%= ids["phase0:spine"] %> | parallel with the corpus stage — depends on the fixture *format*, not its content |
+| Ranking | #<%= ids["phase0:ranking"] %> | after the spine |
+| Phase 1 capture | #<%= ids["phase1:fixture-capture"] %> | after the corpus stage **and** the spine |
+| Wave A | 30 issues, `label:wave-a` | no ordering inside the wave |
+| Wave B | 9 issues, `label:wave-b` | after Wave A |
+| Wave C | 3 issues, `label:wave-c` | after Wave B |
+| Reduce | #<%= ids["reduce:ci"] %> → #<%= ids["reduce:measure"] %> → #<%= ids["reduce:forecast"] %> | strictly serial |
+
+```
+gh issue list --label wave-a --state open        # the 30-way fan-out
+gh issue list --label corpus-audit --state open  # the audit swarm
+```
+
+### Two things the derivation turned up that this issue's plan did not cover
+
+**1. <%= modifier_rules %> of the 221 EN rules construct no `TimeForm` at all.** They clone a `TimeData` and mutate `latent`, `early_late`, `open_interval_direction`, `timezone` or `direction` — `until <time>`, `late/early/mid <time>`, `<time> timezone`, `next <time>` and 19 others. The 37-variant slicing has no home for them, so every variant slice would either skip them or all reach for them at once. They are now a 38th slice: #<%= ids["slice:Modifiers"] %>.
+
+**2. Rule mass is lopsided, and the heavy end sits in the last wave.** `Composed` (34 rules) and `Interval` (27) are Wave C, so ~28% of the EN rules are gated behind both earlier waves. `HourMinute` is 27. Those three issues each carry a concrete suggested sub-split; `Holiday` carries the split note this issue already called for.
+
+### Rule ownership is exclusive, and this is the rule
+
+**A rule is owned by the highest-wave variant it constructs.** `"tomorrow morning"` builds `Composed(Tomorrow, PartOfDay)`, so it is a Wave C `Composed` rule, not a Wave A `Tomorrow` rule. <%= multi_variant %> rules construct more than one variant; without a single-owner rule they would be claimed by several slices at once, which is exactly the conflict the one-file-per-slice convention exists to prevent. Fixture capture buckets cases by the same rule.
+
+All 221 rules are assigned, each to exactly one slice.
+
+### The slice table
+
+| Slice | Wave | EN rules | Port issue | Corpus audit |
+|---|---|---|---|---|
+<% rows.each do |row| -%>
+| <%= row[:name] %> | <%= row[:wave] %> | <%= row[:rules] %> | #<%= row[:port] %> | #<%= row[:audit] %> |
+<% end %>

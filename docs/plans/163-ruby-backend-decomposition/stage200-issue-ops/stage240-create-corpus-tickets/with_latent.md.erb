@@ -1,0 +1,40 @@
+Parent: #<%= parent %> · **Corpus stage.** Blocked by #<%= glob_split_issue %>. The largest of the corpus tickets — this one changes the pipeline, not just the fixtures.
+
+## The gap
+
+`with_latent:` is a documented parameter of the public `Duckling.parse` API, and **the 1,656-case corpus exercises none of it.** Measured against the fixture: zero cases carry a latent flag.
+
+Meanwhile `src/dimensions/time/<%= locale %>.rs` has **<%= latent_rules.size %> rules whose names end in `(latent)`** and 15 `TimeData::latent(...)` construction sites:
+
+```
+<% latent_rules.each_slice(2) do |pair| -%>
+<%= pair.map { |r| r.ljust(40) }.join.rstrip %>
+<% end -%>
+```
+
+On top of that, `latent` is the single most-mutated field in the modifier slice (#<%= modifier_issue %>) — 21 of its 23 rules promote a latent token to a real one. A Ruby backend can get latency wrong in both directions (emitting entities that should be suppressed, or suppressing ones that should surface) and still pass every fixture row #255 produces.
+
+## #255's own excluded list
+
+#255 leaves out 24 commented-out call sites in `time_corpus.rs`, for two reasons it states plainly:
+
+- **22 need `with_latent`**, which no upstream checker passes
+- **2 (`diffCorpus`) need a third reference time**, 2013-02-15 04:30 −02:00
+
+Those 24 are the natural seed, but they are the floor, not the ceiling — <%= latent_rules.size %> latent-producing rules deserve more than 22 cases between them.
+
+## Scope
+
+- [ ] A checker in `test/support/wafer_matchers.rb` that passes `with_latent: true`, following the existing matcher conventions exactly (`.any?` over entities, 0.01 float tolerance, wall-clock comparison)
+- [ ] The fixture schema carries the flag, and `script/generate_corpus_tests.rb` renders it — a pipeline change, so `test/wafer_corpus_generation_test.rb` must still detect a stale tree
+- [ ] A third reference time (2013-02-15 04:30 −02:00) alongside the existing default / saturday / friday_evening contexts
+- [ ] The 22 `with_latent` call sites enabled; the 2 `diffCorpus` cases enabled
+- [ ] Coverage for each latent-producing rule in **both** directions: the latent reading suppressed by default, and surfaced under `with_latent: true`
+- [ ] `docs/wafer-corpus.md` updated with the new checker, the flag, and the fourth reference time
+- [ ] Cases land in `test/fixtures/wafer_corpus_local/`, not the extracted fixture — `corpus:refresh` would wipe them
+
+## Why this one is test-first
+
+The checker is new machinery, not a data addition. Write it against a case whose native answer you know before enabling the 24, so a broken checker fails loudly instead of quietly passing 24 cases it is not really testing.
+
+<%= partial "upstream_divergence" %>

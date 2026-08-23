@@ -1,0 +1,712 @@
+[
+  {
+    "slice": "Modifiers",
+    "slug": "modifiers",
+    "wave": "A",
+    "issue": 204,
+    "audit_issue": 247,
+    "unreached": [
+      "on a <named-day>",
+      "<time-of-day> sharp|exactly"
+    ],
+    "opaque": [],
+    "branches": {
+      "around <time>": [
+        "roughly"
+      ],
+      "<time> approximately": [
+        "roughly"
+      ],
+      "<time> timezone": [
+        "cest",
+        "utc",
+        "edt",
+        "cdt",
+        "mst",
+        "mdt",
+        "pdt",
+        "eest",
+        "wet",
+        "west",
+        "jst",
+        "kst",
+        "hkt",
+        "sgt",
+        "aest",
+        "aedt",
+        "acst",
+        "acdt",
+        "awst",
+        "nzst",
+        "nzdt"
+      ],
+      "<time> (timezone)": [
+        "cest",
+        "utc",
+        "edt",
+        "cdt",
+        "mst",
+        "mdt",
+        "pdt",
+        "eest",
+        "wet",
+        "west",
+        "jst",
+        "kst",
+        "hkt",
+        "sgt",
+        "aest",
+        "aedt",
+        "acst",
+        "acdt",
+        "awst",
+        "nzst",
+        "nzdt"
+      ],
+      "<time-of-day> sharp|exactly": [
+        "sharp"
+      ]
+    },
+    "severity": 51
+  },
+  {
+    "slice": "Composed",
+    "slug": "composed",
+    "wave": "C",
+    "issue": 202,
+    "audit_issue": 245,
+    "unreached": [
+      "iso8601 datetime with T separator (en extension)"
+    ],
+    "opaque": [
+      "<month> <year>",
+      "<named-month>|<named-day> <day-of-month> (ordinal)",
+      "<named-month> <day-of-month> (non ordinal)",
+      "<integer> <month>",
+      "<ordinal> <month>",
+      "<latent-time> <time> compose",
+      "intersect",
+      "<day-of-month> (ordinal or number) <named-month>",
+      "<part-of-day> <latent-time-of-day> (latent)",
+      "<time-of-day> <part-of-day>"
+    ],
+    "branches": {},
+    "severity": 43
+  },
+  {
+    "slice": "Interval",
+    "slug": "interval",
+    "wave": "C",
+    "issue": 201,
+    "audit_issue": 244,
+    "unreached": [],
+    "opaque": [],
+    "branches": {
+      "after lunch/work/school": [
+        "work"
+      ],
+      "<time> - <time> timezone": [
+        "cest",
+        "utc",
+        "edt",
+        "cdt",
+        "mst",
+        "mdt",
+        "pdt",
+        "eest",
+        "wet",
+        "west",
+        "jst",
+        "kst",
+        "hkt",
+        "sgt",
+        "aest",
+        "aedt",
+        "acst",
+        "acdt",
+        "awst",
+        "nzst",
+        "nzdt"
+      ],
+      "<datetime> - <datetime> (interval) timezone": [
+        "cest",
+        "utc",
+        "edt",
+        "cdt",
+        "mst",
+        "mdt",
+        "pdt",
+        "eest",
+        "wet",
+        "west",
+        "jst",
+        "kst",
+        "hkt",
+        "sgt",
+        "aest",
+        "aedt",
+        "acst",
+        "acdt",
+        "awst",
+        "nzst",
+        "nzdt"
+      ]
+    },
+    "severity": 43
+  },
+  {
+    "slice": "DateMDY",
+    "slug": "date_mdy",
+    "wave": "A",
+    "issue": 181,
+    "audit_issue": 224,
+    "unreached": [
+      "date MM DD YYYY",
+      "date DD MM YYYY"
+    ],
+    "opaque": [
+      "<ordinal> <month> <short-year>",
+      "<date> <year>",
+      "<day-of-month>(ordinal or number)/<named-month>/year",
+      "<day-of-month>(ordinal) <named-month> year"
+    ],
+    "branches": {
+      "date DD/Mon/YYYY": [
+        "jun",
+        "nov"
+      ],
+      "digit<month> (no space)": [
+        "june",
+        "november",
+        "december",
+        "jun",
+        "nov"
+      ]
+    },
+    "severity": 29
+  },
+  {
+    "slice": "ordinal",
+    "slug": "ordinal",
+    "wave": "A",
+    "issue": null,
+    "audit_issue": 250,
+    "unreached": [],
+    "opaque": [],
+    "branches": {
+      "ordinals (first..nineteenth)": [
+        "sixth",
+        "seventh",
+        "ninth",
+        "eleventh",
+        "twelfth",
+        "thirteenth",
+        "fourteenth",
+        "fifteenth",
+        "sixteenth",
+        "seventeenth",
+        "eighteenth",
+        "nineteenth"
+      ],
+      "ordinals (twentieth..ninetieth)": [
+        "twentieth",
+        "thirtieth",
+        "fortieth",
+        "fiftieth",
+        "sixtieth",
+        "seventieth",
+        "eightieth"
+      ],
+      "ordinals (composite, e.g. twenty-fifth)": [
+        "eighty",
+        "ninety",
+        "sixth",
+        "seventh",
+        "ninth"
+      ]
+    },
+    "severity": 24
+  },
+  {
+    "slice": "duration",
+    "slug": "duration",
+    "wave": "A",
+    "issue": null,
+    "audit_issue": 249,
+    "unreached": [
+      "quarter of an hour",
+      "three-quarters of an hour",
+      "fortnight",
+      "<integer> and a half hour",
+      "about|exactly <duration>"
+    ],
+    "opaque": [
+      "<integer> <unit-of-duration>",
+      "composite <duration>"
+    ],
+    "branches": {},
+    "severity": 23
+  },
+  {
+    "slice": "numeral",
+    "slug": "numeral",
+    "wave": "A",
+    "issue": null,
+    "audit_issue": 248,
+    "unreached": [],
+    "opaque": [
+      "integer compose (tens + units)",
+      "compose by multiplication",
+      "intersect 2 numbers"
+    ],
+    "branches": {
+      "integer (0..9)": [
+        "none",
+        "zilch"
+      ],
+      "integer (10..19)": [
+        "thirteen"
+      ],
+      "integer (20..90)": [
+        "eighty",
+        "ninety"
+      ],
+      "one eleven (skip hundreds)": [
+        "thirteen",
+        "eighty",
+        "ninety"
+      ],
+      "one twenty two (skip hundreds)": [
+        "eighty",
+        "ninety"
+      ],
+      "powers of tens": [
+        "trillion"
+      ]
+    },
+    "severity": 23
+  },
+  {
+    "slice": "HourMinute",
+    "slug": "hour_minute",
+    "wave": "A",
+    "issue": 171,
+    "audit_issue": 214,
+    "unreached": [
+      "half to|till|before <hour-of-day>"
+    ],
+    "opaque": [
+      "<time:hour> <integer:minute>",
+      "<hour-of-day> <integer>"
+    ],
+    "branches": {
+      "time HMM-ish": [
+        "roughly"
+      ]
+    },
+    "severity": 12
+  },
+  {
+    "slice": "Holiday",
+    "slug": "holiday",
+    "wave": "A",
+    "issue": 185,
+    "audit_issue": 228,
+    "unreached": [],
+    "opaque": [
+      "holidays",
+      "<holiday> <year>"
+    ],
+    "branches": {},
+    "severity": 8
+  },
+  {
+    "slice": "Month",
+    "slug": "month",
+    "wave": "A",
+    "issue": 168,
+    "audit_issue": 211,
+    "unreached": [],
+    "opaque": [],
+    "branches": {
+      "month name": [
+        "june",
+        "november",
+        "december",
+        "jun",
+        "nov"
+      ]
+    },
+    "severity": 5
+  },
+  {
+    "slice": "DayOfMonth",
+    "slug": "day_of_month",
+    "wave": "A",
+    "issue": 169,
+    "audit_issue": 212,
+    "unreached": [],
+    "opaque": [
+      "<day-of-month> (ordinal)"
+    ],
+    "branches": {},
+    "severity": 4
+  },
+  {
+    "slice": "Hour",
+    "slug": "hour",
+    "wave": "A",
+    "issue": 170,
+    "audit_issue": 213,
+    "unreached": [],
+    "opaque": [
+      "time-of-day (latent)"
+    ],
+    "branches": {},
+    "severity": 4
+  },
+  {
+    "slice": "Year",
+    "slug": "year",
+    "wave": "A",
+    "issue": 173,
+    "audit_issue": 216,
+    "unreached": [],
+    "opaque": [
+      "spelled-out year (numeral)"
+    ],
+    "branches": {},
+    "severity": 4
+  },
+  {
+    "slice": "QuarterYear",
+    "slug": "quarter_year",
+    "wave": "A",
+    "issue": 189,
+    "audit_issue": 232,
+    "unreached": [],
+    "opaque": [
+      "<ordinal> quarter <year>"
+    ],
+    "branches": {},
+    "severity": 4
+  },
+  {
+    "slice": "Season",
+    "slug": "season",
+    "wave": "A",
+    "issue": 184,
+    "audit_issue": 227,
+    "unreached": [],
+    "opaque": [],
+    "branches": {
+      "season word": [
+        "spring",
+        "fall",
+        "autumn"
+      ]
+    },
+    "severity": 3
+  },
+  {
+    "slice": "Now",
+    "slug": "now",
+    "wave": "A",
+    "issue": 174,
+    "audit_issue": 217,
+    "unreached": [],
+    "opaque": [],
+    "branches": {
+      "now": [
+        "immediately"
+      ]
+    },
+    "severity": 1
+  },
+  {
+    "slice": "NDOWsFromTime",
+    "slug": "ndo_ws_from_time",
+    "wave": "B",
+    "issue": 196,
+    "audit_issue": 239,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "NthGrainOfTime",
+    "slug": "nth_grain_of_time",
+    "wave": "B",
+    "issue": 197,
+    "audit_issue": 240,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "LastCycleOfTime",
+    "slug": "last_cycle_of_time",
+    "wave": "B",
+    "issue": 195,
+    "audit_issue": 238,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "LastDOWOfTime",
+    "slug": "last_dow_of_time",
+    "wave": "B",
+    "issue": 194,
+    "audit_issue": 237,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "NthDOWOfTime",
+    "slug": "nth_dow_of_time",
+    "wave": "B",
+    "issue": 193,
+    "audit_issue": 236,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "NthLastDayOfTime",
+    "slug": "nth_last_day_of_time",
+    "wave": "B",
+    "issue": 198,
+    "audit_issue": 241,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "NthLastCycleOfTime",
+    "slug": "nth_last_cycle_of_time",
+    "wave": "B",
+    "issue": 199,
+    "audit_issue": 242,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "DurationAfter",
+    "slug": "duration_after",
+    "wave": "B",
+    "issue": 200,
+    "audit_issue": 243,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "NthClosestToTime",
+    "slug": "nth_closest_to_time",
+    "wave": "C",
+    "issue": 203,
+    "audit_issue": 246,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "time_grain",
+    "slug": "time_grain",
+    "wave": "A",
+    "issue": null,
+    "audit_issue": 251,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "BeginEnd",
+    "slug": "begin_end",
+    "wave": "B",
+    "issue": 192,
+    "audit_issue": 235,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "RestOfGrain",
+    "slug": "rest_of_grain",
+    "wave": "A",
+    "issue": 191,
+    "audit_issue": 234,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "AllGrain",
+    "slug": "all_grain",
+    "wave": "A",
+    "issue": 190,
+    "audit_issue": 233,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "Quarter",
+    "slug": "quarter",
+    "wave": "A",
+    "issue": 188,
+    "audit_issue": 231,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "NthGrain",
+    "slug": "nth_grain",
+    "wave": "A",
+    "issue": 187,
+    "audit_issue": 230,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "GrainOffset",
+    "slug": "grain_offset",
+    "wave": "A",
+    "issue": 186,
+    "audit_issue": 229,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "Weekend",
+    "slug": "weekend",
+    "wave": "A",
+    "issue": 183,
+    "audit_issue": 226,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "PartOfDay",
+    "slug": "part_of_day",
+    "wave": "A",
+    "issue": 182,
+    "audit_issue": 225,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "RelativeGrain",
+    "slug": "relative_grain",
+    "wave": "A",
+    "issue": 180,
+    "audit_issue": 223,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "DayBeforeYesterday",
+    "slug": "day_before_yesterday",
+    "wave": "A",
+    "issue": 179,
+    "audit_issue": 222,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "DayAfterTomorrow",
+    "slug": "day_after_tomorrow",
+    "wave": "A",
+    "issue": 178,
+    "audit_issue": 221,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "Yesterday",
+    "slug": "yesterday",
+    "wave": "A",
+    "issue": 177,
+    "audit_issue": 220,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "Tomorrow",
+    "slug": "tomorrow",
+    "wave": "A",
+    "issue": 176,
+    "audit_issue": 219,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "Today",
+    "slug": "today",
+    "wave": "A",
+    "issue": 175,
+    "audit_issue": 218,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "HourMinuteSecond",
+    "slug": "hour_minute_second",
+    "wave": "A",
+    "issue": 172,
+    "audit_issue": 215,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  },
+  {
+    "slice": "DayOfWeek",
+    "slug": "day_of_week",
+    "wave": "A",
+    "issue": 167,
+    "audit_issue": 210,
+    "unreached": [],
+    "opaque": [],
+    "branches": {},
+    "severity": 0
+  }
+]

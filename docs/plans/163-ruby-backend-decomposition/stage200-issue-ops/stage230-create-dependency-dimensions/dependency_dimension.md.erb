@@ -1,0 +1,27 @@
+Parent: #<%= parent %> · Phase 2 · Wave A · dependency dimension **<%= slice.key.tr("_", "-") %>**
+
+**Runs alongside Wave A, independent of it.** The four dependency-dimension slices have no ordering constraint against each other or against any `TimeForm` slice — but most Wave A time slices consume their tokens, so these want to start first in practice.
+
+Blocked by #<%= spine_issue %> (base classes, fixture format) and #<%= fixture_capture_issue %> (your fixture file).
+
+## Scope
+
+Port the <%= slice.rules.size %> EN <%= slice.key.tr("_", "-") %> rules and the dimension's value shape.
+
+Rust source: `src/dimensions/<%= slice.slug %>/<%= locale %>.rs` and `src/dimensions/<%= slice.slug %>/mod.rs` — <%= crate_name %> <%= crate_version %>.
+
+<%= note %>
+
+## Value shape
+
+The emitted `:value` must match what the native backend emits today, exactly as AGENTS.md's "Entity `:value` shapes" documents it. The corpus is the oracle: <%= corpus %>.
+
+<%= partial "files_you_own", resolver: false, dimension: true, slug: slice.slug %>
+## Definition of done
+
+- [ ] Every fixture row in `test/fixtures/ruby_backend/<%= slice.slug %>.json` passes on the Ruby backend
+- [ ] The full suite is green on the **native** backend — it must be untouched
+- [ ] No file outside those listed above is modified
+
+<%= partial "corpus_tdd_rule" %>
+<%= partial "regex_dialect_notes" %>

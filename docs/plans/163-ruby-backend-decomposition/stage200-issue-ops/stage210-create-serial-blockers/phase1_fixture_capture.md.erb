@@ -1,0 +1,28 @@
+Parent: #<%= parent %> · **Phase 1 — serial, one agent, blocked by #<%= spine_issue %>, blocks all of Phase 2.**
+
+## Scope
+
+One script that replays every <%= locale.upcase %> corpus case through the **native** backend and writes per-slice fixture files.
+
+Each fixture row records the input text, the reference context, and the resolved entity output from the public `Duckling.parse` — decision 3 of #<%= parent %>, per-case golden fixtures captured from the public API. **No crate instrumentation.**
+
+## Gated on the corpus stage, not just the spine
+
+**Do not run this until the corpus stage is finished**: #<%= glob_split_issue %>, #<%= branches_issue %>, #<%= unreached_issue %>, #<%= latent_issue %>, and all 42 audits under #<%= audit_parent_issue %>.
+
+This script buckets whatever corpus exists at the moment it runs, and its output *is* every Phase 2 slice's spec. A case added after it runs reaches nobody. That is why the audit was moved ahead of the port rather than left as a Phase 3.
+
+Expect a substantially larger corpus than #255's 1,662 cases: the sweep alone identified 140 unexercised branches, 11 uncovered rules, and a `with_latent:` axis with no coverage at all.
+
+## Definition of done
+
+- [ ] Script in tree, regeneratable, keyed to the pinned crate version (<%= crate_name %> <%= crate_version %>) and the corpus sha — both recorded in the output
+- [ ] Writes one file per slice: `test/fixtures/ruby_backend/<slice>.json`, matching #<%= spine_issue %>'s fixture format exactly
+- [ ] Bucketing follows the slice manifest — 37 `TimeForm` variants, the modifier slice, four dependency dimensions
+- [ ] **Surfaces, rather than silently drops, any case that maps to no slice or to more than one.** This is why Phase 1 is serial and runs before the fan-out: a homeless case discovered during Phase 2 costs an agent's whole run
+- [ ] Reports per-slice case counts, so the fan-out can be sized before it starts
+- [ ] BSD-3-Clause notice preserved on the derived data
+
+## The bucketing problem
+
+A corpus case exercises whatever the parse produced, which is often a composite. `"tomorrow morning"` builds `Composed(Tomorrow, PartOfDay)` — it belongs to the `Composed` slice, not to `Tomorrow`. Bucket by the **outermost** `TimeForm` the native backend resolved, so the slice that owns the case is the slice that owns the rule that produced it. Same attribution rule the rule manifest uses.

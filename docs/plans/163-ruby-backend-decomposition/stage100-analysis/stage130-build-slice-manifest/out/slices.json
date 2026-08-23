@@ -1,0 +1,1876 @@
+[
+  {
+    "key": "DayOfWeek",
+    "slug": "day_of_week",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DayOfWeek(u32),             // 0=Monday .. 6=Sunday",
+    "resolver_refs": 14,
+    "rules": [
+      {
+        "name": "this|next <day-of-week>",
+        "line": 171,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Month",
+    "slug": "month",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Month(u32),                 // 1..12",
+    "resolver_refs": 19,
+    "rules": [
+      {
+        "name": "month name",
+        "line": 199,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "DayOfMonth",
+    "slug": "day_of_month",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DayOfMonth(u32),            // 1..31",
+    "resolver_refs": 14,
+    "rules": [
+      {
+        "name": "<day-of-month> (ordinal)",
+        "line": 2388,
+        "mutates": []
+      },
+      {
+        "name": "the <day-of-month> (ordinal)",
+        "line": 2433,
+        "mutates": []
+      },
+      {
+        "name": "on the <ordinal-word>",
+        "line": 2449,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Hour",
+    "slug": "hour",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Hour(u32, bool),            // hour, is_12h_ambiguous",
+    "resolver_refs": 12,
+    "rules": [
+      {
+        "name": "noon|midnight|EOD|end of day",
+        "line": 290,
+        "mutates": []
+      },
+      {
+        "name": "midnight",
+        "line": 297,
+        "mutates": []
+      },
+      {
+        "name": "H ampm",
+        "line": 684,
+        "mutates": []
+      },
+      {
+        "name": "H a/p (latent)",
+        "line": 709,
+        "mutates": []
+      },
+      {
+        "name": "time-of-day (latent)",
+        "line": 790,
+        "mutates": []
+      },
+      {
+        "name": "<time-of-day> o'clock",
+        "line": 908,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "HourMinute",
+    "slug": "hour_minute",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    HourMinute(u32, u32, bool), // hour, minute, is_12h_ambiguous",
+    "resolver_refs": 14,
+    "rules": [
+      {
+        "name": "hh:mm",
+        "line": 505,
+        "mutates": []
+      },
+      {
+        "name": "hhhmm",
+        "line": 548,
+        "mutates": []
+      },
+      {
+        "name": "hhmm (latent)",
+        "line": 578,
+        "mutates": []
+      },
+      {
+        "name": "time HMM-ish",
+        "line": 600,
+        "mutates": []
+      },
+      {
+        "name": "HH:MM ampm",
+        "line": 656,
+        "mutates": []
+      },
+      {
+        "name": "hhmm (military) am|pm",
+        "line": 736,
+        "mutates": []
+      },
+      {
+        "name": "HMM in the <pod>",
+        "line": 764,
+        "mutates": []
+      },
+      {
+        "name": "<time-of-day> am|pm",
+        "line": 812,
+        "mutates": []
+      },
+      {
+        "name": "<time> a/p suffix",
+        "line": 829,
+        "mutates": []
+      },
+      {
+        "name": "<time> in the AM/PM",
+        "line": 892,
+        "mutates": []
+      },
+      {
+        "name": "half after|past <hour-of-day>",
+        "line": 3525,
+        "mutates": []
+      },
+      {
+        "name": "quarter after|past <hour-of-day>",
+        "line": 3538,
+        "mutates": []
+      },
+      {
+        "name": "quarter to|till|before <hour-of-day>",
+        "line": 3554,
+        "mutates": []
+      },
+      {
+        "name": "integer after|past <hour-of-day>",
+        "line": 3574,
+        "mutates": []
+      },
+      {
+        "name": "<integer> to <time>",
+        "line": 3596,
+        "mutates": []
+      },
+      {
+        "name": "<time:hour> <integer:minute>",
+        "line": 3619,
+        "mutates": []
+      },
+      {
+        "name": "<hour-of-day> <integer>",
+        "line": 4067,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "<hour-of-day> half",
+        "line": 4085,
+        "mutates": []
+      },
+      {
+        "name": "<hour-of-day> quarter",
+        "line": 4100,
+        "mutates": []
+      },
+      {
+        "name": "<integer> to|till|before <hour-of-day>",
+        "line": 4115,
+        "mutates": []
+      },
+      {
+        "name": "<integer> minutes to|till|before <hour-of-day>",
+        "line": 4132,
+        "mutates": []
+      },
+      {
+        "name": "<hour-of-day> zero <integer>",
+        "line": 4567,
+        "mutates": []
+      },
+      {
+        "name": "<hour-of-day> - <integer-as-word>",
+        "line": 4587,
+        "mutates": []
+      },
+      {
+        "name": "<hour-of-day> - zero - <integer>",
+        "line": 4607,
+        "mutates": []
+      },
+      {
+        "name": "half to|till|before <hour-of-day>",
+        "line": 4629,
+        "mutates": []
+      },
+      {
+        "name": "half <integer> (UK style hour-of-day)",
+        "line": 4648,
+        "mutates": []
+      },
+      {
+        "name": "Mid-day",
+        "line": 4754,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "HourMinuteSecond",
+    "slug": "hour_minute_second",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    HourMinuteSecond(u32, u32, u32),",
+    "resolver_refs": 6,
+    "rules": [
+      {
+        "name": "hh:mm:ss",
+        "line": 527,
+        "mutates": []
+      },
+      {
+        "name": "HH:MM:SS ampm",
+        "line": 625,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Year",
+    "slug": "year",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Year(i32),",
+    "resolver_refs": 7,
+    "rules": [
+      {
+        "name": "year (latent)",
+        "line": 1501,
+        "mutates": []
+      },
+      {
+        "name": "spelled-out year (numeral)",
+        "line": 1515,
+        "mutates": []
+      },
+      {
+        "name": "<year> (bc|ad)",
+        "line": 1541,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "in <integer> AD",
+        "line": 1562,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Now",
+    "slug": "now",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Now,",
+    "resolver_refs": 6,
+    "rules": [
+      {
+        "name": "now",
+        "line": 238,
+        "mutates": []
+      },
+      {
+        "name": "as soon as possible",
+        "line": 243,
+        "mutates": [
+          "open_interval_direction"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "Today",
+    "slug": "today",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Today,",
+    "resolver_refs": 5,
+    "rules": [
+      {
+        "name": "today",
+        "line": 255,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Tomorrow",
+    "slug": "tomorrow",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Tomorrow,",
+    "resolver_refs": 4,
+    "rules": [
+      {
+        "name": "tomorrow",
+        "line": 260,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Yesterday",
+    "slug": "yesterday",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Yesterday,",
+    "resolver_refs": 4,
+    "rules": [
+      {
+        "name": "yesterday",
+        "line": 265,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "DayAfterTomorrow",
+    "slug": "day_after_tomorrow",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DayAfterTomorrow,",
+    "resolver_refs": 4,
+    "rules": [
+      {
+        "name": "day after tomorrow",
+        "line": 273,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "DayBeforeYesterday",
+    "slug": "day_before_yesterday",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DayBeforeYesterday,",
+    "resolver_refs": 4,
+    "rules": [
+      {
+        "name": "day before yesterday",
+        "line": 280,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "RelativeGrain",
+    "slug": "relative_grain",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    RelativeGrain {\n        n: i64,\n        grain: Grain,\n    },",
+    "resolver_refs": 5,
+    "rules": [
+      {
+        "name": "in|within|after <duration>",
+        "line": 1025,
+        "mutates": []
+      },
+      {
+        "name": "in <number> (implicit minutes)",
+        "line": 1040,
+        "mutates": []
+      },
+      {
+        "name": "<duration> hence|ago",
+        "line": 1051,
+        "mutates": []
+      },
+      {
+        "name": "<duration> from now",
+        "line": 1114,
+        "mutates": []
+      },
+      {
+        "name": "<duration> back",
+        "line": 1128,
+        "mutates": []
+      },
+      {
+        "name": "after <duration>",
+        "line": 1143,
+        "mutates": [
+          "open_interval_direction"
+        ]
+      },
+      {
+        "name": "last|past|next <duration>",
+        "line": 4223,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "DateMDY",
+    "slug": "date_mdy",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    DateMDY {\n        month: u32,\n        day: u32,\n        year: Option<i32>,\n    },",
+    "resolver_refs": 12,
+    "rules": [
+      {
+        "name": "date MM/DD(/YYYY)",
+        "line": 1183,
+        "mutates": []
+      },
+      {
+        "name": "date DD/MM(/YY)",
+        "line": 1220,
+        "mutates": []
+      },
+      {
+        "name": "date MM DD YYYY",
+        "line": 1256,
+        "mutates": []
+      },
+      {
+        "name": "date DD MM YYYY",
+        "line": 1282,
+        "mutates": []
+      },
+      {
+        "name": "date DD.MM.YYYY",
+        "line": 1435,
+        "mutates": []
+      },
+      {
+        "name": "date DD/Mon/YYYY",
+        "line": 1465,
+        "mutates": []
+      },
+      {
+        "name": "<ordinal> <month> <short-year>",
+        "line": 2322,
+        "mutates": []
+      },
+      {
+        "name": "<date> <year>",
+        "line": 2465,
+        "mutates": []
+      },
+      {
+        "name": "digit<month> (no space)",
+        "line": 3698,
+        "mutates": []
+      },
+      {
+        "name": "<day-of-month>(ordinal or number)/<named-month>/year",
+        "line": 3887,
+        "mutates": []
+      },
+      {
+        "name": "<day-of-month>(ordinal) <named-month> year",
+        "line": 3913,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "PartOfDay",
+    "slug": "part_of_day",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    PartOfDay(PartOfDay),",
+    "resolver_refs": 19,
+    "rules": [
+      {
+        "name": "morning (latent)",
+        "line": 307,
+        "mutates": [
+          "early_late"
+        ]
+      },
+      {
+        "name": "afternoon (latent)",
+        "line": 322,
+        "mutates": []
+      },
+      {
+        "name": "evening (latent)",
+        "line": 331,
+        "mutates": []
+      },
+      {
+        "name": "night (latent)",
+        "line": 340,
+        "mutates": []
+      },
+      {
+        "name": "lunch (latent)",
+        "line": 349,
+        "mutates": []
+      },
+      {
+        "name": "part of days",
+        "line": 4410,
+        "mutates": []
+      },
+      {
+        "name": "early morning",
+        "line": 4428,
+        "mutates": [
+          "early_late"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "Weekend",
+    "slug": "weekend",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Weekend,",
+    "resolver_refs": 4,
+    "rules": [
+      {
+        "name": "week-end",
+        "line": 443,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Season",
+    "slug": "season",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Season(u32),                  // 0=spring, 1=summer, 2=fall, 3=winter",
+    "resolver_refs": 4,
+    "rules": [
+      {
+        "name": "season word",
+        "line": 462,
+        "mutates": []
+      },
+      {
+        "name": "last|this|next <season>",
+        "line": 482,
+        "mutates": [
+          "direction"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "Holiday",
+    "slug": "holiday",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Holiday(String, Option<i32>), // name, optional year",
+    "resolver_refs": 14,
+    "rules": [
+      {
+        "name": "holidays",
+        "line": 2969,
+        "mutates": []
+      },
+      {
+        "name": "<holiday> <year>",
+        "line": 2984,
+        "mutates": []
+      },
+      {
+        "name": "<holiday> in <year>",
+        "line": 3016,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "GrainOffset",
+    "slug": "grain_offset",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    GrainOffset {\n        grain: Grain,\n        offset: i32,\n    },",
+    "resolver_refs": 13,
+    "rules": [
+      {
+        "name": "this|last|next <cycle>",
+        "line": 2003,
+        "mutates": []
+      },
+      {
+        "name": "the <cycle> of the <time grain>",
+        "line": 2043,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "NthGrain",
+    "slug": "nth_grain",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    NthGrain {\n        n: i64,\n        grain: Grain,\n        past: bool,\n        interval: bool,\n    },",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "last <integer> <grain>",
+        "line": 2064,
+        "mutates": []
+      },
+      {
+        "name": "next <integer> <grain>",
+        "line": 2085,
+        "mutates": []
+      },
+      {
+        "name": "upcoming <integer> <cycle>",
+        "line": 2107,
+        "mutates": []
+      },
+      {
+        "name": "<integer> upcoming <grain>",
+        "line": 2129,
+        "mutates": []
+      },
+      {
+        "name": "<integer> upcoming <cycle>",
+        "line": 3995,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Quarter",
+    "slug": "quarter",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    Quarter(u32),",
+    "resolver_refs": 3,
+    "rules": [
+      {
+        "name": "<ordinal> quarter",
+        "line": 2493,
+        "mutates": []
+      },
+      {
+        "name": "the <ordinal> quarter",
+        "line": 2509,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "QuarterYear",
+    "slug": "quarter_year",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    QuarterYear(u32, i32),",
+    "resolver_refs": 3,
+    "rules": [
+      {
+        "name": "<ordinal> quarter <year>",
+        "line": 2529,
+        "mutates": []
+      },
+      {
+        "name": "<quarter> of <year>",
+        "line": 2560,
+        "mutates": []
+      },
+      {
+        "name": "yyyyqq",
+        "line": 2592,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "AllGrain",
+    "slug": "all_grain",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    AllGrain(Grain),",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "week",
+        "line": 2612,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "RestOfGrain",
+    "slug": "rest_of_grain",
+    "wave": "A",
+    "kind": "time_form",
+    "excerpt": "    RestOfGrain(Grain),",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "rest of the week",
+        "line": 2624,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "BeginEnd",
+    "slug": "begin_end",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    BeginEnd {\n        begin: bool,\n        target: Box<TimeForm>,\n    },",
+    "resolver_refs": 4,
+    "rules": [
+      {
+        "name": "beginning of <grain>",
+        "line": 2639,
+        "mutates": []
+      },
+      {
+        "name": "end of <grain>",
+        "line": 2657,
+        "mutates": []
+      },
+      {
+        "name": "beginning of <modifier> <grain>",
+        "line": 2676,
+        "mutates": []
+      },
+      {
+        "name": "end of <modifier> <grain>",
+        "line": 2700,
+        "mutates": []
+      },
+      {
+        "name": "beginning of <time>",
+        "line": 2725,
+        "mutates": []
+      },
+      {
+        "name": "end/beginning of the day/month/year",
+        "line": 2822,
+        "mutates": []
+      },
+      {
+        "name": "the beginning/end of the day/year",
+        "line": 2840,
+        "mutates": []
+      },
+      {
+        "name": "at the beginning|end of <named-month>",
+        "line": 4455,
+        "mutates": []
+      },
+      {
+        "name": "at the beginning|end of <year>",
+        "line": 4470,
+        "mutates": []
+      },
+      {
+        "name": "at the beginning|end of <week>",
+        "line": 4485,
+        "mutates": []
+      },
+      {
+        "name": "beginning of month",
+        "line": 4503,
+        "mutates": []
+      },
+      {
+        "name": "beginning of year",
+        "line": 4535,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "NthDOWOfTime",
+    "slug": "nth_dow_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"first Monday of March\", \"second Tuesday of last month\"\n    NthDOWOfTime {\n        n: i32,\n        dow: u32,\n        base: Box<TimeData>,\n    },",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "first|second|third|fourth|fifth <day-of-week> of <time>",
+        "line": 1667,
+        "mutates": []
+      },
+      {
+        "name": "nth <day-of-week> of <month-or-greater>",
+        "line": 4666,
+        "mutates": []
+      },
+      {
+        "name": "the nth <day-of-week> of <month-or-greater>",
+        "line": 4694,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "LastDOWOfTime",
+    "slug": "last_dow_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"last Friday of October\"\n    LastDOWOfTime {\n        dow: u32,\n        base: Box<TimeData>,\n    },",
+    "resolver_refs": 3,
+    "rules": [
+      {
+        "name": "last <day-of-week> of <time>",
+        "line": 1698,
+        "mutates": []
+      },
+      {
+        "name": "last weekend of <named-month>",
+        "line": 1776,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "LastCycleOfTime",
+    "slug": "last_cycle_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"last week of September\", \"last weekend of July\"\n    LastCycleOfTime {\n        grain: Grain,\n        base: Box<TimeData>,\n    },",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "last <cycle> of <time>",
+        "line": 1724,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "NDOWsFromTime",
+    "slug": "ndo_ws_from_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"2 Sundays from now\", \"3 Fridays from now\"\n    NDOWsFromTime {\n        n: i32,\n        dow: u32,\n        base: Box<TimeData>,\n    },",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "<integer> <day-of-week> from <time>",
+        "line": 1792,
+        "mutates": []
+      },
+      {
+        "name": "<integer> <named-day> ago|back",
+        "line": 1820,
+        "mutates": []
+      },
+      {
+        "name": "nth <time> after <time>",
+        "line": 1846,
+        "mutates": []
+      },
+      {
+        "name": "the nth <time> after <time>",
+        "line": 4338,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "NthGrainOfTime",
+    "slug": "nth_grain_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"Nth week of month\" (e.g., \"first week of October 2014\")\n    NthGrainOfTime {\n        n: i32,\n        grain: Grain,\n        base: Box<TimeData>,\n    },",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "the <ordinal> <cycle> of <time>",
+        "line": 1918,
+        "mutates": []
+      },
+      {
+        "name": "<ordinal> day of <time>",
+        "line": 1979,
+        "mutates": []
+      },
+      {
+        "name": "the week of <time>",
+        "line": 2030,
+        "mutates": []
+      },
+      {
+        "name": "<cycle> after|before <time>",
+        "line": 3939,
+        "mutates": []
+      },
+      {
+        "name": "<ordinal> <cycle> of <time>",
+        "line": 3963,
+        "mutates": []
+      },
+      {
+        "name": "<ordinal> <cycle> after <time>",
+        "line": 4260,
+        "mutates": []
+      },
+      {
+        "name": "<ordinal> <cycle> after <time>",
+        "line": 4280,
+        "mutates": []
+      },
+      {
+        "name": "the <cycle> after|before <time>",
+        "line": 4300,
+        "mutates": []
+      },
+      {
+        "name": "the <cycle> of <time>",
+        "line": 4322,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "NthLastDayOfTime",
+    "slug": "nth_last_day_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // \"last day of October\", \"5th last day of May\"\n    NthLastDayOfTime {\n        n: i32,\n        base: Box<TimeData>,\n    },",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "last day of <time>",
+        "line": 1944,
+        "mutates": []
+      },
+      {
+        "name": "(the) <ordinal> last day of <time>",
+        "line": 1958,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "NthLastCycleOfTime",
+    "slug": "nth_last_cycle_of_time",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // Haskell: cycleNthAfter with negative n — \"<ordinal> last <grain> of <time>\"\n    NthLastCycleOfTime {\n        n: i32,\n        grain: Grain,\n        base: Box<TimeData>,\n    },",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "the <ordinal> last <cycle> of <time>",
+        "line": 1746,
+        "mutates": []
+      },
+      {
+        "name": "<ordinal> last <cycle> of <time>",
+        "line": 3979,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "DurationAfter",
+    "slug": "duration_after",
+    "wave": "B",
+    "kind": "time_form",
+    "excerpt": "    // Haskell: durationAfter — \"<duration> after <time>\"\n    // Shifts each occurrence of base by n grains, picks nearest future\n    DurationAfter {\n        n: i64,\n        grain: Grain,\n        base: Box<TimeData>,\n    },",
+    "resolver_refs": 4,
+    "rules": [
+      {
+        "name": "<duration> after <time>",
+        "line": 3050,
+        "mutates": []
+      },
+      {
+        "name": "<duration> after|before|from|past <time>",
+        "line": 4007,
+        "mutates": []
+      },
+      {
+        "name": "<day> <duration> hence|ago",
+        "line": 4030,
+        "mutates": []
+      },
+      {
+        "name": "<day> in <duration>",
+        "line": 4050,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Interval",
+    "slug": "interval",
+    "wave": "C",
+    "kind": "time_form",
+    "excerpt": "    Interval(Box<TimeData>, Box<TimeData>, bool), // from, to, open (true=don't adjust end)",
+    "resolver_refs": 7,
+    "rules": [
+      {
+        "name": "within <duration>",
+        "line": 1160,
+        "mutates": []
+      },
+      {
+        "name": "EOM/BOM/EOY/BOY/EOD",
+        "line": 2750,
+        "mutates": []
+      },
+      {
+        "name": "by <time>",
+        "line": 2858,
+        "mutates": []
+      },
+      {
+        "name": "after lunch/work/school",
+        "line": 2942,
+        "mutates": []
+      },
+      {
+        "name": "<datetime> - <datetime> (interval)",
+        "line": 3143,
+        "mutates": []
+      },
+      {
+        "name": "<time-of-day> - <time-of-day> (interval)",
+        "line": 3178,
+        "mutates": []
+      },
+      {
+        "name": "hh(:mm) - <time-of-day> am|pm",
+        "line": 3203,
+        "mutates": []
+      },
+      {
+        "name": "dd-dd <month> (interval)",
+        "line": 3249,
+        "mutates": []
+      },
+      {
+        "name": "<month> dd-dd (interval)",
+        "line": 3283,
+        "mutates": []
+      },
+      {
+        "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) <named-month> (interval)",
+        "line": 3316,
+        "mutates": []
+      },
+      {
+        "name": "from <month> dd-dd (interval)",
+        "line": 3352,
+        "mutates": []
+      },
+      {
+        "name": "later than <tod> before <tod>",
+        "line": 3386,
+        "mutates": []
+      },
+      {
+        "name": "from <datetime> - <datetime> (interval)",
+        "line": 3405,
+        "mutates": []
+      },
+      {
+        "name": "between <time> and <time>",
+        "line": 3424,
+        "mutates": []
+      },
+      {
+        "name": "from <time> for <duration>",
+        "line": 3443,
+        "mutates": []
+      },
+      {
+        "name": "for <duration> from <time>",
+        "line": 3469,
+        "mutates": []
+      },
+      {
+        "name": "<time> for <duration>",
+        "line": 3496,
+        "mutates": []
+      },
+      {
+        "name": "<time> - <time> timezone",
+        "line": 3766,
+        "mutates": [
+          "timezone"
+        ]
+      },
+      {
+        "name": "<datetime>/<datetime> (interval)",
+        "line": 3795,
+        "mutates": []
+      },
+      {
+        "name": "<datetime> - <datetime> (interval) timezone",
+        "line": 3812,
+        "mutates": [
+          "timezone"
+        ]
+      },
+      {
+        "name": "<year> (latent) - <year> (latent) (interval)",
+        "line": 3838,
+        "mutates": []
+      },
+      {
+        "name": "from <time-of-day> - <time-of-day> (interval)",
+        "line": 4205,
+        "mutates": []
+      },
+      {
+        "name": "by the end of <time>",
+        "line": 4380,
+        "mutates": []
+      },
+      {
+        "name": "between <time-of-day> and <time-of-day> (interval)",
+        "line": 4392,
+        "mutates": []
+      },
+      {
+        "name": "end of month",
+        "line": 4511,
+        "mutates": []
+      },
+      {
+        "name": "end of year",
+        "line": 4543,
+        "mutates": []
+      },
+      {
+        "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) of <named-month> (interval)",
+        "line": 4723,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Composed",
+    "slug": "composed",
+    "wave": "C",
+    "kind": "time_form",
+    "excerpt": "    Composed(Box<TimeData>, Box<TimeData>),",
+    "resolver_refs": 20,
+    "rules": [
+      {
+        "name": "tonight",
+        "line": 361,
+        "mutates": []
+      },
+      {
+        "name": "this <part-of-day>",
+        "line": 374,
+        "mutates": []
+      },
+      {
+        "name": "last night",
+        "line": 397,
+        "mutates": []
+      },
+      {
+        "name": "tomorrow <part-of-day>",
+        "line": 409,
+        "mutates": []
+      },
+      {
+        "name": "<time> <part-of-day>",
+        "line": 852,
+        "mutates": []
+      },
+      {
+        "name": "<duration> from right now",
+        "line": 1078,
+        "mutates": []
+      },
+      {
+        "name": "<duration> from today",
+        "line": 1096,
+        "mutates": []
+      },
+      {
+        "name": "mm/yyyy",
+        "line": 1308,
+        "mutates": []
+      },
+      {
+        "name": "iso8601 datetime with T separator (en extension)",
+        "line": 1332,
+        "mutates": [
+          "timezone"
+        ]
+      },
+      {
+        "name": "yyyy-mm-dd",
+        "line": 1377,
+        "mutates": []
+      },
+      {
+        "name": "yyyy-mm",
+        "line": 1415,
+        "mutates": []
+      },
+      {
+        "name": "<month> <year>",
+        "line": 1582,
+        "mutates": []
+      },
+      {
+        "name": "the <day-of-month> (ordinal or number) of <named-month>",
+        "line": 2153,
+        "mutates": []
+      },
+      {
+        "name": "<named-month>|<named-day> <day-of-month> (ordinal)",
+        "line": 2179,
+        "mutates": []
+      },
+      {
+        "name": "<named-month> <day-of-month> (non ordinal)",
+        "line": 2201,
+        "mutates": []
+      },
+      {
+        "name": "<dow> <month> <day>",
+        "line": 2220,
+        "mutates": []
+      },
+      {
+        "name": "the <day-of-month> (number)",
+        "line": 2258,
+        "mutates": []
+      },
+      {
+        "name": "<integer> <month>",
+        "line": 2279,
+        "mutates": []
+      },
+      {
+        "name": "<ordinal> <month>",
+        "line": 2297,
+        "mutates": []
+      },
+      {
+        "name": "the ides of <named-month>",
+        "line": 2365,
+        "mutates": []
+      },
+      {
+        "name": "<numeral> of <grain-offset-month>",
+        "line": 2404,
+        "mutates": []
+      },
+      {
+        "name": "<latent-time> <time> compose",
+        "line": 3073,
+        "mutates": []
+      },
+      {
+        "name": "intersect",
+        "line": 3091,
+        "mutates": []
+      },
+      {
+        "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\", \\\"'s\\\"",
+        "line": 3120,
+        "mutates": []
+      },
+      {
+        "name": "ISO interval",
+        "line": 3647,
+        "mutates": []
+      },
+      {
+        "name": "<day-of-month> (ordinal or number) of <named-month>",
+        "line": 3856,
+        "mutates": []
+      },
+      {
+        "name": "<day-of-month> (ordinal or number) <named-month>",
+        "line": 3872,
+        "mutates": []
+      },
+      {
+        "name": "<part-of-day> at <time-of-day>",
+        "line": 4149,
+        "mutates": []
+      },
+      {
+        "name": "<part-of-day> <latent-time-of-day> (latent)",
+        "line": 4158,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "<time-of-day> <part-of-day>",
+        "line": 4169,
+        "mutates": []
+      },
+      {
+        "name": "<part-of-day> of <time>",
+        "line": 4196,
+        "mutates": []
+      },
+      {
+        "name": "in <duration> at <time-of-day>",
+        "line": 4242,
+        "mutates": []
+      },
+      {
+        "name": "<day-of-month> (ordinal or number) of <month>",
+        "line": 4359,
+        "mutates": []
+      },
+      {
+        "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\" for year",
+        "line": 4371,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "NthClosestToTime",
+    "slug": "nth_closest_to_time",
+    "wave": "C",
+    "kind": "time_form",
+    "excerpt": "    // \"closest Monday to Oct 5th\", \"closest xmas to today\"\n    NthClosestToTime {\n        n: i32,\n        target: Box<TimeData>,\n        base: Box<TimeData>,\n    },",
+    "resolver_refs": 2,
+    "rules": [
+      {
+        "name": "the closest <day> to <time>",
+        "line": 1874,
+        "mutates": []
+      },
+      {
+        "name": "the <ordinal> closest <day> to <time>",
+        "line": 1893,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "Modifiers",
+    "slug": "modifiers",
+    "wave": "A",
+    "kind": "modifiers",
+    "excerpt": null,
+    "resolver_refs": 0,
+    "rules": [
+      {
+        "name": "in|during the <part-of-day>",
+        "line": 386,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "late/early/mid <time>",
+        "line": 421,
+        "mutates": [
+          "latent",
+          "early_late"
+        ]
+      },
+      {
+        "name": "this past weekend",
+        "line": 449,
+        "mutates": [
+          "direction"
+        ]
+      },
+      {
+        "name": "at <time-of-day>",
+        "line": 940,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "on <day>",
+        "line": 953,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "on a <named-day>",
+        "line": 963,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "in|during <named-month>|year",
+        "line": 974,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "around <time>",
+        "line": 997,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "<time> approximately",
+        "line": 1011,
+        "mutates": []
+      },
+      {
+        "name": "in <year>",
+        "line": 1525,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "last <time>",
+        "line": 1604,
+        "mutates": [
+          "latent",
+          "direction"
+        ]
+      },
+      {
+        "name": "next <time>",
+        "line": 1619,
+        "mutates": [
+          "latent",
+          "direction"
+        ]
+      },
+      {
+        "name": "this <time>",
+        "line": 1635,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "<time> before last|after next",
+        "line": 1650,
+        "mutates": [
+          "latent",
+          "direction"
+        ]
+      },
+      {
+        "name": "until <time>",
+        "line": 2873,
+        "mutates": [
+          "latent",
+          "open_interval_direction"
+        ]
+      },
+      {
+        "name": "from|since|after <time>",
+        "line": 2905,
+        "mutates": [
+          "latent",
+          "open_interval_direction"
+        ]
+      },
+      {
+        "name": "after <part-of-day>",
+        "line": 2922,
+        "mutates": [
+          "latent",
+          "open_interval_direction"
+        ]
+      },
+      {
+        "name": "<time> timezone",
+        "line": 3723,
+        "mutates": [
+          "latent",
+          "timezone"
+        ]
+      },
+      {
+        "name": "<time> (timezone)",
+        "line": 3744,
+        "mutates": [
+          "latent",
+          "timezone"
+        ]
+      },
+      {
+        "name": "<time-of-day> sharp|exactly",
+        "line": 4178,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "about|exactly <time-of-day>",
+        "line": 4187,
+        "mutates": [
+          "latent"
+        ]
+      },
+      {
+        "name": "absorption of , after named day",
+        "line": 4405,
+        "mutates": []
+      },
+      {
+        "name": "part of <named-month>",
+        "line": 4437,
+        "mutates": [
+          "latent",
+          "early_late"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "numeral",
+    "slug": "numeral",
+    "wave": "A",
+    "kind": "dimension",
+    "excerpt": null,
+    "resolver_refs": 0,
+    "rules": [
+      {
+        "name": "integer (0..9)",
+        "line": 20,
+        "mutates": []
+      },
+      {
+        "name": "integer (10..19)",
+        "line": 52,
+        "mutates": []
+      },
+      {
+        "name": "integer (20..90)",
+        "line": 79,
+        "mutates": []
+      },
+      {
+        "name": "a few",
+        "line": 104,
+        "mutates": []
+      },
+      {
+        "name": "integer (21..99)",
+        "line": 114,
+        "mutates": []
+      },
+      {
+        "name": "integer compose (tens + units)",
+        "line": 141,
+        "mutates": []
+      },
+      {
+        "name": "one eleven (skip hundreds)",
+        "line": 167,
+        "mutates": []
+      },
+      {
+        "name": "one twenty two (skip hundreds)",
+        "line": 192,
+        "mutates": []
+      },
+      {
+        "name": "integer (numeric)",
+        "line": 221,
+        "mutates": []
+      },
+      {
+        "name": "decimal number",
+        "line": 234,
+        "mutates": []
+      },
+      {
+        "name": "fractional number",
+        "line": 247,
+        "mutates": []
+      },
+      {
+        "name": "number with commas",
+        "line": 264,
+        "mutates": []
+      },
+      {
+        "name": "number suffixes (K, M, G)",
+        "line": 278,
+        "mutates": []
+      },
+      {
+        "name": "negative number",
+        "line": 297,
+        "mutates": []
+      },
+      {
+        "name": "powers of tens",
+        "line": 306,
+        "mutates": []
+      },
+      {
+        "name": "a pair / a couple",
+        "line": 335,
+        "mutates": []
+      },
+      {
+        "name": "a dozen of",
+        "line": 345,
+        "mutates": []
+      },
+      {
+        "name": "one point 2",
+        "line": 357,
+        "mutates": []
+      },
+      {
+        "name": "point 77",
+        "line": 372,
+        "mutates": []
+      },
+      {
+        "name": "compose by multiplication",
+        "line": 384,
+        "mutates": []
+      },
+      {
+        "name": "intersect 2 numbers",
+        "line": 410,
+        "mutates": []
+      },
+      {
+        "name": "intersect 2 numbers (with and)",
+        "line": 429,
+        "mutates": []
+      },
+      {
+        "name": "<integer> '('<integer>')'",
+        "line": 449,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "duration",
+    "slug": "duration",
+    "wave": "A",
+    "kind": "dimension",
+    "excerpt": null,
+    "resolver_refs": 0,
+    "rules": [
+      {
+        "name": "<integer> <unit-of-duration>",
+        "line": 53,
+        "mutates": []
+      },
+      {
+        "name": "quarter of an hour",
+        "line": 70,
+        "mutates": []
+      },
+      {
+        "name": "half an hour (abbrev)",
+        "line": 78,
+        "mutates": []
+      },
+      {
+        "name": "three-quarters of an hour",
+        "line": 86,
+        "mutates": []
+      },
+      {
+        "name": "fortnight",
+        "line": 94,
+        "mutates": []
+      },
+      {
+        "name": "<integer> + '\\\"",
+        "line": 100,
+        "mutates": []
+      },
+      {
+        "name": "<integer> more <unit-of-duration>",
+        "line": 121,
+        "mutates": []
+      },
+      {
+        "name": "number.number hours",
+        "line": 141,
+        "mutates": []
+      },
+      {
+        "name": "number.number minutes",
+        "line": 163,
+        "mutates": []
+      },
+      {
+        "name": "<integer> and a half hour",
+        "line": 185,
+        "mutates": []
+      },
+      {
+        "name": "<integer> and a half minute",
+        "line": 198,
+        "mutates": []
+      },
+      {
+        "name": "a <unit-of-duration>",
+        "line": 211,
+        "mutates": []
+      },
+      {
+        "name": "half a <time-grain>",
+        "line": 223,
+        "mutates": []
+      },
+      {
+        "name": "a <unit-of-duration> and a half",
+        "line": 236,
+        "mutates": []
+      },
+      {
+        "name": "<integer> hour and <integer>",
+        "line": 253,
+        "mutates": []
+      },
+      {
+        "name": "about|exactly <duration>",
+        "line": 273,
+        "mutates": []
+      },
+      {
+        "name": "<integer> and <integer> quarter of hour",
+        "line": 283,
+        "mutates": []
+      },
+      {
+        "name": "composite <duration> (with ,/and)",
+        "line": 310,
+        "mutates": []
+      },
+      {
+        "name": "composite <duration>",
+        "line": 333,
+        "mutates": []
+      },
+      {
+        "name": "composite <duration> and <duration>",
+        "line": 355,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "ordinal",
+    "slug": "ordinal",
+    "wave": "A",
+    "kind": "dimension",
+    "excerpt": null,
+    "resolver_refs": 0,
+    "rules": [
+      {
+        "name": "ordinals (first..nineteenth)",
+        "line": 8,
+        "mutates": []
+      },
+      {
+        "name": "ordinals (twentieth..ninetieth)",
+        "line": 43,
+        "mutates": []
+      },
+      {
+        "name": "ordinals (composite, e.g. twenty-fifth)",
+        "line": 68,
+        "mutates": []
+      },
+      {
+        "name": "ordinal (numeric)",
+        "line": 111,
+        "mutates": []
+      }
+    ]
+  },
+  {
+    "key": "time_grain",
+    "slug": "time_grain",
+    "wave": "A",
+    "kind": "dimension",
+    "excerpt": null,
+    "resolver_refs": 0,
+    "rules": [
+      {
+        "name": "second (grain)",
+        "line": 9,
+        "mutates": []
+      },
+      {
+        "name": "minute (grain)",
+        "line": 14,
+        "mutates": []
+      },
+      {
+        "name": "hour (grain)",
+        "line": 19,
+        "mutates": []
+      },
+      {
+        "name": "day (grain)",
+        "line": 24,
+        "mutates": []
+      },
+      {
+        "name": "week (grain)",
+        "line": 29,
+        "mutates": []
+      },
+      {
+        "name": "month (grain)",
+        "line": 34,
+        "mutates": []
+      },
+      {
+        "name": "quarter (grain)",
+        "line": 39,
+        "mutates": []
+      },
+      {
+        "name": "year (grain)",
+        "line": 44,
+        "mutates": []
+      }
+    ]
+  }
+]

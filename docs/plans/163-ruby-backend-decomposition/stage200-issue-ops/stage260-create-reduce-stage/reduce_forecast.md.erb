@@ -1,0 +1,23 @@
+Parent: #<%= parent %> · **Phase 4 — reduce.** Blocked by #<%= reduce_measure_issue %>. This is the deliverable the whole issue exists to produce.
+
+## Scope
+
+A forecast document in tree stating **what EN cost** and **what the remaining 26 locales are projected to cost**.
+
+#<%= parent %> is a *test-drive*, not a commitment. Its stated goal is "carrying a continually-updated go/no-go forecast until all 27 time-supporting locales are covered, or the forecast says stop." This document is where "stop" becomes sayable.
+
+## What it has to answer
+
+- [ ] **What EN actually cost.** Agent-hours or wall-clock across <%= slice_count %> Phase 2 slices and <%= slice_count %> audits; how many slices needed sub-splitting; how many spine follow-ups the frozen-files rule generated
+- [ ] **What EN actually bought.** The measured numbers from #<%= reduce_measure_issue %> against the native baseline — memory, throughput, and the adversarial-input result
+- [ ] **The per-locale projection, and its error bars.** EN is `dimensions/time/en.rs` at 5,169 lines and 221 rules. The other 26 time-supporting locales are smaller, but not proportionally — and the EN port had a 1,034-case corpus that **no other locale has**. State plainly that Milestone 2+ has no oracle of the same quality, and what that does to the estimate
+- [ ] **Where the corpus-TDD method broke down**, if it did. The 23 rules with no `TimeForm` were invisible in #<%= parent %>'s own slicing plan until the rule map was derived; say what else the method missed
+- [ ] **A recommendation**: continue to Milestone 2 (FR), or stop
+
+## Milestone 2's role, if the forecast is favourable
+
+FR is the calibration point, not an arbitrary next locale: it is the **largest per-locale memory cost PR #162 measured (+26.8 MB)** and `dimensions/time/fr.rs` is 1,479 lines. Its purpose is to calibrate the per-locale port cost against this document's EN estimate. Open it as a follow-up only if this forecast says go.
+
+## Explicitly out of scope for the recommendation
+
+Per #<%= parent %>: replacing the native backend as the default, or changing what the gem ships. This forecast informs a future decision; it does not make it.

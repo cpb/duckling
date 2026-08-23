@@ -1,0 +1,10 @@
+## Two outcomes, not three
+
+There is no Ruby backend yet — that is the point of running the audit before the port. A gap found now is a gap the port never has.
+
+| Result on the native backend | Meaning | Action |
+|---|---|---|
+| behaves as you predicted from the Rust | the corpus got stronger | keep the case — a standalone win for the corpus regardless of #<%= parent %> |
+| behaves differently | you misread the Rust, or it is an upstream bug the corpus was hiding | work out which. If it is real, open a `<%= divergence_label %>` issue **on this repo** (see below). **Never pin surprising behaviour as golden silently** |
+
+The "fails on Ruby → port gap" outcome is gone, because there is no Ruby backend to fail. Preventing that outcome is strictly better than diagnosing it.

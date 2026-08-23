@@ -1,0 +1,32 @@
+# Per-dimension prose. Rule counts and file sizes come from the crate; these
+# are the "why this matters to the rest of the tree" notes.
+numeral:
+  corpus: 105 numeral corpus cases (#157)
+  note: >-
+    Every `TimeForm` slice that takes an integer — `DayOfMonth`, `Year`,
+    `NthGrain`, `NDOWsFromTime`, `RelativeGrain` — consumes numeral tokens
+    through `integer_value()`/`numeral_data()`. This slice is on the critical
+    path for most of Wave A even though it is not a time slice.
+duration:
+  corpus: 83 duration corpus cases (#157)
+  note: >-
+    `DurationAfter` (Wave B) and six of `Interval`'s rules (`<time> for
+    <duration>`, `from <time> for <duration>`, `within <duration>`) consume
+    duration tokens. `normalized_seconds` is part of the emitted value shape.
+ordinal:
+  corpus: 32 ordinal corpus cases (#157)
+  note: >-
+    The smallest slice in the tree. `NthGrain`, `NthDOWOfTime`,
+    `NthGrainOfTime`, `NthLastDayOfTime`, `NthLastCycleOfTime` and the
+    `<ordinal> <month>` date rules all consume ordinal tokens.
+time_grain:
+  corpus: >-
+    no dedicated corpus file — grain is asserted as the second argument of
+    every `check_time_naive`/`check_time_instant` case, so its coverage comes
+    through the time slices
+  note: >-
+    `Grain` is the enum every time slice's resolved value carries. `mod.rs`
+    holds the ordering and the `as_str()` mapping that produces the
+    lowercase-snake_case symbols (`:second`, `:no_grain`, …) the Ruby side must
+    emit — see AGENTS.md's "Entity `:value` shapes". A hard blocker for the
+    fixture format itself.

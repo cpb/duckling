@@ -1,0 +1,5 @@
+## What the sweep can and cannot see
+
+A branch matching no corpus text is definitely unexercised. The converse does not hold: a branch that *does* appear in some text may still never fire, because another rule can win the span.
+
+So the pre-identified list is a **lower bound**, and a slice with an empty list is not a covered slice. Rules whose pattern is pure `predicate`/`dim` composition have no regex to test and are invisible to the sweep entirely — which is why this audit is done by a person reading the source.

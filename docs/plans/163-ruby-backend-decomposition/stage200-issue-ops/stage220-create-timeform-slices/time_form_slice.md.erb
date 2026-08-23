@@ -1,0 +1,40 @@
+Parent: #<%= parent %> · Phase 2 · Wave <%= slice.wave %> · slice **`<%= slice.key %>`**
+
+<%= wave_note %>
+
+Blocked by #<%= spine_issue %> (base classes, fixture format) and #<%= fixture_capture_issue %> (your fixture file). Ranking (#<%= ranking_issue %>) runs in parallel and does not block this slice's fixture rows.
+<% if sizing_note %>
+<%= sizing_note %>
+<% end %>
+## The variant
+
+```rust
+// src/dimensions/time/mod.rs — <%= crate_name %> <%= crate_version %>
+<%= slice.excerpt %>
+```
+
+Its resolution logic is spread across several functions in `src/dimensions/time/mod.rs` (<%= slice.resolver_refs %> `TimeForm::<%= slice.key %>` reference<%= "s" unless slice.resolver_refs == 1 %>), not one match arm.
+
+## Rules you own (<%= slice.rules.size %>)
+
+Ownership is exclusive: **a rule is owned by the highest-wave variant it constructs.** `"tomorrow morning"` builds `Composed(Tomorrow, PartOfDay)`, so it is a Wave C `Composed` rule, not a Wave A `Tomorrow` rule. That is what makes the assignment conflict-free across all 42 slices, and Phase 1 buckets fixture cases the same way.
+
+<% if slice.rules.empty? -%>
+_None. This variant is constructed only by other slices' rules; your job is the resolver and its fixture rows._
+<% else -%>
+| Rust rule name |
+|---|
+<% slice.rules.each do |rule| -%>
+| `<%= cell(rule.name) %>` |
+<% end -%>
+<% end %>
+<%= partial "files_you_own", resolver: true, dimension: false, slug: slice.slug %>
+## Definition of done
+
+- [ ] Every fixture row in `test/fixtures/ruby_backend/<%= slice.slug %>.json` passes on the Ruby backend
+- [ ] The full suite is green on the **native** backend — it must be untouched
+- [ ] No file outside the four listed above is modified
+- [ ] Any spine gap found is filed as a follow-up issue and linked here, not patched in place
+
+<%= partial "corpus_tdd_rule" %>
+<%= partial "regex_dialect_notes" %>

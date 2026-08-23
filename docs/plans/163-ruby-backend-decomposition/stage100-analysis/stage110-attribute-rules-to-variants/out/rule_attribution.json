@@ -1,0 +1,2794 @@
+[
+  {
+    "name": "this|next <day-of-week>",
+    "line": 171,
+    "builds": [
+      "DayOfWeek"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "month name",
+    "line": 199,
+    "builds": [
+      "Month"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "now",
+    "line": 238,
+    "builds": [
+      "Now"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "as soon as possible",
+    "line": 243,
+    "builds": [
+      "Now"
+    ],
+    "mutates": [
+      "open_interval_direction"
+    ],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "today",
+    "line": 255,
+    "builds": [
+      "Today"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "tomorrow",
+    "line": 260,
+    "builds": [
+      "Tomorrow"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "yesterday",
+    "line": 265,
+    "builds": [
+      "Yesterday"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "day after tomorrow",
+    "line": 273,
+    "builds": [
+      "DayAfterTomorrow"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "day before yesterday",
+    "line": 280,
+    "builds": [
+      "DayBeforeYesterday"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "noon|midnight|EOD|end of day",
+    "line": 290,
+    "builds": [
+      "Hour"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "midnight",
+    "line": 297,
+    "builds": [
+      "Hour"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "morning (latent)",
+    "line": 307,
+    "builds": [
+      "PartOfDay"
+    ],
+    "mutates": [
+      "early_late"
+    ],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "afternoon (latent)",
+    "line": 322,
+    "builds": [
+      "PartOfDay"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "evening (latent)",
+    "line": 331,
+    "builds": [
+      "PartOfDay"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "night (latent)",
+    "line": 340,
+    "builds": [
+      "PartOfDay"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "lunch (latent)",
+    "line": 349,
+    "builds": [
+      "PartOfDay"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "tonight",
+    "line": 361,
+    "builds": [
+      "Composed",
+      "Today",
+      "PartOfDay"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "this <part-of-day>",
+    "line": 374,
+    "builds": [
+      "Composed",
+      "Today"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "in|during the <part-of-day>",
+    "line": 386,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "last night",
+    "line": 397,
+    "builds": [
+      "Composed",
+      "Yesterday"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "tomorrow <part-of-day>",
+    "line": 409,
+    "builds": [
+      "Composed",
+      "Tomorrow"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "late/early/mid <time>",
+    "line": 421,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "early_late"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "week-end",
+    "line": 443,
+    "builds": [
+      "Weekend"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "this past weekend",
+    "line": 449,
+    "builds": [],
+    "mutates": [
+      "direction"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "season word",
+    "line": 462,
+    "builds": [
+      "Season"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "last|this|next <season>",
+    "line": 482,
+    "builds": [
+      "Season"
+    ],
+    "mutates": [
+      "direction"
+    ],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "hh:mm",
+    "line": 505,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "hh:mm:ss",
+    "line": 527,
+    "builds": [
+      "HourMinuteSecond"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "hhhmm",
+    "line": 548,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "hhmm (latent)",
+    "line": 578,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "time HMM-ish",
+    "line": 600,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "HH:MM:SS ampm",
+    "line": 625,
+    "builds": [
+      "HourMinuteSecond"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "HH:MM ampm",
+    "line": 656,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "H ampm",
+    "line": 684,
+    "builds": [
+      "Hour"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "H a/p (latent)",
+    "line": 709,
+    "builds": [
+      "Hour"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "hhmm (military) am|pm",
+    "line": 736,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "HMM in the <pod>",
+    "line": 764,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "time-of-day (latent)",
+    "line": 790,
+    "builds": [
+      "Hour"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate"
+    ]
+  },
+  {
+    "name": "<time-of-day> am|pm",
+    "line": 812,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<time> a/p suffix",
+    "line": 829,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "<time> <part-of-day>",
+    "line": 852,
+    "builds": [
+      "Hour",
+      "HourMinute",
+      "Composed",
+      "PartOfDay"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<time> in the AM/PM",
+    "line": 892,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<time-of-day> o'clock",
+    "line": 908,
+    "builds": [
+      "Hour"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "at <time-of-day>",
+    "line": 940,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "on <day>",
+    "line": 953,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "on a <named-day>",
+    "line": 963,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "in|during <named-month>|year",
+    "line": 974,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "around <time>",
+    "line": 997,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<time> approximately",
+    "line": 1011,
+    "builds": [],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "in|within|after <duration>",
+    "line": 1025,
+    "builds": [
+      "RelativeGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "in <number> (implicit minutes)",
+    "line": 1040,
+    "builds": [
+      "RelativeGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<duration> hence|ago",
+    "line": 1051,
+    "builds": [
+      "RelativeGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<duration> from right now",
+    "line": 1078,
+    "builds": [
+      "Composed",
+      "RelativeGrain",
+      "Now"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<duration> from today",
+    "line": 1096,
+    "builds": [
+      "Composed",
+      "Today",
+      "RelativeGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<duration> from now",
+    "line": 1114,
+    "builds": [
+      "RelativeGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<duration> back",
+    "line": 1128,
+    "builds": [
+      "RelativeGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "after <duration>",
+    "line": 1143,
+    "builds": [
+      "RelativeGrain"
+    ],
+    "mutates": [
+      "open_interval_direction"
+    ],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "within <duration>",
+    "line": 1160,
+    "builds": [
+      "Now",
+      "RelativeGrain",
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "date MM/DD(/YYYY)",
+    "line": 1183,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "date DD/MM(/YY)",
+    "line": 1220,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "date MM DD YYYY",
+    "line": 1256,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "date DD MM YYYY",
+    "line": 1282,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "mm/yyyy",
+    "line": 1308,
+    "builds": [
+      "Composed",
+      "Month",
+      "Year"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "iso8601 datetime with T separator (en extension)",
+    "line": 1332,
+    "builds": [
+      "DateMDY",
+      "HourMinuteSecond",
+      "HourMinute",
+      "Composed"
+    ],
+    "mutates": [
+      "timezone"
+    ],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "yyyy-mm-dd",
+    "line": 1377,
+    "builds": [
+      "DateMDY",
+      "Composed",
+      "Month",
+      "Year"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "yyyy-mm",
+    "line": 1415,
+    "builds": [
+      "Composed",
+      "Month",
+      "Year"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "date DD.MM.YYYY",
+    "line": 1435,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "date DD/Mon/YYYY",
+    "line": 1465,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "year (latent)",
+    "line": 1501,
+    "builds": [
+      "Year"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "spelled-out year (numeral)",
+    "line": 1515,
+    "builds": [
+      "Year"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate"
+    ]
+  },
+  {
+    "name": "in <year>",
+    "line": 1525,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<year> (bc|ad)",
+    "line": 1541,
+    "builds": [
+      "Year"
+    ],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "in <integer> AD",
+    "line": 1562,
+    "builds": [
+      "Year"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "<month> <year>",
+    "line": 1582,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "last <time>",
+    "line": 1604,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "direction"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "next <time>",
+    "line": 1619,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "direction"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "this <time>",
+    "line": 1635,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<time> before last|after next",
+    "line": 1650,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "direction"
+    ],
+    "items": [
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "first|second|third|fourth|fifth <day-of-week> of <time>",
+    "line": 1667,
+    "builds": [
+      "NthDOWOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "last <day-of-week> of <time>",
+    "line": 1698,
+    "builds": [
+      "LastDOWOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "last <cycle> of <time>",
+    "line": 1724,
+    "builds": [
+      "LastCycleOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the <ordinal> last <cycle> of <time>",
+    "line": 1746,
+    "builds": [
+      "NthLastCycleOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "last weekend of <named-month>",
+    "line": 1776,
+    "builds": [
+      "LastDOWOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<integer> <day-of-week> from <time>",
+    "line": 1792,
+    "builds": [
+      "NDOWsFromTime"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<integer> <named-day> ago|back",
+    "line": 1820,
+    "builds": [
+      "NDOWsFromTime",
+      "Now"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "nth <time> after <time>",
+    "line": 1846,
+    "builds": [
+      "NDOWsFromTime"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the closest <day> to <time>",
+    "line": 1874,
+    "builds": [
+      "NthClosestToTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the <ordinal> closest <day> to <time>",
+    "line": 1893,
+    "builds": [
+      "NthClosestToTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the <ordinal> <cycle> of <time>",
+    "line": 1918,
+    "builds": [
+      "NthGrainOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "last day of <time>",
+    "line": 1944,
+    "builds": [
+      "NthLastDayOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "(the) <ordinal> last day of <time>",
+    "line": 1958,
+    "builds": [
+      "NthLastDayOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<ordinal> day of <time>",
+    "line": 1979,
+    "builds": [
+      "NthGrainOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "this|last|next <cycle>",
+    "line": 2003,
+    "builds": [
+      "GrainOffset"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "regex"
+    ]
+  },
+  {
+    "name": "the week of <time>",
+    "line": 2030,
+    "builds": [
+      "NthGrainOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the <cycle> of the <time grain>",
+    "line": 2043,
+    "builds": [
+      "GrainOffset"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "regex"
+    ]
+  },
+  {
+    "name": "last <integer> <grain>",
+    "line": 2064,
+    "builds": [
+      "NthGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "dim"
+    ]
+  },
+  {
+    "name": "next <integer> <grain>",
+    "line": 2085,
+    "builds": [
+      "NthGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "dim"
+    ]
+  },
+  {
+    "name": "upcoming <integer> <cycle>",
+    "line": 2107,
+    "builds": [
+      "NthGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "dim"
+    ]
+  },
+  {
+    "name": "<integer> upcoming <grain>",
+    "line": 2129,
+    "builds": [
+      "NthGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the <day-of-month> (ordinal or number) of <named-month>",
+    "line": 2153,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<named-month>|<named-day> <day-of-month> (ordinal)",
+    "line": 2179,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "dim"
+    ]
+  },
+  {
+    "name": "<named-month> <day-of-month> (non ordinal)",
+    "line": 2201,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<dow> <month> <day>",
+    "line": 2220,
+    "builds": [
+      "DayOfWeek",
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "the <day-of-month> (number)",
+    "line": 2258,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<integer> <month>",
+    "line": 2279,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<ordinal> <month>",
+    "line": 2297,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<ordinal> <month> <short-year>",
+    "line": 2322,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "the ides of <named-month>",
+    "line": 2365,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<day-of-month> (ordinal)",
+    "line": 2388,
+    "builds": [
+      "DayOfMonth"
+    ],
+    "mutates": [],
+    "items": [
+      "dim"
+    ]
+  },
+  {
+    "name": "<numeral> of <grain-offset-month>",
+    "line": 2404,
+    "builds": [
+      "Composed",
+      "DayOfMonth"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "the <day-of-month> (ordinal)",
+    "line": 2433,
+    "builds": [
+      "DayOfMonth"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "on the <ordinal-word>",
+    "line": 2449,
+    "builds": [
+      "DayOfMonth"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<date> <year>",
+    "line": 2465,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<ordinal> quarter",
+    "line": 2493,
+    "builds": [
+      "Quarter"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "the <ordinal> quarter",
+    "line": 2509,
+    "builds": [
+      "Quarter"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<ordinal> quarter <year>",
+    "line": 2529,
+    "builds": [
+      "QuarterYear"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<quarter> of <year>",
+    "line": 2560,
+    "builds": [
+      "QuarterYear"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "yyyyqq",
+    "line": 2592,
+    "builds": [
+      "QuarterYear"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "week",
+    "line": 2612,
+    "builds": [
+      "AllGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "rest of the week",
+    "line": 2624,
+    "builds": [
+      "RestOfGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "beginning of <grain>",
+    "line": 2639,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "regex"
+    ]
+  },
+  {
+    "name": "end of <grain>",
+    "line": 2657,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "regex"
+    ]
+  },
+  {
+    "name": "beginning of <modifier> <grain>",
+    "line": 2676,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "regex",
+      "regex"
+    ]
+  },
+  {
+    "name": "end of <modifier> <grain>",
+    "line": 2700,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "regex",
+      "regex"
+    ]
+  },
+  {
+    "name": "beginning of <time>",
+    "line": 2725,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "EOM/BOM/EOY/BOY/EOD",
+    "line": 2750,
+    "builds": [
+      "Interval",
+      "Now",
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "end/beginning of the day/month/year",
+    "line": 2822,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "the beginning/end of the day/year",
+    "line": 2840,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "by <time>",
+    "line": 2858,
+    "builds": [
+      "Interval",
+      "Now"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "until <time>",
+    "line": 2873,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "open_interval_direction"
+    ],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "from|since|after <time>",
+    "line": 2905,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "open_interval_direction"
+    ],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "after <part-of-day>",
+    "line": 2922,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "open_interval_direction"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "after lunch/work/school",
+    "line": 2942,
+    "builds": [
+      "Hour",
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "holidays",
+    "line": 2969,
+    "builds": [
+      "Holiday"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "<holiday> <year>",
+    "line": 2984,
+    "builds": [
+      "Holiday"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<holiday> in <year>",
+    "line": 3016,
+    "builds": [
+      "Holiday"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<duration> after <time>",
+    "line": 3050,
+    "builds": [
+      "DurationAfter"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<latent-time> <time> compose",
+    "line": 3073,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "intersect",
+    "line": 3091,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "dim"
+    ]
+  },
+  {
+    "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\", \\\"'s\\\"",
+    "line": 3120,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<datetime> - <datetime> (interval)",
+    "line": 3143,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<time-of-day> - <time-of-day> (interval)",
+    "line": 3178,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "hh(:mm) - <time-of-day> am|pm",
+    "line": 3203,
+    "builds": [
+      "Interval",
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "regex",
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "dd-dd <month> (interval)",
+    "line": 3249,
+    "builds": [
+      "Interval",
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<month> dd-dd (interval)",
+    "line": 3283,
+    "builds": [
+      "Interval",
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) <named-month> (interval)",
+    "line": 3316,
+    "builds": [
+      "Interval",
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "regex",
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "from <month> dd-dd (interval)",
+    "line": 3352,
+    "builds": [
+      "Interval",
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "later than <tod> before <tod>",
+    "line": 3386,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "from <datetime> - <datetime> (interval)",
+    "line": 3405,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "between <time> and <time>",
+    "line": 3424,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "from <time> for <duration>",
+    "line": 3443,
+    "builds": [
+      "DurationAfter",
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "for <duration> from <time>",
+    "line": 3469,
+    "builds": [
+      "DurationAfter",
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<time> for <duration>",
+    "line": 3496,
+    "builds": [
+      "DurationAfter",
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "half after|past <hour-of-day>",
+    "line": 3525,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "quarter after|past <hour-of-day>",
+    "line": 3538,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "quarter to|till|before <hour-of-day>",
+    "line": 3554,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "integer after|past <hour-of-day>",
+    "line": 3574,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<integer> to <time>",
+    "line": 3596,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<time:hour> <integer:minute>",
+    "line": 3619,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "ISO interval",
+    "line": 3647,
+    "builds": [
+      "Composed",
+      "HourMinuteSecond",
+      "DateMDY",
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "digit<month> (no space)",
+    "line": 3698,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "<time> timezone",
+    "line": 3723,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "timezone"
+    ],
+    "items": [
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "<time> (timezone)",
+    "line": 3744,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "timezone"
+    ],
+    "items": [
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "<time> - <time> timezone",
+    "line": 3766,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [
+      "timezone"
+    ],
+    "items": [
+      "dim",
+      "regex",
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<datetime>/<datetime> (interval)",
+    "line": 3795,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<datetime> - <datetime> (interval) timezone",
+    "line": 3812,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [
+      "timezone"
+    ],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "<year> (latent) - <year> (latent) (interval)",
+    "line": 3838,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<day-of-month> (ordinal or number) of <named-month>",
+    "line": 3856,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<day-of-month> (ordinal or number) <named-month>",
+    "line": 3872,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<day-of-month>(ordinal or number)/<named-month>/year",
+    "line": 3887,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate",
+      "dim"
+    ]
+  },
+  {
+    "name": "<day-of-month>(ordinal) <named-month> year",
+    "line": 3913,
+    "builds": [
+      "DateMDY"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "predicate",
+      "dim"
+    ]
+  },
+  {
+    "name": "<cycle> after|before <time>",
+    "line": 3939,
+    "builds": [
+      "NthGrainOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<ordinal> <cycle> of <time>",
+    "line": 3963,
+    "builds": [
+      "NthGrainOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<ordinal> last <cycle> of <time>",
+    "line": 3979,
+    "builds": [
+      "NthLastCycleOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<integer> upcoming <cycle>",
+    "line": 3995,
+    "builds": [
+      "NthGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<duration> after|before|from|past <time>",
+    "line": 4007,
+    "builds": [
+      "DurationAfter"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<day> <duration> hence|ago",
+    "line": 4030,
+    "builds": [
+      "DurationAfter"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "dim",
+      "regex"
+    ]
+  },
+  {
+    "name": "<day> in <duration>",
+    "line": 4050,
+    "builds": [
+      "DurationAfter"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<hour-of-day> <integer>",
+    "line": 4067,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<hour-of-day> half",
+    "line": 4085,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "<hour-of-day> quarter",
+    "line": 4100,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "<integer> to|till|before <hour-of-day>",
+    "line": 4115,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<integer> minutes to|till|before <hour-of-day>",
+    "line": 4132,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<part-of-day> at <time-of-day>",
+    "line": 4149,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<part-of-day> <latent-time-of-day> (latent)",
+    "line": 4158,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<time-of-day> <part-of-day>",
+    "line": 4169,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<time-of-day> sharp|exactly",
+    "line": 4178,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "about|exactly <time-of-day>",
+    "line": 4187,
+    "builds": [],
+    "mutates": [
+      "latent"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<part-of-day> of <time>",
+    "line": 4196,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "from <time-of-day> - <time-of-day> (interval)",
+    "line": 4205,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "last|past|next <duration>",
+    "line": 4223,
+    "builds": [
+      "RelativeGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "in <duration> at <time-of-day>",
+    "line": 4242,
+    "builds": [
+      "Composed",
+      "RelativeGrain"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<ordinal> <cycle> after <time>",
+    "line": 4260,
+    "builds": [
+      "NthGrainOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<ordinal> <cycle> after <time>",
+    "line": 4280,
+    "builds": [
+      "NthGrainOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the <cycle> after|before <time>",
+    "line": 4300,
+    "builds": [
+      "NthGrainOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the <cycle> of <time>",
+    "line": 4322,
+    "builds": [
+      "NthGrainOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the nth <time> after <time>",
+    "line": 4338,
+    "builds": [
+      "NDOWsFromTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "<day-of-month> (ordinal or number) of <month>",
+    "line": 4359,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\" for year",
+    "line": 4371,
+    "builds": [
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "by the end of <time>",
+    "line": 4380,
+    "builds": [
+      "Interval",
+      "Now"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "between <time-of-day> and <time-of-day> (interval)",
+    "line": 4392,
+    "builds": [
+      "Interval"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "absorption of , after named day",
+    "line": 4405,
+    "builds": [],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex"
+    ]
+  },
+  {
+    "name": "part of days",
+    "line": 4410,
+    "builds": [
+      "PartOfDay"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "early morning",
+    "line": 4428,
+    "builds": [
+      "PartOfDay"
+    ],
+    "mutates": [
+      "early_late"
+    ],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "part of <named-month>",
+    "line": 4437,
+    "builds": [],
+    "mutates": [
+      "latent",
+      "early_late"
+    ],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "at the beginning|end of <named-month>",
+    "line": 4455,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "at the beginning|end of <year>",
+    "line": 4470,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "at the beginning|end of <week>",
+    "line": 4485,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "beginning of month",
+    "line": 4503,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "end of month",
+    "line": 4511,
+    "builds": [
+      "Interval",
+      "Now"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "beginning of year",
+    "line": 4535,
+    "builds": [
+      "BeginEnd"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "end of year",
+    "line": 4543,
+    "builds": [
+      "Interval",
+      "Now"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  },
+  {
+    "name": "<hour-of-day> zero <integer>",
+    "line": 4567,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<hour-of-day> - <integer-as-word>",
+    "line": 4587,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "<hour-of-day> - zero - <integer>",
+    "line": 4607,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "predicate",
+      "regex",
+      "regex",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "half to|till|before <hour-of-day>",
+    "line": 4629,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "half <integer> (UK style hour-of-day)",
+    "line": 4648,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "nth <day-of-week> of <month-or-greater>",
+    "line": 4666,
+    "builds": [
+      "NthDOWOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "dim",
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "the nth <day-of-week> of <month-or-greater>",
+    "line": 4694,
+    "builds": [
+      "NthDOWOfTime"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "dim",
+      "predicate",
+      "regex",
+      "dim"
+    ]
+  },
+  {
+    "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) of <named-month> (interval)",
+    "line": 4723,
+    "builds": [
+      "Interval",
+      "Composed"
+    ],
+    "mutates": [],
+    "items": [
+      "regex",
+      "predicate",
+      "predicate",
+      "regex",
+      "predicate"
+    ]
+  },
+  {
+    "name": "Mid-day",
+    "line": 4754,
+    "builds": [
+      "HourMinute"
+    ],
+    "mutates": [],
+    "items": [
+      "regex"
+    ]
+  }
+]

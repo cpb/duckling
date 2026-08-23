@@ -1,0 +1,48 @@
+# Everything this pipeline is pointed at. Change these to decompose a
+# different issue; nothing else here hardcodes the target.
+repo: cpb/duckling
+parent_issue: 163
+
+# The crate being ported. `crate_path` accepts a glob because the Cargo
+# registry embeds a hash in its directory name.
+crate:
+  name: duckling
+  version: "0.4.0"
+  path_glob: "~/.cargo/registry/src/index.crates.io-*/duckling-0.4.0"
+  locale: en
+
+# The corpus that acts as the oracle. Paths are relative to the repo root.
+corpus:
+  extracted: test/fixtures/wafer_corpus.json
+  local_glob: test/fixtures/wafer_corpus_local/*.json
+  # Until PR #255 merges, read them from its branch instead:
+  #   git show origin/claude/issue-157-tov9l0:test/fixtures/wafer_corpus.json
+  fallback_ref: origin/claude/issue-157-tov9l0
+
+# Labels the pipeline creates and assigns.
+labels:
+  umbrella: ruby-backend
+  waves: {A: wave-a, B: wave-b, C: wave-c}
+  spine: phase-0
+  fixture_capture: phase-1
+  reduce: phase-4
+  corpus: corpus
+  corpus_audit: corpus-audit
+  serial: pr-train
+  test_first: test-first
+  divergence: upstream-divergence
+
+# Which TimeForm variants belong to which wave. Wave A takes no TimeData
+# child, B takes one, C takes two or more — so this is a property of the
+# Rust enum, restated here because the pipeline needs it before it parses.
+waves:
+  A: [DayOfWeek, Month, DayOfMonth, Hour, HourMinute, HourMinuteSecond, Year,
+      Now, Today, Tomorrow, Yesterday, DayAfterTomorrow, DayBeforeYesterday,
+      RelativeGrain, DateMDY, PartOfDay, Weekend, Season, Holiday, GrainOffset,
+      NthGrain, Quarter, QuarterYear, AllGrain, RestOfGrain]
+  B: [BeginEnd, NthDOWOfTime, LastDOWOfTime, LastCycleOfTime, NDOWsFromTime,
+      NthGrainOfTime, NthLastDayOfTime, NthLastCycleOfTime, DurationAfter]
+  C: [Interval, Composed, NthClosestToTime]
+
+# Dependency dimensions ported alongside Wave A.
+dependency_dimensions: [numeral, duration, ordinal, time_grain]

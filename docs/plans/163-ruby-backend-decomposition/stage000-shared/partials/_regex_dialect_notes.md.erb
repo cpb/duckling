@@ -1,0 +1,8 @@
+## Regex dialect notes
+
+Handled per rule, ad hoc — decision 5 of #<%= parent %>.
+
+- `(?i)` is applied crate-wide by `pattern.rs`'s `regex()` helper, which prefixes every pattern. Apply the same blanket case-insensitivity; do not rely on per-pattern flags.
+- Rust `regex` has no backreferences and no lookaround; Onigmo has both, so translation is one-directional and mostly verbatim. Measured over all 276 EN rules: **276 translated to Ruby, 0 errors**, needing only `(?P<` → `(?<`.
+- `\b` semantics differ on non-ASCII input, and the crate leans on `\b` heavily.
+- Rust's leftmost-first alternation and Onigmo's backtracking order are not identical. A rule whose alternation branches overlap can match a different span — the likeliest source of a fixture row that fails on span rather than on value.

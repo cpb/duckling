@@ -40,9 +40,10 @@ If you notice this file describing a not-yet-built piece as current, or vice ver
 | `bin/` | Two kinds of scripts living side by side — see "bin/ scripts" below. Don't confuse the dev-workflow scripts (`worktree`, `check-worktree`, `claude-code-web-setup`, `lint`) with the gem's own build/test entrypoints (`setup`, `console`, `test`, `benchmark`, `benchmark-replay`). |
 | `benchmark/` | `benchmark-ips`-based suite exercising `Duckling.parse` (`parse_benchmark.rb`: ips + GC/allocation pressure + threaded-concurrency scenarios) and the environment-aware recording/reporting logic (`report.rb`: writes `docs/benchmarks/<environment>/<version>.json`, regenerates `docs/benchmarks/README.md`). `parse_benchmark.rb` tolerates `Duckling::Native` not existing (pre-issue-#64 implementations only defined `Duckling.parse` directly) by skipping the native-only scenarios — see `NATIVE_AVAILABLE` — since `bin/benchmark-replay` runs this harness against historical checkouts that may predate that split. Not part of what ships in the gem (excluded from packaging in `duckling.gemspec`) or of `task default:` (too slow/non-deterministic for every `bundle exec rake`). Run via `bin/benchmark` — see "Build and test commands" below. |
 | `docs/benchmarks/` | Per-environment, per-version benchmark history: `<environment>/<version>.json` raw results plus an auto-generated `README.md` (owned entirely by `DucklingBenchmark::Report.write_docs_readme!` — never hand-edited) with Mermaid charts comparing environments. `local` recordings are further bucketed by Ruby *minor* version (`local-3.3`, `local-3.4`, `local-4.0`, ...) since a dev machine's Ruby version drifts over a project's lifetime in a way CI runners' don't — see `Report.detect_environment`. Also holds `comparison-artifact-prompt.md`, a hand-maintained saved prompt (not auto-generated) for regenerating a richer interactive HTML cross-version comparison artifact than the README's latest-per-environment view supports — re-run it as new versions get recorded or `-rc` data changes. Committed to git but excluded from the packaged gem. Linked from the root `README.md`'s "Performance" section. |
+| `docs/plans/` | Issue-decomposition derivations: the scripts that computed a large issue's slicing, the data they produced, and the orchestration prompt that drives it. Committed because the numbers are load-bearing — they decide which slice owns which rule, and re-deriving them by hand is how two slices end up editing one file. Excluded from the packaged gem alongside `docs/benchmarks/`. `163-ruby-backend-decomposition/` is the first; its README states the findings, the method and its caveats. |
 | `Gemfile` | Bundler deps beyond the gemspec's. `tzinfo-data` is declared here rather than in `duckling.gemspec`, and conditionally: `DUCKLING_TZINFO_DATA` unset installs the current version, `none` omits it (so tzinfo falls back to the host's zoneinfo), and a `X.Y…`-shaped value pins that exact version. Anything else raises, rather than reaching the resolver as an unsatisfiable constraint. Pair non-default values with `BUNDLE_LOCKFILE` — see "The tz-database axis" below. |
 | `Brewfile` | Homebrew deps for local macOS dev: `rust` (bundles `cargo`/`rustc`/`rustfmt`/`clippy`), `hk` (see `hk.pkl` below — local-dev-only, not installed in CI or remote/web sessions), and `gh` (GitHub CLI, used by `benchmark:record_pr` to open PRs — needs `gh auth login` before that task can push/open a PR). `bin/setup` runs `brew bundle` against it, then `hk install`, when Homebrew is present. |
-| `duckling.gemspec` | Gem spec. Declares `spec.extensions = ["ext/duckling/extconf.rb"]` (the native-extension build entrypoint), depends on `rb_sys` + `tzinfo` (which backs `reference_zone:` — see "Public and internal APIs"; `tzinfo-data` is deliberately *not* a dependency, see "The tz-database axis") and dev-depends on `rake-compiler` + `benchmark-ips` — see the gemspec's `add_dependency`/`add_development_dependency` lines for the current version constraints. Packaged files come from `git ls-files`, excluding `bin/`, `Gemfile`, `.gitignore`, `.env.local.example`, `test/`, `.github/`, `.standard.yml`, `hk.pkl`, `benchmark/`, `docs/benchmarks/`, `cross_targets.rb`. |
+| `duckling.gemspec` | Gem spec. Declares `spec.extensions = ["ext/duckling/extconf.rb"]` (the native-extension build entrypoint), depends on `rb_sys` + `tzinfo` (which backs `reference_zone:` — see "Public and internal APIs"; `tzinfo-data` is deliberately *not* a dependency, see "The tz-database axis") and dev-depends on `rake-compiler` + `benchmark-ips` — see the gemspec's `add_dependency`/`add_development_dependency` lines for the current version constraints. Packaged files are an **allow-list** over `git ls-files`, not a reject-list: `lib/`, `ext/` and `docs/` (minus `docs/benchmarks/` and `docs/plans/`, both agent working material), plus a named handful of root files. Anything tracked and not named stays out — a reject-list is how `.claude/settings.json`, `AGENTS.md` and `CLAUDE.md` all shipped in 0.3.0–0.4.0. New files join the gem deliberately, by editing that list. |
 | `Rakefile` | `task default: %i[standard compile test]` — runs StandardRB lint, compiles the Rust extension, then Minitest. `test` also declares an explicit `compile` prerequisite (`Minitest::TestTask` has no built-in way to express one itself, and it must be a prerequisite rather than an extra `task :test do` block — rake *appends* actions, so a second block would run after the test subprocess had already exited), so `bundle exec rake test` run in isolation still compiles first — not just `bundle exec rake` via the `default` array's ordering. Loads `.env.local` via `Dotenv.load` at the top (no-ops if absent, e.g. in CI); also defines an opt-in `:dev` task (not part of `default`) that sets `RB_SYS_CARGO_PROFILE=dev` directly — use `bundle exec rake dev compile test` for a one-off dev-profile build without `.env.local` in place. Also defines `benchmark` / `benchmark:record` / `benchmark:record_pr` (all deliberately excluded from `task default:`) — see "Build and test commands" below for how they relate. |
 | `.env.local.example` | Tracked template for `.env.local` (gitignored) — sets `RB_SYS_CARGO_PROFILE=dev` so `bin/setup` (see below) makes the dev Cargo profile the local default. |
 | `.standard.yml` | StandardRB config — see its `ruby_version:` field for the Ruby version StandardRB targets. StandardRB wraps RuboCop internally; there is no separate `.rubocop.yml`. |
@@ -175,6 +176,36 @@ Two exceptions *are* part of the gem's own test tooling, both building a zoneinf
 - `bin/check-worktree` — PreToolUse hook that blocks `Edit`/`Write` when on the `main` branch, steering you toward `bin/worktree add <branch>` instead.
 - `bin/claude-code-web-setup` — PreToolUse hook for remote/web Claude Code sessions. Before each `Edit`/`Write`, just-in-time installs gems (`bundle install`) and compiles the native extension (`bundle exec rake compile`) — each step cached via receipt files in `tmp/claude-web-receipts/` so it's a no-op after the first call per session. Does not provision `hk`: `bin/lint` (see above) calls the underlying lint tools directly, so remote sessions never need `hk` installed — it's local-dev-only (see `hk.pkl`/`Brewfile` above). The gems/extension installers live in `bin/claude-web-deps.sh` (sourced, not directly executable); `bin/test` shares its `install_gems` installer (called unconditionally, any-args or no-args) since Bash tool calls don't trigger this Edit/Write-gated hook — `bin/test` no longer needs `compile_extension` itself, since `bundle exec rake test`'s compile prerequisite handles that.
 
+## Upstream divergences
+
+The wrapped crate is `wafer-inc/duckling`. When this repo's behaviour disagrees
+with what that crate's source says should happen — a corpus case the native
+backend answers differently than the Rust reads, a rule that never fires, a
+resolver branch that contradicts its own comment — **open an issue on this
+repo with the `upstream-divergence` label. Do not open an issue or a pull
+request against `wafer-inc/duckling`.**
+
+The reason is batching, not shyness. A divergence found mid-task is rarely
+understood yet: the finder usually cannot tell a genuine upstream bug from a
+misreading of unfamiliar Rust, and one root cause often surfaces in several
+places at once. A triaged batch makes a far better upstream report than a
+stream of individual guesses, and it costs the upstream maintainers far less.
+Whether any of it goes upstream at all is a separate decision, taken later,
+by a human.
+
+An `upstream-divergence` issue records:
+
+- the input that shows it, in a form that runs
+- what the crate's source says should happen, with the `file.rs:line` it comes from
+- what this gem actually does
+- whether anything in this repo currently depends on the divergent behaviour
+
+**Never silently pin divergent behaviour as expected.** A test that records
+what the code does today, with no note that it contradicts the source, converts
+an upstream bug into a required behaviour of this gem. That matters most for
+the corpus fixtures, which are the specification a reimplementation is written
+against — see `docs/plans/163-ruby-backend-decomposition/`.
+
 ## Code comment conventions
 
 Inline comments are kept to the bare minimum. Anything longer than a line or
@@ -203,6 +234,7 @@ part of that PR** (don't leave it for someone else):
 - Build/test commands (`bin/test`, `bin/lint`, `Rakefile` tasks)
 - The Rust/Magnus wiring (`Cargo.toml`, `extconf.rb`, CI Rust toolchain setup, cross-compilation config) — keep the "Rust/Magnus wiring" section in sync with the actual, verified file contents
 - The release process (`Rakefile` `release` task, `.github/workflows/release.yml`, `.github/workflows/cross-gem.yml`, `.github/workflows/benchmark.yml`) — keep "Gem release conventions" above in sync with the actual, verified workflow behavior
+- The upstream-divergence rule above, or the `upstream-divergence` label's meaning
 - Version numbers for tools/crates/gems — these belong in their own config files (`duckling.gemspec`, `ext/duckling/Cargo.toml`/`Cargo.lock`, `.standard.yml`, `hk.pkl`, CI workflow matrices), not here. If you need to reference a version, point to the file/field that holds it rather than copying the number, so this doc can't go stale when Dependabot or a manual bump changes it.
 
 If you're an agent and notice this file is out of date with what you just

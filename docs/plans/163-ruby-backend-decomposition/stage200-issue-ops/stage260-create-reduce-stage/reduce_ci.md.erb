@@ -1,0 +1,25 @@
+Parent: #<%= parent %> · **Phase 4 — reduce.** Blocked by all of Phase 2.
+
+## Scope
+
+Wire both backends into CI, running the full <%= locale.upcase %> corpus against each.
+
+The differential **is** the oracle (decision 1 of #<%= parent %>) — that only holds if both backends actually run on every PR. A Ruby backend that runs only when someone remembers stops being a check on the native one within a release.
+
+## Definition of done
+
+- [ ] The corpus runs against the native backend and the Ruby backend in one suite
+- [ ] #157's 1,034 EN time cases pass on the Ruby backend, with the same matcher semantics: `.any` over entities, 0.01 float tolerance, wall-clock component comparison, the corpus reference contexts (2013-02-12 04:30 −02:00 default; Saturday 2013-02-09 10:00; Friday-evening 2013-02-08 20:00)
+- [ ] The dependency-dimension cases pass on the Ruby backend: numeral 105, duration 83, ordinal 32
+- [ ] Both backends run in CI — see AGENTS.md's `.github/workflows/main.yml` section for which job gates a merge (`baseline`, hardcoded `name: "Ruby 3.3.6"`) versus which gate a release
+- [ ] **The Ruby backend leg proves the no-Rust claim**: at least one CI leg loads and parses on the Ruby backend with no native extension built
+- [ ] Runtime accounted for — the corpus is ~1,700 short-string parses per backend
+- [ ] AGENTS.md updated in the same PR (its "Keeping this file current" section makes this mandatory for CI and directory-layout changes)
+
+## This absorbs what used to be Phase 3's differential
+
+The gap audit now runs *before* the port (#<%= audit_parent_issue %>), so by the time Phase 2 finishes, the corpus already contains the cases that swarm would have added afterwards. There is no second swarm.
+
+What remains of the differential is exactly this issue: run the grown corpus against both backends and require both to pass. A slice that mis-ported something the audit added fails here, on a case that already existed when it was written — which makes the failure a straightforward bug rather than a discovery.
+
+Note the corpus this runs is **not** #255's <%= corpus_size %> cases. It is that plus the corpus stage's additions, so size the CI budget against the grown fixture.
