@@ -1,0 +1,28 @@
+Parent: #<%= parent %> · **Corpus stage.** Blocked by #<%= glob_split_issue %>. Runs in parallel with the other corpus tickets.
+
+## What this is
+
+Of the 276 EN rules in <%= crate_name %> <%= crate_version %>, **<%= rules.size %> have no corpus text matching their pattern at all** — not a thin branch, the whole rule. These are shipped, reachable rules with zero coverage in #255.
+
+| Rule | Dim | en.rs | Pattern |
+|---|---|---|---|
+<% rules.each do |rule| -%>
+| `<%= cell(rule[:name]) %>` | <%= rule[:dimension] %> | <%= rule[:line] %> | <%= rule[:patterns].map { |p| "`#{cell(p[:pattern])}`" }.join("<br>") %> |
+<% end %>
+## Worth noting about several of these
+
+- **`fortnight`, `quarter of an hour`, `three-quarters of an hour`** — three duration rules with no coverage whatsoever. `duration` is a Wave A dependency slice that most of Wave B consumes.
+- **`date MM DD YYYY` and `date DD MM YYYY`** share one pattern and disambiguate by locale convention. Untested, that ambiguity is invisible to a porting agent — and getting it backwards silently swaps months and days.
+- **`iso8601 datetime with T separator`** is an explicit en-extension over upstream, and nothing exercises it.
+- **`half to|till|before <hour-of-day>`** — the whole "half to five" construction.
+
+## Definition of done
+
+- [ ] At least one corpus case per rule above, in `test/fixtures/wafer_corpus_local/` (never a single shared file)
+- [ ] For `date MM DD YYYY` versus `date DD MM YYYY`, cases that actually **discriminate** the two — a date where the readings differ, not one where they coincide
+- [ ] Every expectation captured from the native backend and verified by hand
+- [ ] A rule that turns out to be genuinely unreachable is recorded as such with the reason, rather than left silently uncovered
+- [ ] Anything behaving unexpectedly gets an `<%= divergence_label %>` issue on this repo
+- [ ] `rake corpus:generate` clean, staleness test passing, full suite green
+
+<%= partial "upstream_divergence" %>

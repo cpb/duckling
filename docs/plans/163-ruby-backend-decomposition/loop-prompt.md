@@ -80,7 +80,7 @@ what is ready, dispatch it, advance what is in flight, and open the next gate.
 
 ## If you sub-split a slice
 
-#171 (HourMinute, 26 rules), #201 (Interval, 27), #202 (Composed, 34) and #185
+#171 (HourMinute, 27 rules), #201 (Interval, 27), #202 (Composed, 34) and #185
 (Holiday) each carry a suggested sub-split, and their agents may act on it. If
 a slice is split, the child issues MUST carry the same wave label and be linked
 as sub-issues of #163. The gates are label-emptiness checks — an unlabelled

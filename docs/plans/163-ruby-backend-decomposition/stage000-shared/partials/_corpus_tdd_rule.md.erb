@@ -1,0 +1,7 @@
+## Do not read the Rust rule implementations
+
+Decision 2 of #<%= parent %>: this is **corpus-TDD, not transcription**. You write Ruby from the fixture rows, not by copying a production closure out of the crate.
+
+A separate agent already read the Rust for this slice during the corpus audit and turned everything it found into corpus cases. Reading it again here collapses two independent readings into one, and a misread then produces a green test.
+
+Pattern strings are the exception: they are data, and PR #162 extracted all 3,418 of them to `docs/spike/duckling_patterns.json`. Take them from there.

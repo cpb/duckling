@@ -1,0 +1,38 @@
+Parent: #<%= parent %> · Phase 2 · Wave A · slice **`Modifiers`**
+
+**Wave A — cross-cutting, no variant of its own.** Fully parallel with every other Wave A slice and with the four dependency-dimension slices. These rules run *after* a `TimeData` exists, but they need no resolver, so they carry no wave dependency.
+
+Blocked by #<%= spine_issue %> (base classes, fixture format) and #<%= fixture_capture_issue %> (your fixture file).
+
+## Scope — a slice #<%= parent %> does not name
+
+**#<%= parent %>'s slicing plan has 37 `TimeForm` variants and 221 EN rules, but <%= slice.rules.size %> of those rules construct no `TimeForm` at all.** They clone an existing `TimeData` and mutate its attribute fields. They have no variant to be sliced by, so without this issue they would be orphaned — every one of the 37 variant slices would either skip them or all reach for them at once.
+
+These rules own the `TimeData` attribute fields rather than the `form` field:
+
+| Attribute | What sets it |
+|---|---|
+| `latent` | almost every rule here — promoting a latent token to a real one |
+| `early_late` | `late/early/mid <time>`, `part of <named-month>` |
+| `open_interval_direction` | `until <time>`, `from\|since\|after <time>`, `after <part-of-day>` |
+| `timezone` | `<time> timezone`, `<time> (timezone)` |
+| `direction` | `this past weekend`, `last <time>`, `next <time>`, `<time> before last\|after next` |
+
+Those fields are declared on `TimeData` in `src/dimensions/time/mod.rs` and are therefore **#<%= spine_issue %> output** — this slice mutates them, it does not define them. A missing field is a spine follow-up, not an edit here.
+
+## Rules you own (<%= slice.rules.size %>)
+
+| Rust rule name | fields it mutates |
+|---|---|
+<% slice.rules.each do |rule| -%>
+| `<%= cell(rule.name) %>` | <%= rule.mutates.empty? ? "—" : rule.mutates.map { |m| "`#{m}`" }.join(", ") %> |
+<% end %>
+<%= partial "files_you_own", resolver: false, dimension: false, slug: slice.slug %>
+## Definition of done
+
+- [ ] Every fixture row in `test/fixtures/ruby_backend/<%= slice.slug %>.json` passes on the Ruby backend
+- [ ] The full suite is green on the **native** backend
+- [ ] No file outside those listed above is modified
+
+<%= partial "corpus_tdd_rule" %>
+<%= partial "regex_dialect_notes" %>

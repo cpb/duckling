@@ -1,0 +1,7 @@
+## Upstream divergences stay on this repo
+
+When the native backend disagrees with what the Rust source says, **open an issue here with the `<%= divergence_label %>` label.** Do not open anything against wafer-inc/duckling.
+
+We accumulate these rather than filing them one at a time: a divergence found mid-task is rarely fully understood yet, the same root cause often surfaces in several slices, and a batch that has been triaged makes a far better upstream report than a stream of individual guesses. Whether any of it ever goes upstream is a separate decision, taken later, by a human.
+
+Each such issue carries the corpus case, what the Rust says should happen, what the native backend actually does, and the `en.rs`/`mod.rs` lines it comes from. See "Upstream divergences" in AGENTS.md.

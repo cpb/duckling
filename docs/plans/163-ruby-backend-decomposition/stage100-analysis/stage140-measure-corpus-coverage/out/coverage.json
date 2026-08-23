@@ -1,0 +1,5368 @@
+[
+  {
+    "dimension": "time",
+    "name": "this|next <day-of-week>",
+    "line": 171,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(mondays?|tuesdays?|wednesdays?|thursdays?|fridays?|saturdays?|sundays?|mon|tue|wed|thu|fri|sat|sun)\\b\\.?",
+        "hits": 136,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "month name",
+    "line": 199,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\\b\\.?",
+        "hits": 125,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "now",
+    "line": 238,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(now|((just|right)\\s*)now|immediately|at the moment|atm)\\b",
+        "hits": 16,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "as soon as possible",
+    "line": 243,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(asap|as soon as possible)\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "today",
+    "line": 255,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\btodays?|(at this time)\\b",
+        "hits": 9,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "tomorrow",
+    "line": 260,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(tmrw?|tomm?or?rows?)\\b",
+        "hits": 23,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "yesterday",
+    "line": 265,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\byesterdays?\\b",
+        "hits": 5,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "day after tomorrow",
+    "line": 273,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(the )?day after tomorrow\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "day before yesterday",
+    "line": 280,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(the )?day before yesterday\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "noon|midnight|EOD|end of day",
+    "line": 290,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(noon|(the )?midday|mid day)\\b",
+        "hits": 10,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "midnight",
+    "line": 297,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bmidnight\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "morning (latent)",
+    "line": 307,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(early ((in|hours of) the )?morning|morning)\\b",
+        "hits": 20,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "afternoon (latent)",
+    "line": 322,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bafternoon(ish)?\\b",
+        "hits": 14,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "evening (latent)",
+    "line": 331,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bevening\\b",
+        "hits": 14,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "night (latent)",
+    "line": 340,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bnight\\b",
+        "hits": 5,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "lunch (latent)",
+    "line": 349,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\blunch\\b",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "tonight",
+    "line": 361,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(tonight|tonite)\\b",
+        "hits": 10,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "this <part-of-day>",
+    "line": 374,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(this|today)\\b",
+        "hits": 55,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "in|during the <part-of-day>",
+    "line": 386,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin the\\b",
+        "hits": 17,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "last night",
+    "line": 397,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(last|yesterday)\\b",
+        "hits": 68,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "tomorrow <part-of-day>",
+    "line": 409,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\btomorrow\\b",
+        "hits": 22,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "late/early/mid <time>",
+    "line": 421,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(late|early|mid)\\b[\\s-]?",
+        "hits": 11,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "week-end",
+    "line": 443,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bweek[\\s-]?ends?\\b",
+        "hits": 13,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "this past weekend",
+    "line": 449,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bthis past\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "season word",
+    "line": 462,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(spring|summer|fall|autumn|winter)\\b",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "last|this|next <season>",
+    "line": 482,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(this|current|next|last|past|previous)\\s+seasons?\\b",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "hh:mm",
+    "line": 505,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})[:\\.](\\d{2})\\b",
+        "hits": 47,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "hh:mm:ss",
+    "line": 527,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})[:\\.](\\d{2})[:\\.](\\d{2})\\b",
+        "hits": 5,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "hhhmm",
+    "line": 548,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})h(\\d{2})?\\b",
+        "hits": 41,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "hhmm (latent)",
+    "line": 578,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b([01]\\d|2[0-3])([0-5]\\d)\\b",
+        "hits": 218,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "time HMM-ish",
+    "line": 600,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b((?:[01]?\\d)|(?:2[0-3]))([0-5]\\d)\\s?(?:ish|approximately|roughly)\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "HH:MM:SS ampm",
+    "line": 625,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})[:\\.](\\d{2})[:\\.](\\d{2})\\s?([ap])\\.?(\\s?m\\.?)?",
+        "hits": 4,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "HH:MM ampm",
+    "line": 656,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})[:\\.](\\d{2})\\s?([ap])\\.?(\\s?m\\.?)?",
+        "hits": 37,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "H ampm",
+    "line": 684,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})\\s?([ap])\\.?\\s?m\\.?",
+        "hits": 91,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "H a/p (latent)",
+    "line": 709,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})([ap])\\b",
+        "hits": 9,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "hhmm (military) am|pm",
+    "line": 736,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b([1-9])([0-5]\\d)\\s?([ap])\\.?(\\s?m\\.?)?",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "HMM in the <pod>",
+    "line": 764,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b([1-9])([0-5]\\d)\\s+in the (morning|afternoon|evening)",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "time-of-day (latent)",
+    "line": 790,
+    "items": [
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<time-of-day> am|pm",
+    "line": 812,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)",
+        "hits": 38,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time> a/p suffix",
+    "line": 829,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "([ap])\\.?(?:\\b|\\s|$)",
+        "hits": 97,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time> <part-of-day>",
+    "line": 852,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin (the )?(morning|afternoon|evening)\\b",
+        "hits": 14,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time> in the AM/PM",
+    "line": 892,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin the (am|pm)\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time-of-day> o'clock",
+    "line": 908,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\\d{1,2})\\s+o[' ]?clock\\b",
+        "hits": 4,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "at <time-of-day>",
+    "line": 940,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "(\\bat\\b|@)",
+        "hits": 109,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "on <day>",
+    "line": 953,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(on|during)\\b",
+        "hits": 17,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "on a <named-day>",
+    "line": 963,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bon a\\b",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "in|during <named-month>|year",
+    "line": 974,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(in|during)\\b",
+        "hits": 92,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "around <time>",
+    "line": 997,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(around|about|approximately|roughly)\\b",
+        "hits": 12,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time> approximately",
+    "line": 1011,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(approximately|roughly|ish)\\b",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "in|within|after <duration>",
+    "line": 1025,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin\\b",
+        "hits": 91,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "in <number> (implicit minutes)",
+    "line": 1040,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin\\b",
+        "hits": 91,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<duration> hence|ago",
+    "line": 1051,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(hence|ago)\\b",
+        "hits": 22,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<duration> from right now",
+    "line": 1078,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfrom right now\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<duration> from today",
+    "line": 1096,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfrom today\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<duration> from now",
+    "line": 1114,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfrom now\\b",
+        "hits": 10,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<duration> back",
+    "line": 1128,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bback\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "after <duration>",
+    "line": 1143,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bafter\\b",
+        "hits": 14,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "within <duration>",
+    "line": 1160,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bwithin\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "date MM/DD(/YYYY)",
+    "line": 1183,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})\\s?[/\\-]\\s?(\\d{1,2})(?:\\s?[/\\-]\\s?(\\d{2,4}))?\\b",
+        "hits": 34,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "date DD/MM(/YY)",
+    "line": 1220,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})\\s?[/\\-]\\s?(\\d{1,2})(?:\\s?[/\\-]\\s?(\\d{2,4}))?\\b",
+        "hits": 34,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "date MM DD YYYY",
+    "line": 1256,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})\\s+(\\d{1,2})\\s+(\\d{2,4})\\b",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "date DD MM YYYY",
+    "line": 1282,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})\\s+(\\d{1,2})\\s+(\\d{2,4})\\b",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "mm/yyyy",
+    "line": 1308,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})\\s?/\\s?(\\d{4})\\b",
+        "hits": 4,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "iso8601 datetime with T separator (en extension)",
+    "line": 1332,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{4})-(0?[1-9]|1[0-2])-(3[01]|[12]\\d|0?[1-9])[Tt]([01]?\\d|2[0-3]):([0-5]\\d)(?::([0-5]\\d))?(?:\\.\\d+)?([Zz])\\b",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "yyyy-mm-dd",
+    "line": 1377,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{4})\\s?[/\\-]\\s?(\\d{1,2})(?:\\s?[/\\-]\\s?(\\d{1,2}))?\\b",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "yyyy-mm",
+    "line": 1415,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{4})\\s?[/\\-]\\s?(\\d{1,2})\\b",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "date DD.MM.YYYY",
+    "line": 1435,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "date DD/Mon/YYYY",
+    "line": 1465,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})\\s?[/\\-]\\s?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\\s?[/\\-]\\s?(\\d{2,4})\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "year (latent)",
+    "line": 1501,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(1\\d{3}|20\\d{2})\\b",
+        "hits": 237,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "spelled-out year (numeral)",
+    "line": 1515,
+    "items": [
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "in <year>",
+    "line": 1525,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin\\b",
+        "hits": 91,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<year> (bc|ad)",
+    "line": 1541,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(a\\.?d\\.?|b\\.?c\\.?)\\b",
+        "hits": 5,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "in <integer> AD",
+    "line": 1562,
+    "items": [
+      "regex",
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin\\b",
+        "hits": 91,
+        "error": null
+      },
+      {
+        "pattern": "\\b(a\\.?d\\.?|b\\.?c\\.?)\\b",
+        "hits": 5,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<month> <year>",
+    "line": 1582,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "last <time>",
+    "line": 1604,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(this past|last|past|previous)\\b",
+        "hits": 100,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "next <time>",
+    "line": 1619,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(next|following|upcoming|coming)\\b",
+        "hits": 109,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "this <time>",
+    "line": 1635,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(this|current|coming)\\b",
+        "hits": 61,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time> before last|after next",
+    "line": 1650,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bafter next\\b",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "first|second|third|fourth|fifth <day-of-week> of <time>",
+    "line": 1667,
+    "items": [
+      "dim",
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bof|in\\b",
+        "hits": 241,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "last <day-of-week> of <time>",
+    "line": 1698,
+    "items": [
+      "regex",
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\blast\\b",
+        "hits": 63,
+        "error": null
+      },
+      {
+        "pattern": "\\bof|in\\b",
+        "hits": 241,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "last <cycle> of <time>",
+    "line": 1724,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\blast\\b",
+        "hits": 63,
+        "error": null
+      },
+      {
+        "pattern": "\\bof|in\\b",
+        "hits": 241,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <ordinal> last <cycle> of <time>",
+    "line": 1746,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(the\\s+)?",
+        "hits": 1040,
+        "error": null
+      },
+      {
+        "pattern": "\\blast\\b",
+        "hits": 63,
+        "error": null
+      },
+      {
+        "pattern": "\\bof|in|from\\b",
+        "hits": 403,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "last weekend of <named-month>",
+    "line": 1776,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\blast\\s+(week[\\s-]?end|wkend)\\s+(of|in)\\b",
+        "hits": 5,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<integer> <day-of-week> from <time>",
+    "line": 1792,
+    "items": [
+      "predicate",
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfrom\\b",
+        "hits": 48,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<integer> <named-day> ago|back",
+    "line": 1820,
+    "items": [
+      "predicate",
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(ago|back)\\b",
+        "hits": 13,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "nth <time> after <time>",
+    "line": 1846,
+    "items": [
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bafter\\b",
+        "hits": 14,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the closest <day> to <time>",
+    "line": 1874,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(the\\s+)?closest\\b",
+        "hits": 5,
+        "error": null
+      },
+      {
+        "pattern": "\\bto\\b",
+        "hits": 37,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <ordinal> closest <day> to <time>",
+    "line": 1893,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(the\\s+)?",
+        "hits": 1040,
+        "error": null
+      },
+      {
+        "pattern": "\\bclosest\\b",
+        "hits": 5,
+        "error": null
+      },
+      {
+        "pattern": "\\bto\\b",
+        "hits": 37,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <ordinal> <cycle> of <time>",
+    "line": 1918,
+    "items": [
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bof|in\\b",
+        "hits": 241,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "last day of <time>",
+    "line": 1944,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(last day|last day) of\\b",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "(the) <ordinal> last day of <time>",
+    "line": 1958,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(the\\s+)?",
+        "hits": 1040,
+        "error": null
+      },
+      {
+        "pattern": "\\blast day of\\b",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<ordinal> day of <time>",
+    "line": 1979,
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bday of\\b",
+        "hits": 8,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "this|last|next <cycle>",
+    "line": 2003,
+    "items": [
+      "regex",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(this|current|coming|next|the( following)?|last|past|previous|upcoming)\\b",
+        "hits": 355,
+        "error": null
+      },
+      {
+        "pattern": "\\b(week|month|year|yr|quarter|qtr)\\b",
+        "hits": 173,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the week of <time>",
+    "line": 2030,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(the )?week of\\b",
+        "hits": 9,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <cycle> of the <time grain>",
+    "line": 2043,
+    "items": [
+      "regex",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bthe\\b",
+        "hits": 124,
+        "error": null
+      },
+      {
+        "pattern": "\\b(week|month|year|yr|quarter|qtr)\\b",
+        "hits": 173,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "last <integer> <grain>",
+    "line": 2064,
+    "items": [
+      "regex",
+      "predicate",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(last|past)\\b",
+        "hits": 93,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "next <integer> <grain>",
+    "line": 2085,
+    "items": [
+      "regex",
+      "predicate",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(next)\\b",
+        "hits": 58,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "upcoming <integer> <cycle>",
+    "line": 2107,
+    "items": [
+      "regex",
+      "predicate",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(upcoming)\\b",
+        "hits": 41,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<integer> upcoming <grain>",
+    "line": 2129,
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(upcoming)\\b",
+        "hits": 41,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <day-of-month> (ordinal or number) of <named-month>",
+    "line": 2153,
+    "items": [
+      "dim",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(of )?\\b",
+        "hits": 1040,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<named-month>|<named-day> <day-of-month> (ordinal)",
+    "line": 2179,
+    "items": [
+      "predicate",
+      "dim"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<named-month> <day-of-month> (non ordinal)",
+    "line": 2201,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<dow> <month> <day>",
+    "line": 2220,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": ",?\\s*",
+        "hits": 1040,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <day-of-month> (number)",
+    "line": 2258,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(of )\\b",
+        "hits": 151,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<integer> <month>",
+    "line": 2279,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<ordinal> <month>",
+    "line": 2297,
+    "items": [
+      "dim",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<ordinal> <month> <short-year>",
+    "line": 2322,
+    "items": [
+      "predicate",
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "the ides of <named-month>",
+    "line": 2365,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(the )?ides of\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<day-of-month> (ordinal)",
+    "line": 2388,
+    "items": [
+      "dim"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<numeral> of <grain-offset-month>",
+    "line": 2404,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(of|day of)( the)?\\b",
+        "hits": 152,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <day-of-month> (ordinal)",
+    "line": 2433,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(the|on the)\\b",
+        "hits": 124,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "on the <ordinal-word>",
+    "line": 2449,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bon (the )?\\b",
+        "hits": 16,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<date> <year>",
+    "line": 2465,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<ordinal> quarter",
+    "line": 2493,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(quarter|qtr)\\b",
+        "hits": 28,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <ordinal> quarter",
+    "line": 2509,
+    "items": [
+      "regex",
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bthe\\b",
+        "hits": 124,
+        "error": null
+      },
+      {
+        "pattern": "\\b(quarter|qtr)\\b",
+        "hits": 28,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<ordinal> quarter <year>",
+    "line": 2529,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<quarter> of <year>",
+    "line": 2560,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bof\\b",
+        "hits": 152,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "yyyyqq",
+    "line": 2592,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{2,4})q([1-4])\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "week",
+    "line": 2612,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\ball (week|month|year)\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "rest of the week",
+    "line": 2624,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\brest of (the )?(week|month|year)\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "beginning of <grain>",
+    "line": 2639,
+    "items": [
+      "regex",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(beginning|start) of( the| this| current)?\\b",
+        "hits": 27,
+        "error": null
+      },
+      {
+        "pattern": "\\b(week|month|year)\\b",
+        "hits": 142,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "end of <grain>",
+    "line": 2657,
+    "items": [
+      "regex",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(end) of( the| this| current)?\\b",
+        "hits": 39,
+        "error": null
+      },
+      {
+        "pattern": "\\b(week|month|year)\\b",
+        "hits": 142,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "beginning of <modifier> <grain>",
+    "line": 2676,
+    "items": [
+      "regex",
+      "regex",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(at the )?(beginning|start) of( the| around)?\\b",
+        "hits": 27,
+        "error": null
+      },
+      {
+        "pattern": "\\b(next|last|past|previous|coming|following)\\b",
+        "hits": 168,
+        "error": null
+      },
+      {
+        "pattern": "\\b(week|month|year)\\b",
+        "hits": 142,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "end of <modifier> <grain>",
+    "line": 2700,
+    "items": [
+      "regex",
+      "regex",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(at the )?(end) of( the| around)?\\b",
+        "hits": 39,
+        "error": null
+      },
+      {
+        "pattern": "\\b(next|last|past|previous|coming|following)\\b",
+        "hits": 168,
+        "error": null
+      },
+      {
+        "pattern": "\\b(week|month|year)\\b",
+        "hits": 142,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "beginning of <time>",
+    "line": 2725,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(beginning|start|end) of( the| this)?\\b",
+        "hits": 66,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "EOM/BOM/EOY/BOY/EOD",
+    "line": 2750,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(by (the )?|(at )?the )?(eom|bom|eoy|boy|eod)\\b",
+        "hits": 17,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "end/beginning of the day/month/year",
+    "line": 2822,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(beginning|end) of (the )?(day|month|year)\\b",
+        "hits": 20,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the beginning/end of the day/year",
+    "line": 2840,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bthe (beginning|end) of (the )?(day|month|year)\\b",
+        "hits": 11,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "by <time>",
+    "line": 2858,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bby( the)?\\b",
+        "hits": 19,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "until <time>",
+    "line": 2873,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(until|through|before|since|after|from|anytime after|sometimes before)\\b",
+        "hits": 75,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "from|since|after <time>",
+    "line": 2905,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(from|since|after|anytime after)\\b",
+        "hits": 64,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "after <part-of-day>",
+    "line": 2922,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(after|before)\\b",
+        "hits": 20,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "after lunch/work/school",
+    "line": 2942,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bafter[\\s-]?(lunch|work|school)\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "holidays",
+    "line": 2969,
+    "items": [
+      "regex"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<holiday> <year>",
+    "line": 2984,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<holiday> in <year>",
+    "line": 3016,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin\\b",
+        "hits": 91,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<duration> after <time>",
+    "line": 3050,
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(after|from)\\b",
+        "hits": 62,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<latent-time> <time> compose",
+    "line": 3073,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "intersect",
+    "line": 3091,
+    "items": [
+      "dim",
+      "dim"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\", \\\"'s\\\"",
+    "line": 3120,
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(of|from|for)\\b( the)?|'s( the)?|,",
+        "hits": 233,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<datetime> - <datetime> (interval)",
+    "line": 3143,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\s*[\\-\\u{2013}]\\s*",
+        "hits": 66,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time-of-day> - <time-of-day> (interval)",
+    "line": 3178,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\s*[\\-\\u{2013}]\\s*|:|\\bto\\b|\\bth?ru\\b|\\bthrough\\b|\\b(un)?til(l)?\\b",
+        "hits": 157,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "hh(:mm) - <time-of-day> am|pm",
+    "line": 3203,
+    "items": [
+      "regex",
+      "regex",
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(?:from )?((?:[01]?\\d)|(?:2[0-3]))(?:[:.]([0-5]\\d))?",
+        "hits": 624,
+        "error": null
+      },
+      {
+        "pattern": "\\s*[\\-\\u{2013}]\\s*|\\bto\\b|\\bth?ru\\b|\\bthrough\\b|\\b(un)?til(l)?\\b",
+        "hits": 112,
+        "error": null
+      },
+      {
+        "pattern": "(?:in the )?([ap])(?:\\s|\\.)?m?\\.?",
+        "hits": 792,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "dd-dd <month> (interval)",
+    "line": 3249,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\-|to( the)?|th?ru|through|(un)?til(l)?",
+        "hits": 166,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<month> dd-dd (interval)",
+    "line": 3283,
+    "items": [
+      "predicate",
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\-|to( the)?|th?ru|through|(un)?til(l)?",
+        "hits": 166,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) <named-month> (interval)",
+    "line": 3316,
+    "items": [
+      "regex",
+      "predicate",
+      "regex",
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfrom( the)?\\b",
+        "hits": 48,
+        "error": null
+      },
+      {
+        "pattern": "\\-|to( the)?|th?ru|through|(un)?til(l)?",
+        "hits": 166,
+        "error": null
+      },
+      {
+        "pattern": "\\b(of )?\\b",
+        "hits": 1040,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "from <month> dd-dd (interval)",
+    "line": 3352,
+    "items": [
+      "regex",
+      "predicate",
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfrom\\b",
+        "hits": 48,
+        "error": null
+      },
+      {
+        "pattern": "\\-|to( the)?|th?ru|through|(un)?til(l)?",
+        "hits": 166,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "later than <tod> before <tod>",
+    "line": 3386,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(later than|from|(in[\\s\\-])?between)\\b",
+        "hits": 54,
+        "error": null
+      },
+      {
+        "pattern": "((but )?before)|\\-|to|th?ru|through|(un)?til(l)?",
+        "hits": 172,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "from <datetime> - <datetime> (interval)",
+    "line": 3405,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(from|between)\\b",
+        "hits": 52,
+        "error": null
+      },
+      {
+        "pattern": "\\-|to|till|until|and|thru|through",
+        "hits": 176,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "between <time> and <time>",
+    "line": 3424,
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(to|till|until|thru|through)\\b",
+        "hits": 44,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "from <time> for <duration>",
+    "line": 3443,
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfor\\b",
+        "hits": 13,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "for <duration> from <time>",
+    "line": 3469,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfor\\b",
+        "hits": 13,
+        "error": null
+      },
+      {
+        "pattern": "\\b(from|starting|starting from|beginning|after)\\b",
+        "hits": 89,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time> for <duration>",
+    "line": 3496,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(from|starting|starting from|beginning|after)\\b",
+        "hits": 89,
+        "error": null
+      },
+      {
+        "pattern": "\\bfor\\b",
+        "hits": 13,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "half after|past <hour-of-day>",
+    "line": 3525,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bhalf (past|after)?\\b",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "quarter after|past <hour-of-day>",
+    "line": 3538,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(a )?quarter (past|after)\\b",
+        "hits": 10,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "quarter to|till|before <hour-of-day>",
+    "line": 3554,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(a )?quarter (to|before|of)\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "integer after|past <hour-of-day>",
+    "line": 3574,
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(minutes? )?(past|after|from)\\b",
+        "hits": 92,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<integer> to <time>",
+    "line": 3596,
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(minutes? )?(to|before|of|til)\\b",
+        "hits": 183,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time:hour> <integer:minute>",
+    "line": 3619,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "ISO interval",
+    "line": 3647,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{4})-(\\d{2})-(\\d{2})\\s+(\\d{2}):(\\d{2}):(\\d{2})\\s*/\\s*(\\d{4})-(\\d{2})-(\\d{2})\\s+(\\d{2}):(\\d{2}):(\\d{2})\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "digit<month> (no space)",
+    "line": 3698,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(\\d{1,2})(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\\b",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time> timezone",
+    "line": 3723,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(?i)\\b(cet|cest|gmt|utc|est|edt|cst|cdt|mst|mdt|pst|pdt|eet|eest|wet|west|bst|ist|jst|kst|hkt|sgt|aest|aedt|acst|acdt|awst|nzst|nzdt)\\b",
+        "hits": 26,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time> (timezone)",
+    "line": 3744,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\((cet|cest|gmt|utc|est|edt|cst|cdt|mst|mdt|pst|pdt|eet|eest|wet|west|bst|ist|jst|kst|hkt|sgt|aest|aedt|acst|acdt|awst|nzst|nzdt)\\)",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<time> - <time> timezone",
+    "line": 3766,
+    "items": [
+      "dim",
+      "regex",
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\s*[\\-\\u{2013}]\\s*|to|th?ru|through|(un)?til(l)?",
+        "hits": 166,
+        "error": null
+      },
+      {
+        "pattern": "\\b(cet|cest|gmt|utc|est|edt|cst|cdt|mst|mdt|pst|pdt|eet|eest|wet|west|bst|ist|jst|kst|hkt|sgt|aest|aedt|acst|acdt|awst|nzst|nzdt)\\b",
+        "hits": 26,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<datetime>/<datetime> (interval)",
+    "line": 3795,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\s*/\\s*",
+        "hits": 23,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<datetime> - <datetime> (interval) timezone",
+    "line": 3812,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\s*[\\-\\u{2013}]\\s*|to|th?ru|through|(un)?til(l)?",
+        "hits": 166,
+        "error": null
+      },
+      {
+        "pattern": "\\b(cet|cest|gmt|utc|est|edt|cst|cdt|mst|mdt|pst|pdt|eet|eest|wet|west|bst|ist|jst|kst|hkt|sgt|aest|aedt|acst|acdt|awst|nzst|nzdt)\\b",
+        "hits": 26,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<year> (latent) - <year> (latent) (interval)",
+    "line": 3838,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\s*[\\-\\u{2013}]\\s*",
+        "hits": 66,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<day-of-month> (ordinal or number) of <named-month>",
+    "line": 3856,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bof\\b",
+        "hits": 152,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<day-of-month> (ordinal or number) <named-month>",
+    "line": 3872,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<day-of-month>(ordinal or number)/<named-month>/year",
+    "line": 3887,
+    "items": [
+      "predicate",
+      "predicate",
+      "dim"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<day-of-month>(ordinal) <named-month> year",
+    "line": 3913,
+    "items": [
+      "dim",
+      "predicate",
+      "dim"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<cycle> after|before <time>",
+    "line": 3939,
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(after|before)\\b",
+        "hits": 20,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<ordinal> <cycle> of <time>",
+    "line": 3963,
+    "items": [
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bof|in\\b",
+        "hits": 241,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<ordinal> last <cycle> of <time>",
+    "line": 3979,
+    "items": [
+      "dim",
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\blast\\b",
+        "hits": 63,
+        "error": null
+      },
+      {
+        "pattern": "\\bof|in|from\\b",
+        "hits": 403,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<integer> upcoming <cycle>",
+    "line": 3995,
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bupcoming\\b",
+        "hits": 41,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<duration> after|before|from|past <time>",
+    "line": 4007,
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(after|before|from|past)\\b",
+        "hits": 98,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<day> <duration> hence|ago",
+    "line": 4030,
+    "items": [
+      "predicate",
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(hence|ago)\\b",
+        "hits": 22,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<day> in <duration>",
+    "line": 4050,
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin\\b",
+        "hits": 91,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<hour-of-day> <integer>",
+    "line": 4067,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<hour-of-day> half",
+    "line": 4085,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bhalf\\b",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<hour-of-day> quarter",
+    "line": 4100,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bquarter\\b",
+        "hits": 21,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<integer> to|till|before <hour-of-day>",
+    "line": 4115,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(to|till|before)\\b",
+        "hits": 44,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<integer> minutes to|till|before <hour-of-day>",
+    "line": 4132,
+    "items": [
+      "predicate",
+      "regex",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bminutes?\\b",
+        "hits": 23,
+        "error": null
+      },
+      {
+        "pattern": "\\b(to|till|before)\\b",
+        "hits": 44,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<part-of-day> at <time-of-day>",
+    "line": 4149,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bat\\b",
+        "hits": 105,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<part-of-day> <latent-time-of-day> (latent)",
+    "line": 4158,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<time-of-day> <part-of-day>",
+    "line": 4169,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "time",
+    "name": "<time-of-day> sharp|exactly",
+    "line": 4178,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(sharp|exactly)\\b",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "about|exactly <time-of-day>",
+    "line": 4187,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(about|exactly)\\b",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<part-of-day> of <time>",
+    "line": 4196,
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bof\\b",
+        "hits": 152,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "from <time-of-day> - <time-of-day> (interval)",
+    "line": 4205,
+    "items": [
+      "regex",
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfrom\\b",
+        "hits": 48,
+        "error": null
+      },
+      {
+        "pattern": "\\b(-|to|through)\\b",
+        "hits": 87,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "last|past|next <duration>",
+    "line": 4223,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b([lp]ast|next)\\b",
+        "hits": 151,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "in <duration> at <time-of-day>",
+    "line": 4242,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bin\\b",
+        "hits": 91,
+        "error": null
+      },
+      {
+        "pattern": "\\bat\\b",
+        "hits": 105,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<ordinal> <cycle> after <time>",
+    "line": 4260,
+    "items": [
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bafter\\b",
+        "hits": 14,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<ordinal> <cycle> after <time>",
+    "line": 4280,
+    "items": [
+      "regex",
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bthe\\b",
+        "hits": 124,
+        "error": null
+      },
+      {
+        "pattern": "\\bafter\\b",
+        "hits": 14,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <cycle> after|before <time>",
+    "line": 4300,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bthe\\b",
+        "hits": 124,
+        "error": null
+      },
+      {
+        "pattern": "\\b(after|before)\\b",
+        "hits": 20,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the <cycle> of <time>",
+    "line": 4322,
+    "items": [
+      "regex",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bthe\\b",
+        "hits": 124,
+        "error": null
+      },
+      {
+        "pattern": "\\bof\\b",
+        "hits": 152,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the nth <time> after <time>",
+    "line": 4338,
+    "items": [
+      "regex",
+      "dim",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bthe\\b",
+        "hits": 124,
+        "error": null
+      },
+      {
+        "pattern": "\\bafter\\b",
+        "hits": 14,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<day-of-month> (ordinal or number) of <month>",
+    "line": 4359,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bof( the)?\\b",
+        "hits": 152,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "intersect by \\\",\\\", \\\"of\\\", \\\"from\\\" for year",
+    "line": 4371,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(of|from|,)\\b",
+        "hits": 188,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "by the end of <time>",
+    "line": 4380,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bby( the)?\\b",
+        "hits": 19,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "between <time-of-day> and <time-of-day> (interval)",
+    "line": 4392,
+    "items": [
+      "regex",
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bbetween\\b",
+        "hits": 4,
+        "error": null
+      },
+      {
+        "pattern": "\\b(and|to)\\b",
+        "hits": 42,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "absorption of , after named day",
+    "line": 4405,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": ",",
+        "hits": 15,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "part of days",
+    "line": 4410,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(morning|after ?noo?n(ish)?|evening|night|(at )?lunch)\\b",
+        "hits": 56,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "early morning",
+    "line": 4428,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bearly ((in|hours of) the )?morning\\b",
+        "hits": 4,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "part of <named-month>",
+    "line": 4437,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(early|mid|late)-?( of)?\\b",
+        "hits": 11,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "at the beginning|end of <named-month>",
+    "line": 4455,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(at the )?(beginning|end) of\\b",
+        "hits": 66,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "at the beginning|end of <year>",
+    "line": 4470,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(at the )?(beginning|end) of\\b",
+        "hits": 66,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "at the beginning|end of <week>",
+    "line": 4485,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(at the )?(beginning|end) of\\b",
+        "hits": 66,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "beginning of month",
+    "line": 4503,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b((at )?the )?(BOM|beginning of (the )?month)\\b",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "end of month",
+    "line": 4511,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(by (the )?|(at )?the )?(EOM|end of (the )?month)\\b",
+        "hits": 10,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "beginning of year",
+    "line": 4535,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b((at )?the )?(BOY|beginning of (the )?year)\\b",
+        "hits": 4,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "end of year",
+    "line": 4543,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(by (the )?|(at )?the )?(EOY|end of (the )?year)\\b",
+        "hits": 10,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<hour-of-day> zero <integer>",
+    "line": 4567,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\b(zero|o(h|u)?)\\b",
+        "hits": 4,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<hour-of-day> - <integer-as-word>",
+    "line": 4587,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "-",
+        "hits": 66,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "<hour-of-day> - zero - <integer>",
+    "line": 4607,
+    "items": [
+      "predicate",
+      "regex",
+      "regex",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "-",
+        "hits": 66,
+        "error": null
+      },
+      {
+        "pattern": "\\b(zero|o(h|u)?)\\b",
+        "hits": 4,
+        "error": null
+      },
+      {
+        "pattern": "-",
+        "hits": 66,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "half to|till|before <hour-of-day>",
+    "line": 4629,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bhalf (to|till|before|of)\\b",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "half <integer> (UK style hour-of-day)",
+    "line": 4648,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bhalf\\b",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "nth <day-of-week> of <month-or-greater>",
+    "line": 4666,
+    "items": [
+      "dim",
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bof|in\\b",
+        "hits": 241,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "the nth <day-of-week> of <month-or-greater>",
+    "line": 4694,
+    "items": [
+      "regex",
+      "dim",
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bthe\\b",
+        "hits": 124,
+        "error": null
+      },
+      {
+        "pattern": "\\bof|in\\b",
+        "hits": 241,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "from the <day-of-month> (ordinal or number) to the <day-of-month> (ordinal or number) of <named-month> (interval)",
+    "line": 4723,
+    "items": [
+      "regex",
+      "predicate",
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bfrom\\b",
+        "hits": 48,
+        "error": null
+      },
+      {
+        "pattern": "\\-|to( the)?|th?ru|through|(un)?til(l)?",
+        "hits": 166,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time",
+    "name": "Mid-day",
+    "line": 4754,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\bmid[\\s-]?day\\b",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "integer (0..9)",
+    "line": 20,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(zero|naught|nought|nil|none|zilch|one|single|two|three|four|five|six|seven|eight|nine)",
+        "hits": 39,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "integer (10..19)",
+    "line": 52,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|ten|eleven|twelve)",
+        "hits": 11,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "integer (20..90)",
+    "line": 79,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(twenty|thirty|fou?rty|fifty|sixty|seventy|eighty|ninety)",
+        "hits": 11,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "a few",
+    "line": 104,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(a )?few",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "integer (21..99)",
+    "line": 114,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "[\\s\\-]+",
+        "hits": 54,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "integer compose (tens + units)",
+    "line": 141,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "numeral",
+    "name": "one eleven (skip hundreds)",
+    "line": 167,
+    "items": [
+      "regex",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(one|two|three|four|five|six|seven|eight|nine)",
+        "hits": 34,
+        "error": null
+      },
+      {
+        "pattern": "(ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|fou?rty|fifty|sixty|seventy|eighty|ninety)",
+        "hits": 17,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "one twenty two (skip hundreds)",
+    "line": 192,
+    "items": [
+      "regex",
+      "regex",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(one|two|three|four|five|six|seven|eight|nine)",
+        "hits": 34,
+        "error": null
+      },
+      {
+        "pattern": "(twenty|thirty|fou?rty|fifty|sixty|seventy|eighty|ninety)",
+        "hits": 11,
+        "error": null
+      },
+      {
+        "pattern": "(one|two|three|four|five|six|seven|eight|nine)",
+        "hits": 34,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "integer (numeric)",
+    "line": 221,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(\\d{1,18})",
+        "hits": 59,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "decimal number",
+    "line": 234,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(\\d*\\.\\d+)",
+        "hits": 10,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "fractional number",
+    "line": 247,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(\\d+)/(\\d+)",
+        "hits": 4,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "number with commas",
+    "line": 264,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?)",
+        "hits": 7,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "number suffixes (K, M, G)",
+    "line": 278,
+    "items": [
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(k|m|g|b)\\b",
+        "hits": 10,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "negative number",
+    "line": 297,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "(-|minus|negative)\\s?",
+        "hits": 19,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "powers of tens",
+    "line": 306,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(hundred|thousand|l(ac|(a?kh)?)|million|((k|c)r(ore)?|koti)|billion|trillion)s?",
+        "hits": 32,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "a pair / a couple",
+    "line": 335,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(a\\s+)?(pair|couple)s?(\\s+of)?",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "a dozen of",
+    "line": 345,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(a )?dozens?( of)?",
+        "hits": 7,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "one point 2",
+    "line": 357,
+    "items": [
+      "dim",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "point|dot",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "point 77",
+    "line": 372,
+    "items": [
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "point|dot",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "compose by multiplication",
+    "line": 384,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "numeral",
+    "name": "intersect 2 numbers",
+    "line": 410,
+    "items": [
+      "predicate",
+      "predicate"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "numeral",
+    "name": "intersect 2 numbers (with and)",
+    "line": 429,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "and",
+        "hits": 13,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "numeral",
+    "name": "<integer> '('<integer>')'",
+    "line": 449,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "\\(",
+        "hits": 2,
+        "error": null
+      },
+      {
+        "pattern": "\\)",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "<integer> <unit-of-duration>",
+    "line": 53,
+    "items": [
+      "predicate",
+      "dim"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "duration",
+    "name": "quarter of an hour",
+    "line": 70,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(1/4\\s?h(our)?|(a\\s)?quarter of an hour)",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "half an hour (abbrev)",
+    "line": 78,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "1/2\\s?h",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "three-quarters of an hour",
+    "line": 86,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(3/4\\s?h(our)?|three(\\s|-)quarters of an hour)",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "fortnight",
+    "line": 94,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(a|one)?\\s*fortnight",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "<integer> + '\\\"",
+    "line": 100,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(['\"])",
+        "hits": 2,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "<integer> more <unit-of-duration>",
+    "line": 121,
+    "items": [
+      "predicate",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "more|additional|extra|less|fewer",
+        "hits": 5,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "number.number hours",
+    "line": 141,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(\\d+)\\.(\\d+)",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "number.number minutes",
+    "line": 163,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(\\d+)\\.(\\d+)",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "<integer> and a half hour",
+    "line": 185,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "and (an? )?half hours?",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "<integer> and a half minute",
+    "line": 198,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "and (an? )?half min(ute)?s?",
+        "hits": 3,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "a <unit-of-duration>",
+    "line": 211,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "an?",
+        "hits": 55,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "half a <time-grain>",
+    "line": 223,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "(1/2|half)( an?)?",
+        "hits": 15,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "a <unit-of-duration> and a half",
+    "line": 236,
+    "items": [
+      "regex",
+      "dim",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "an?|one",
+        "hits": 56,
+        "error": null
+      },
+      {
+        "pattern": "and (a )?half",
+        "hits": 6,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "<integer> hour and <integer>",
+    "line": 253,
+    "items": [
+      "predicate",
+      "regex",
+      "predicate"
+    ],
+    "patterns": [
+      {
+        "pattern": "hours?( and)?",
+        "hits": 39,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "about|exactly <duration>",
+    "line": 273,
+    "items": [
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": "(about|around|approximately|exactly)",
+        "hits": 0,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": true,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "<integer> and <integer> quarter of hour",
+    "line": 283,
+    "items": [
+      "predicate",
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "and (a |an |one |two |three )?quarters?( of)?( an)?",
+        "hits": 20,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "composite <duration> (with ,/and)",
+    "line": 310,
+    "items": [
+      "predicate",
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": ",|and",
+        "hits": 40,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "duration",
+    "name": "composite <duration>",
+    "line": 333,
+    "items": [
+      "predicate",
+      "dim",
+      "dim"
+    ],
+    "patterns": [],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": true
+  },
+  {
+    "dimension": "duration",
+    "name": "composite <duration> and <duration>",
+    "line": 355,
+    "items": [
+      "dim",
+      "regex",
+      "dim"
+    ],
+    "patterns": [
+      {
+        "pattern": ",|and",
+        "hits": 40,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "ordinal",
+    "name": "ordinals (first..nineteenth)",
+    "line": 8,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth)",
+        "hits": 21,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "ordinal",
+    "name": "ordinals (twentieth..ninetieth)",
+    "line": 43,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(twentieth|thirtieth|fortieth|fiftieth|sixtieth|seventieth|eightieth|ninetieth)",
+        "hits": 1,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "ordinal",
+    "name": "ordinals (composite, e.g. twenty-fifth)",
+    "line": 68,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[\\s\\-\\u{2014}]?(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth)",
+        "hits": 16,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "ordinal",
+    "name": "ordinal (numeric)",
+    "line": 111,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(\\d+)\\s*(st|nd|rd|th)",
+        "hits": 10,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time_grain",
+    "name": "second (grain)",
+    "line": 9,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "sec(ond)?s?",
+        "hits": 13,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time_grain",
+    "name": "minute (grain)",
+    "line": 14,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "m(in(ute)?s?)?",
+        "hits": 433,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time_grain",
+    "name": "hour (grain)",
+    "line": 19,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "h(((ou)?rs?)|r)?",
+        "hits": 509,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time_grain",
+    "name": "day (grain)",
+    "line": 24,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "days?",
+        "hits": 209,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time_grain",
+    "name": "week (grain)",
+    "line": 29,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "weeks?",
+        "hits": 101,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time_grain",
+    "name": "month (grain)",
+    "line": 34,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "months?",
+        "hits": 41,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time_grain",
+    "name": "quarter (grain)",
+    "line": 39,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "(quarter|qtr)s?",
+        "hits": 33,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  },
+  {
+    "dimension": "time_grain",
+    "name": "year (grain)",
+    "line": 44,
+    "items": [
+      "regex"
+    ],
+    "patterns": [
+      {
+        "pattern": "y(ea)?rs?",
+        "hits": 58,
+        "error": null
+      }
+    ],
+    "untranslatable": false,
+    "unreached": false,
+    "opaque": false
+  }
+]

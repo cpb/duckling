@@ -1,0 +1,55 @@
+# Per-slice prose that is a judgement call rather than something derivable
+# from the crate. Everything else in these issues is computed.
+
+wave_notes:
+  A: >-
+    **Wave A — leaf variant, no `TimeData` child.** Fully parallel with every
+    other Wave A slice and with the four dependency-dimension slices. No
+    ordering constraint of any kind inside the wave.
+  B: >-
+    **Wave B — single-child composite.** Takes one `TimeData` child, so it
+    starts once Wave A is green. No ordering constraint against other Wave B
+    slices.
+  C: >-
+    **Wave C — multi-child composite.** Takes two or more `TimeData` children,
+    so it starts once Wave B is green. No ordering constraint against the
+    other two Wave C slices.
+
+# Slices big or risky enough to warn the assignee about. Literal blocks, not
+# folded: these contain blockquotes, and folding would join their lines.
+sizing:
+  Holiday: |-
+    > **Sized for a split.** The corpus carries a long tail of named holidays —
+    > Eid, Ramadan, Thanksgiving, Yom Kippur, Guru Nanak, Vesak, Koningsdag,
+    > Orthodox Easter, MLK — with real calendar arithmetic behind several. #163
+    > says explicitly: split this into sub-slices if one agent stalls on it.
+    > `holidays_regex()` at `src/dimensions/time/en.rs:4847` is the enumeration.
+
+  Interval: |-
+    > **Highest-risk slice in the tree.** It owns open intervals (13 explicit
+    > `check_time_open_interval_after`/`_before` corpus cases), end-bound
+    > adjustment, and the `by <time>` deadline synthesis #157 documents — a
+    > *closed* `[now, named]` interval where `from` equals the reference instant
+    > exactly. "Both bounds present" is not the same as "both bounds stated in
+    > the text". The third tuple field is the open flag (`true` = do not adjust
+    > the end).
+    >
+    > With 27 rules it is also one of the three fattest slices. Consider
+    > splitting it: the `from…to` / `between…and` explicit-range rules, the
+    > `<time> for <duration>` rules, and the `end of <grain>` / `by <time>`
+    > deadline rules are three coherent groups.
+
+  Composed: |-
+    > **Fattest slice in the tree at 34 rules**, and it carries 20 of the
+    > `TimeForm::` references in `mod.rs`'s resolver — the `PartOfDay`
+    > interaction alone spans roughly `mod.rs:993–1230`. Consider splitting into
+    > three sub-slices: the `<part-of-day>` intersections, the `<month>` /
+    > `<day-of-month>` date intersections, and the ISO/numeric formats
+    > (`yyyy-mm-dd`, `mm/yyyy`, `iso8601`).
+
+  HourMinute: |-
+    > **27 rules — joint second-fattest slice.** It absorbs the `apply_ampm()`
+    > rules (`src/dimensions/time/en.rs:4766`), which produce `Hour` or
+    > `HourMinute` depending on input, and it owns the 12-hour ambiguity flag
+    > that `Hour`/`HourMinute` both carry as their trailing `bool`. Consider
+    > splitting the am/pm rules from the bare clock-time rules.

@@ -1,0 +1,8 @@
+## Constraints inherited from #<%= parent %>
+
+- **Placement.** `lib/duckling/ruby/`, behind a backend switch. The native backend stays the default and ships unchanged.
+- **No Rust at runtime.** The Ruby backend must load and parse with no native extension present.
+- **No central registry file.** Loading is `Dir.glob`-based and every file self-registers on load. A hand-edited `require` manifest would be a guaranteed 40-way conflict.
+- **Shared files are frozen after Phase 0.** A slice that needs a spine change files a follow-up issue rather than editing in place.
+- **Fixtures are generated, never hand-written.**
+- **Pinned crate version: <%= crate_name %> <%= crate_version %>.**
